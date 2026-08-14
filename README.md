@@ -18,14 +18,27 @@ und Glas-Panel) und dem PXL-Studio (Eingabe-Karte mit Toolbar).
     morpht im Lauf zu Stop, Tippen im Lauf wird zum Dazwischenfunken.
   - `applyEvent` - der Streaming-Kern als pure Funktion: `ChatEvent`-Strom rein,
     Nachrichtenliste raus. Transport (SSE, SignalR, Fake) bleibt Sache des Hosts.
+- **@quassel/agent-node** - die Backend-Komponente für Node: Systemprompt, Konfiguration
+  gegen OpenAI-kompatible Backends (OpenRouter, Ollama, vLLM; baseUrl, model, apiKey,
+  temperature, topP, maxTokens, headers), optionale Tools, Stop und Zwischenrufe,
+  Session-Persistenz über ein steckbares `SessionStore`-Interface (`FileSessionStore`,
+  `MemorySessionStore`) und ein framework-freier HTTP/SSE-Adapter (`createChatHandler`).
+  Der Agent spricht dieselbe Event-Sprache wie das Frontend.
+- **@quassel/events** - die gemeinsame Sprache: `ChatEvent`-Typen und der pure
+  Reducer `applyEvent`. Frontend und Backend teilen genau dieses Paket.
 - **gallery** - die Schubladen-Demo (Vite): jede Komposition einmal live, mit
-  geskriptetem Fake-Agenten inklusive Stop und Zwischenrufen.
+  geskriptetem Fake-Agenten inklusive Stop und Zwischenrufen - und einer
+  Live-Schublade gegen den Beispiel-Server.
 
 ## Loslegen
 
 ```sh
 pnpm install
 pnpm dev        # Galerie auf http://localhost:3210
+
+# Beispiel-Backend (fuer die Live-Schublade), Konfiguration per Env:
+QUASSEL_BASE_URL=http://localhost:11434/v1 QUASSEL_MODEL=qwen3:4b \
+  pnpm --filter @quassel/agent-node demo
 ```
 
 ## Verwenden in einem Projekt

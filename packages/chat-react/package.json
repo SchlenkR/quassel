@@ -10,6 +10,9 @@
     ".": "./src/index.ts",
     "./chat.css": "./src/chat.css"
   },
+  "dependencies": {
+    "@quassel/events": "workspace:*"
+  },
   "peerDependencies": {
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"

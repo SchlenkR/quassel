@@ -5,6 +5,7 @@ import {
   ChatMessages,
   DetailMode,
   IconSpark,
+  useChat,
 } from "@quassel/chat-react";
 import "./themes.css";
 import { useFakeAgent } from "./fakeAgent";
@@ -16,6 +17,7 @@ const DEMOS = [
   { id: "toolbar", title: "Eingabe-Karte", note: "Toolbar, Stop und Dazwischenfunken" },
   { id: "bausteine", title: "Panel-Bausteine", note: "Glas, Felder, Punkte" },
   { id: "stile", title: "Stile", note: "Dieselben Bausteine, andere Tokens" },
+  { id: "live", title: "Live-Backend", note: "Echtes LLM über @quassel/agent-node" },
 ] as const;
 
 type DemoId = (typeof DEMOS)[number]["id"];
@@ -52,6 +54,7 @@ export function App() {
         {demo === "toolbar" && <ToolbarDemo />}
         {demo === "bausteine" && <BausteineDemo />}
         {demo === "stile" && <StilDemo />}
+        {demo === "live" && <LiveDemo />}
       </main>
     </div>
   );
@@ -190,6 +193,41 @@ function StilDemo() {
         <div className="stage-foot">
           <ChatInputPlain onSend={(text) => agent.send(text)} onStop={() => agent.stop()} running={running} showHint={false} />
         </div>
+      </div>
+    </>
+  );
+}
+
+function LiveDemo() {
+  const { messages, running, connected, send, stop } = useChat("http://localhost:3300/chat/demo");
+  return (
+    <>
+      <div className="stage-head">
+        <div>
+          <h2>Live-Backend</h2>
+          <p>
+            useChat gegen den Beispiel-Server (packages/agent-node, pnpm --filter @quassel/agent-node demo) -
+            dahinter ein OpenAI-kompatibles LLM.
+          </p>
+        </div>
+        <span className={connected ? "verbindung verbindung--da" : "verbindung"}>
+          <span className={connected ? "qsl-dot qsl-dot--live" : "qsl-dot"} />
+          {connected ? "verbunden" : "Server nicht erreichbar"}
+        </span>
+      </div>
+      <ChatMessages
+        emptyState={
+          <div className="empty">
+            {connected
+              ? "Verbunden - stell dem Modell eine Frage (Uhrzeit fragen zeigt den Tool-Call)."
+              : "Beispiel-Server starten: pnpm --filter @quassel/agent-node demo"}
+          </div>
+        }
+        messages={messages}
+        running={running}
+      />
+      <div className="stage-foot">
+        <ChatInputToolbar disabled={!connected} onSend={(text) => void send(text)} onStop={() => void stop()} running={running} />
       </div>
     </>
   );

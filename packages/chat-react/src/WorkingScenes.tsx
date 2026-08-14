@@ -5,15 +5,15 @@ const GRUNDTAKT_MS = 90;
 const SZENENWECHSEL_MS = 2600;
 
 /** Eine Zelle je Figur: Emoji und Satzzeichen teilen sich kein Raster, geschobener Text ruckelt. */
-function bahn(figuren: Record<number, string>): string[] {
-  return Array.from({ length: SPUR }, (_, x) => figuren[x] ?? " ");
+function bahn(figuren: Record<number, string>, breite = SPUR): string[] {
+  return Array.from({ length: breite }, (_, x) => figuren[x] ?? " ");
 }
 
 interface Szene {
   id: string;
   takt: number;
   laufend?: true;
-  zeichne: (schritt: number, wort: string) => string | string[];
+  zeichne: (schritt: number) => string | string[];
 }
 
 /**
@@ -22,22 +22,6 @@ interface Szene {
  * zurueck, alle anderen als schlichten Text.
  */
 const SZENEN: Szene[] = [
-  {
-    // Buchstaben rattern und rasten von links nacheinander ein.
-    id: "slot",
-    takt: 1,
-    zeichne: (schritt, wort) => {
-      const zeichen = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      return [...wort]
-        .map((z, i) => {
-          if (z === " ") return " ";
-          const rastet = 2 + i * 2;
-          if (schritt >= rastet) return z;
-          return zeichen[(schritt * (7 + i * 3) + i * 11) % zeichen.length];
-        })
-        .join("");
-    },
-  },
   {
     id: "denken",
     takt: 2,
@@ -54,30 +38,7 @@ const SZENEN: Szene[] = [
     laufend: true,
     zeichne: (schritt) => {
       const x = schritt % SPUR;
-      return bahn({ [x - 2]: "\u00b7", [x - 1]: "\u{1F4A8}", [x]: "\u{1F680}" });
-    },
-  },
-  {
-    // Die Maus fuehrt, die Katze haelt Abstand - beide laufen rechts raus.
-    id: "katzemaus",
-    takt: 2,
-    laufend: true,
-    zeichne: (schritt) => {
-      const x = schritt % (SPUR + 4);
-      return bahn({ [x - 4]: "\u{1F408}", [x]: "\u{1F401}" });
-    },
-  },
-  {
-    id: "bauen",
-    takt: 2,
-    zeichne: (schritt) => {
-      const x = schritt % (SPUR + 1);
-      const figuren: Record<number, string> = {};
-      for (let i = 0; i < SPUR; i++) {
-        figuren[i] = i < x ? "\u{1F7E9}" : "\u2B1C";
-      }
-      figuren[x] = schritt % 2 === 0 ? "\u{1F528}" : "\u{1F6E0}\uFE0F";
-      return bahn(figuren);
+      return bahn({ [x - 2]: "·", [x - 1]: "\u{1F4A8}", [x]: "\u{1F680}" });
     },
   },
   {
@@ -89,7 +50,7 @@ const SZENEN: Szene[] = [
       const x = schritt % SPUR;
       const figuren: Record<number, string> = {};
       for (let i = x + 1; i < SPUR; i++) {
-        figuren[i] = "\u00b7";
+        figuren[i] = "·";
       }
       figuren[x] = schritt % 2 === 0 ? "\u{1F7E1}" : "\u{1F315}";
       return bahn(figuren);
@@ -111,19 +72,9 @@ const SZENEN: Szene[] = [
     zeichne: (schritt) => {
       const takt = schritt % 12;
       if (takt < 4) return "\u{1F95A}";
-      if (takt < 6) return "\u{1F95A}\u2728";
+      if (takt < 6) return "\u{1F95A}✨";
       if (takt < 9) return "\u{1F423}";
       return "\u{1F425}";
-    },
-  },
-  {
-    // Die Waage schwingt und pendelt sich ein.
-    id: "waage",
-    takt: 2,
-    zeichne: (schritt) => {
-      const takt = schritt % 12;
-      const stellung = takt < 8 ? ["/-\\", "\\-/"][takt % 2] : "-=-";
-      return "\u2696\uFE0F " + stellung;
     },
   },
   {
@@ -133,7 +84,7 @@ const SZENEN: Szene[] = [
     zeichne: (schritt) => {
       const takt = schritt % 14;
       if (takt >= 11) return "\u{1F4E1} OK";
-      const muster = ["\u00b7", "\u00b7\u00b7", "\u00b7-", "-\u00b7", "\u00b7\u00b7-", "-\u00b7\u00b7"];
+      const muster = ["·", "··", "·-", "-·", "··-", "-··"];
       return "\u{1F4E1} " + muster[takt % muster.length];
     },
   },
@@ -143,28 +94,73 @@ const SZENEN: Szene[] = [
     takt: 2,
     zeichne: (schritt) => {
       const takt = schritt % 12;
-      const koerner = "\u00b7".repeat(Math.max(0, 5 - Math.floor(takt / 2)));
-      return (takt < 10 ? "\u23F3" : "\u231B") + " " + koerner;
+      const koerner = "·".repeat(Math.max(0, 5 - Math.floor(takt / 2)));
+      return (takt < 10 ? "⏳" : "⌛") + " " + koerner;
     },
   },
   {
-    // Puzzleteile rasten nacheinander ein.
-    id: "puzzle",
+    // Ei, Kueken, Henne - und die legt das naechste Ei.
+    id: "huhn-kreislauf",
+    takt: 3,
+    zeichne: (schritt) => {
+      const takt = schritt % 16;
+      if (takt < 3) return "\u{1F95A}";
+      if (takt < 5) return "\u{1F95A}✨";
+      if (takt < 8) return "\u{1F423}";
+      if (takt < 11) return "\u{1F424}";
+      if (takt < 14) return "\u{1F414}";
+      return "\u{1F414}\u{1F95A}";
+    },
+  },
+  {
+    // Hut, Funken - und das Kaninchen tuermt.
+    id: "zauberhut",
+    takt: 3,
+    zeichne: (schritt) => {
+      const takt = schritt % 14;
+      if (takt < 4) return "\u{1F3A9}";
+      if (takt < 7) return "\u{1F3A9}✨";
+      if (takt < 11) return "\u{1F3A9}\u{1F407}";
+      return "\u{1F407}\u{1F4A8}";
+    },
+  },
+  {
+    // Rot, Gelb, Gruen - und ab.
+    id: "ampel",
+    takt: 3,
+    zeichne: (schritt) => {
+      const takt = schritt % 12;
+      if (takt < 4) return "\u{1F534}";
+      if (takt < 6) return "\u{1F7E1}";
+      if (takt < 8) return "\u{1F7E2}";
+      return "\u{1F697}\u{1F4A8}";
+    },
+  },
+  {
+    // Klingeln, verschlafen, losrennen.
+    id: "wecker",
     takt: 2,
     zeichne: (schritt) => {
-      const x = schritt % (SPUR + 2);
-      const figuren: Record<number, string> = {};
-      for (let i = 0; i < SPUR; i++) {
-        figuren[i] = i < x ? "\u{1F9E9}" : "\u00b7";
-      }
-      return bahn(figuren);
+      const takt = schritt % 14;
+      if (takt < 5) return takt % 2 === 0 ? "⏰" : "\u{1F514}";
+      if (takt < 8) return "\u{1F634}";
+      if (takt < 10) return "\u{1F633}";
+      return "\u{1F3C3}\u{1F4A8}";
+    },
+  },
+  {
+    // Schnecke kriecht zur Flagge - und feiert.
+    id: "schnecke",
+    takt: 4,
+    zeichne: (schritt) => {
+      const takt = schritt % 8;
+      if (takt < 5) return bahn({ [takt]: "\u{1F40C}", 4: "\u{1F3C1}" }, 5);
+      return bahn({ 4: "\u{1F389}" }, 5);
     },
   },
 ];
 
 export interface WorkingScenesProps {
-  /** Wort fuer die Slot-Szene, Default QUASSEL. */
-  word?: string;
   /** Text fuer Screenreader, Default "Arbeitet ...". */
   label?: string;
 }
@@ -174,7 +170,7 @@ export interface WorkingScenesProps {
  * und Startphase, damit dieselben Szenen nie wie eine Schleife wirken. Ueber die
  * working-Prop von ChatMessages laesst er sich komplett ersetzen.
  */
-export function WorkingScenes({ word = "QUASSEL", label = "Arbeitet ..." }: WorkingScenesProps) {
+export function WorkingScenes({ label = "Arbeitet ..." }: WorkingScenesProps) {
   const [szene, setSzene] = useState(() => SZENEN[Math.floor(Math.random() * SZENEN.length)]);
   const [versatz, setVersatz] = useState(() => Math.floor(Math.random() * 20));
   const [frameTick, setFrameTick] = useState(0);
@@ -196,7 +192,7 @@ export function WorkingScenes({ word = "QUASSEL", label = "Arbeitet ..." }: Work
     return () => window.clearInterval(timer);
   }, []);
 
-  const bild = szene.zeichne(Math.floor(frameTick / szene.takt) + (szene.laufend ? versatz : 0), word);
+  const bild = szene.zeichne(Math.floor(frameTick / szene.takt) + (szene.laufend ? versatz : 0));
   return (
     <div aria-label={label} className="qsl-working" role="status">
       <span aria-hidden="true" className="qsl-working__stage" key={szene.id}>

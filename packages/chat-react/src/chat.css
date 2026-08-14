@@ -748,10 +748,19 @@ button.qsl-trace:focus-visible {
     margin-top: 0;
 }
 
+/* h1/h2 mitnehmen, sonst erbt der Chat die Ueberschriften der Gastseite. */
+.qsl-md h1,
+.qsl-md h2,
 .qsl-md h3 {
     margin: 12px 0 4px;
+    font-family: inherit;
     font-size: 15px;
     font-weight: 500;
+}
+
+.qsl-md h1 {
+    font-size: 16px;
+    font-weight: 600;
 }
 
 .qsl-md h4 {

@@ -24,7 +24,7 @@ export function ChatMessages({
   detailMode = "compact",
   running = false,
   working,
-  workingWord,
+  workingTimeoutMs = 20000,
   texts,
   toolArgumentsText = defaultArgumentsText,
   onAnswerQuestion,
@@ -35,8 +35,8 @@ export function ChatMessages({
   detailMode?: DetailMode;
   running?: boolean;
   working?: ReactNode;
-  /** Wort fuer die Slot-Szene des Default-Indikators (WorkingScenes). */
-  workingWord?: string;
+  /** Ohne neue Events verschwindet der Working-Indikator nach dieser Zeit, Default 20s. */
+  workingTimeoutMs?: number;
   texts?: Partial<ChatTexts>;
   toolArgumentsText?: (tool: ToolInfo) => string;
   onAnswerQuestion?: (callId: string, text: string) => void;
@@ -47,6 +47,15 @@ export function ChatMessages({
   const scrollBereich = useRef<HTMLDivElement>(null);
   const ende = useRef<HTMLDivElement>(null);
   const [amEnde, setAmEnde] = useState(true);
+
+  // Der Indikator laeuft nur, solange wirklich Events eintreffen: jede Aenderung am Verlauf
+  // gilt als Lebenszeichen, danach zaehlt der Timeout. Stop beendet ihn ohnehin (running).
+  const [stromAktiv, setStromAktiv] = useState(true);
+  useEffect(() => {
+    setStromAktiv(true);
+    const timer = window.setTimeout(() => setStromAktiv(false), workingTimeoutMs);
+    return () => window.clearTimeout(timer);
+  }, [messages, workingTimeoutMs]);
 
   // Ein paar Pixel Spielraum: exakt am Ende ist man durch Rundung selten. Passt der ganze
   // Verlauf ins Fenster, gibt es kein Unten - dann gilt man als angekommen.
@@ -140,7 +149,7 @@ export function ChatMessages({
       ) : (
         <div aria-live="polite" className="qsl-thread">
           {bloecke}
-          {running && (working ?? <WorkingScenes label={alleTexte.working} word={workingWord} />)}
+          {running && stromAktiv && (working ?? <WorkingScenes label={alleTexte.working} />)}
           <div ref={ende} />
         </div>
       )}

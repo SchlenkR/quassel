@@ -1,6 +1,8 @@
 export type {
   AgentConfig,
   AgentTool,
+  ChatSessionLike,
+  ChatSessionProvider,
   OpenAiMessage,
   OpenAiToolCall,
   SessionState,

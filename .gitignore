@@ -4,3 +4,4 @@ build/
 *.log
 .DS_Store
 packages/agent-node/.sessions/
+packages/agent-pi/.pi-sessions/

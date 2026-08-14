@@ -27,6 +27,13 @@ und Glas-Panel) und dem PXL-Studio (Eingabe-Karte mit Toolbar).
   Session-Persistenz über ein steckbares `SessionStore`-Interface (`FileSessionStore`,
   `MemorySessionStore`) und ein framework-freier HTTP/SSE-Adapter (`createChatHandler`).
   Der Agent spricht dieselbe Event-Sprache wie das Frontend.
+- **@quassel/agent-pi** - der Pi Coding Agent als quassel-Backend, hinter demselben
+  Event-Kontrakt und HTTP-Adapter. `PiChatConfig` macht alles einstellbar:
+  `systemPrompt` (ersetzen) oder `appendSystemPrompt` (anhängen), `model`,
+  `thinkingLevel`, `tools` (Auswahl oder leer = reiner Chat), `customTools`, `cwd`
+  (Projekt-Skills und AGENTS.md), `sessionDir` (Persistenz) und `createOptions` als
+  Fluchtluke. Ohne Angaben läuft Pi mit seiner normalen Konfiguration aus ~/.pi
+  (Settings, Modelle, Skills, Extensions) - also so gut vorkonfiguriert wie die CLI.
 - **@quassel/events** - die gemeinsame Sprache: `ChatEvent`-Typen und der pure
   Reducer `applyEvent`. Frontend und Backend teilen genau dieses Paket.
 - **gallery** - die Schubladen-Demo (Vite): jede Komposition einmal live, mit

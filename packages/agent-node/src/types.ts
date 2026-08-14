@@ -46,6 +46,20 @@ export interface SessionInfo {
   updatedAt: number;
 }
 
+/** Was der HTTP-Adapter von einer Unterhaltung braucht - AgentSession erfüllt das, andere Backends auch. */
+export interface ChatSessionLike {
+  readonly running: boolean;
+  subscribe(listener: (event: import("@quassel/events").ChatEvent) => void): () => void;
+  send(text: string): void;
+  stop(): void;
+}
+
+export interface ChatSessionProvider {
+  get(id: string): Promise<ChatSessionLike>;
+  list(): Promise<SessionInfo[]>;
+  delete(id: string): Promise<void>;
+}
+
 export interface SessionStore {
   load(id: string): Promise<SessionState | undefined>;
   save(state: SessionState): Promise<void>;

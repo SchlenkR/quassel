@@ -105,6 +105,13 @@
     color: var(--qsl-muted);
 }
 
+.pi-kopf {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+}
+
 .verbindung {
     display: flex;
     align-items: center;

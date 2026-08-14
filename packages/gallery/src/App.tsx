@@ -18,6 +18,7 @@ const DEMOS = [
   { id: "bausteine", title: "Panel-Bausteine", note: "Glas, Felder, Punkte" },
   { id: "stile", title: "Stile", note: "Dieselben Bausteine, andere Tokens" },
   { id: "live", title: "Live-Backend", note: "Echtes LLM über @quassel/agent-node" },
+  { id: "pi", title: "Pi-Backend", note: "Der Pi Coding Agent über @quassel/agent-pi" },
 ] as const;
 
 type DemoId = (typeof DEMOS)[number]["id"];
@@ -81,6 +82,7 @@ export function App() {
         {demo === "bausteine" && <BausteineDemo />}
         {demo === "stile" && <StilDemo />}
         {demo === "live" && <LiveDemo />}
+        {demo === "pi" && <PiDemo />}
       </main>
     </div>
   );
@@ -243,6 +245,46 @@ function LiveDemo() {
             {connected
               ? "Verbunden - stell dem Modell eine Frage (Uhrzeit fragen zeigt den Tool-Call)."
               : "Beispiel-Server starten: pnpm --filter @quassel/agent-node demo"}
+          </div>
+        }
+        messages={messages}
+        running={running}
+      />
+      <div className="stage-foot">
+        <ChatInputToolbar disabled={!connected} onSend={(text) => void send(text)} onStop={() => void stop()} running={running} />
+      </div>
+    </>
+  );
+}
+
+function PiDemo() {
+  const { messages, running, connected, send, stop } = useChat("http://localhost:3301/chat/pi-demo");
+  const [detailMode, setDetailMode] = useState<DetailMode>("chips");
+  return (
+    <>
+      <div className="stage-head">
+        <div>
+          <h2>Pi-Backend</h2>
+          <p>
+            Gleiches Frontend, anderes Backend: der Pi Coding Agent hinter demselben Event-Kontrakt
+            (pnpm --filter @quassel/agent-pi demo).
+          </p>
+        </div>
+        <div className="pi-kopf">
+          <ModusToggles modus={detailMode} setModus={setDetailMode} />
+          <span className={connected ? "verbindung verbindung--da" : "verbindung"}>
+            <span className={connected ? "qsl-dot qsl-dot--live" : "qsl-dot"} />
+            {connected ? "verbunden" : "Server nicht erreichbar"}
+          </span>
+        </div>
+      </div>
+      <ChatMessages
+        detailMode={detailMode}
+        emptyState={
+          <div className="empty">
+            {connected
+              ? "Verbunden - frag z.B. nach den Dateien im Projekt, dann siehst du Pi-Tool-Calls."
+              : "Pi-Server starten: pnpm --filter @quassel/agent-pi demo"}
           </div>
         }
         messages={messages}

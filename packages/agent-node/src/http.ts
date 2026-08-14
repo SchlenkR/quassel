@@ -1,8 +1,8 @@
 import { IncomingMessage, ServerResponse } from "node:http";
-import { SessionManager } from "./manager";
+import { ChatSessionProvider } from "./types";
 
 export interface ChatHandlerOptions {
-  manager: SessionManager;
+  manager: ChatSessionProvider;
   prefix?: string;
   cors?: boolean;
 }

@@ -12,6 +12,7 @@ export interface ToolInfo {
 export interface Question {
   callId: string;
   options: string[];
+  multi?: boolean;
   answer?: string;
 }
 
@@ -31,7 +32,7 @@ export type ChatEvent =
   | { kind: "thinking"; delta: string }
   | { kind: "tool"; id: string; name: string; arguments: string; label?: string }
   | { kind: "tool-result"; id: string; result: string; isError?: boolean }
-  | { kind: "question"; callId: string; text: string; options: string[] }
+  | { kind: "question"; callId: string; text: string; options: string[]; multi?: boolean }
   | { kind: "question-answered"; callId: string; answer: string }
   | { kind: "system"; text: string }
   | { kind: "status"; running: boolean }
@@ -89,7 +90,7 @@ export function applyEvent(messages: Message[], event: ChatEvent): Message[] {
           role: "question",
           text: event.text,
           closed: true,
-          question: { callId: event.callId, options: event.options },
+          question: { callId: event.callId, options: event.options, multi: event.multi },
         },
       ];
     case "question-answered":

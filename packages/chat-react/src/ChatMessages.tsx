@@ -4,6 +4,7 @@ import { ChatTexts, defaultTexts } from "./texts";
 import { Markdown } from "./Markdown";
 import { StepPopover } from "./StepPopover";
 import { QuestionCard } from "./QuestionCard";
+import { WorkingScenes } from "./WorkingScenes";
 import { IconChevronDown, IconSpark, IconTool } from "./icons";
 
 function istSchritt(message?: Message): boolean {
@@ -23,6 +24,7 @@ export function ChatMessages({
   detailMode = "compact",
   running = false,
   working,
+  workingWord,
   texts,
   toolArgumentsText = defaultArgumentsText,
   onAnswerQuestion,
@@ -33,6 +35,8 @@ export function ChatMessages({
   detailMode?: DetailMode;
   running?: boolean;
   working?: ReactNode;
+  /** Wort fuer die Slot-Szene des Default-Indikators (WorkingScenes). */
+  workingWord?: string;
   texts?: Partial<ChatTexts>;
   toolArgumentsText?: (tool: ToolInfo) => string;
   onAnswerQuestion?: (callId: string, text: string) => void;
@@ -136,7 +140,7 @@ export function ChatMessages({
       ) : (
         <div aria-live="polite" className="qsl-thread">
           {bloecke}
-          {running && (working ?? <div className="qsl-busy">{alleTexte.working}</div>)}
+          {running && (working ?? <WorkingScenes label={alleTexte.working} word={workingWord} />)}
           <div ref={ende} />
         </div>
       )}

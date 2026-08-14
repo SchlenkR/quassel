@@ -54,6 +54,17 @@ export function StepPopover({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  // Klick daneben schliesst - auch wenn der Host etwas ueber den Backdrop legt.
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!popover.current?.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [onClose]);
+
   const tool = message.tool;
   const title = message.role === "thinking" ? texts.thinkingTitle : texts.toolTitle;
 

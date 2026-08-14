@@ -9,6 +9,8 @@ export { ChatInputToolbar } from "./ChatInputToolbar";
 export type { ToolbarAction } from "./ChatInputToolbar";
 export { Markdown } from "./Markdown";
 export { QuestionCard } from "./QuestionCard";
+export { WorkingScenes } from "./WorkingScenes";
+export type { WorkingScenesProps } from "./WorkingScenes";
 export { StepPopover } from "./StepPopover";
 export {
   IconSend,

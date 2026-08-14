@@ -211,6 +211,50 @@ button.qsl-trace:focus-visible {
     animation: qsl-pulse 1.9s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
 }
 
+/* Der Default-Working-Indikator: kleine Text-Szenen auf fester Buehne. */
+.qsl-working {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--qsl-ink);
+}
+
+.qsl-working::before {
+    content: ">";
+    color: var(--qsl-muted);
+    opacity: 0.7;
+}
+
+.qsl-working__stage {
+    display: inline-block;
+    width: 15rem;
+    flex-shrink: 0;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-variant-ligatures: none;
+}
+
+/* Die Bewegung steckt im Text selbst - jede Szene zeichnet ihre Zeile neu. */
+.qsl-working__character {
+    white-space: pre;
+    letter-spacing: 0.02em;
+}
+
+/* Eine Zelle je Figur: Emoji laufen breiter als Satzzeichen, ohne festes Raster
+   wuerde eine Figur bei jedem Bildwechsel vor- und zurueckspringen. */
+.qsl-working__cell {
+    display: inline-block;
+    width: 1.35em;
+    text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .qsl-working__character {
+        opacity: 0.6;
+    }
+}
+
 .qsl-jump {
     pointer-events: none;
     position: sticky;
@@ -379,18 +423,23 @@ button.qsl-trace:focus-visible {
 
 .qsl-question__options {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
     gap: 6px;
 }
 
 .qsl-question__option {
-    padding: 5px 11px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
     border: 1px solid var(--qsl-line);
-    border-radius: 999px;
+    border-radius: var(--qsl-radius);
     background: none;
     color: var(--qsl-ink);
     font: inherit;
     font-size: 12px;
+    text-align: left;
     cursor: pointer;
     transition: border-color .12s ease, background-color .12s ease;
 }
@@ -398,6 +447,75 @@ button.qsl-trace:focus-visible {
 .qsl-question__option:hover {
     border-color: var(--qsl-accent);
     background: var(--qsl-surface);
+}
+
+.qsl-question__option--gewaehlt {
+    border-color: var(--qsl-accent);
+    background: color-mix(in srgb, var(--qsl-accent) 8%, transparent);
+}
+
+.qsl-question__kasten {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    border: 1px solid var(--qsl-line);
+    border-radius: 4px;
+    color: var(--qsl-accent);
+}
+
+.qsl-question__option--gewaehlt .qsl-question__kasten {
+    border-color: var(--qsl-accent);
+}
+
+.qsl-question__uebernehmen {
+    margin-top: 8px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: var(--qsl-radius);
+    background: var(--qsl-accent);
+    color: #ffffff;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.qsl-question__uebernehmen:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.qsl-question__frei {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.qsl-question__frei-feld {
+    flex: 1;
+    font-size: 12px;
+}
+
+.qsl-question__frei-senden {
+    padding: 5px 11px;
+    border: 1px solid var(--qsl-line);
+    border-radius: var(--qsl-radius);
+    background: none;
+    color: var(--qsl-ink);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.qsl-question__frei-senden:hover:not(:disabled) {
+    border-color: var(--qsl-accent);
+}
+
+.qsl-question__frei-senden:disabled {
+    opacity: 0.4;
+    cursor: default;
 }
 
 .qsl-question__answered {

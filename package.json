@@ -1,0 +1,8 @@
+{
+  "name": "quassel",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter gallery dev",
+    "build": "pnpm --filter gallery build"
+  }
+}

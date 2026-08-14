@@ -1,0 +1,24 @@
+/* Optional: App-weite Grundeinstellungen. Bewusst nicht Teil von index.css,
+   damit die Bibliothek einem Host nichts Globales aufzwingt. */
+* {
+    box-sizing: border-box;
+    scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+    display: none;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    padding: 16px;
+    background: var(--qsl-app-bg);
+    color: var(--qsl-text);
+    font-family: var(--qsl-font);
+    font-size: 14px;
+    line-height: 1.5;
+}

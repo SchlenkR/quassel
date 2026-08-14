@@ -1,0 +1,67 @@
+:root {
+    --qsl-ink: #223347;
+    --qsl-muted: #7692ad;
+    --qsl-line: #d1dde9;
+    --qsl-line-soft: #e3ecf2;
+    --qsl-surface: #ecf2f7;
+    --qsl-panel: #f8fcff;
+    --qsl-content: #ffffff;
+    --qsl-accent: #2a94fa;
+    --qsl-danger: #ff004e;
+    --qsl-success: #72d500;
+    --qsl-app-bg: #f4f6fa;
+    --qsl-text: #1d2433;
+    --qsl-shadow-bar: 0 2px 10px rgba(34, 51, 71, 0.07);
+    --qsl-shadow-pop: 0 10px 30px rgba(118, 146, 173, 0.28);
+    --qsl-mono: "Noto Sans Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --qsl-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --qsl-radius-panel: 14px;
+    --qsl-radius: 8px;
+    --qsl-radius-small: 4px;
+    --qsl-wash-1: oklch(0.93 0.055 245 / 0.75);
+    --qsl-wash-2: oklch(0.94 0.05 165 / 0.7);
+    --qsl-wash-3: oklch(0.93 0.05 305 / 0.6);
+    --qsl-wash-4: oklch(0.95 0.045 75 / 0.65);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --qsl-ink: #dbe6f2;
+        --qsl-muted: #8ea6bf;
+        --qsl-line: #33465c;
+        --qsl-line-soft: #2b3c4f;
+        --qsl-surface: #223142;
+        --qsl-panel: #1b2938;
+        --qsl-content: #16212d;
+        --qsl-accent: #58aaff;
+        --qsl-danger: #ff4d7d;
+        --qsl-app-bg: #131c26;
+        --qsl-text: #dbe6f2;
+        --qsl-shadow-bar: 0 2px 10px rgba(0, 0, 0, 0.4);
+        --qsl-shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.5);
+        --qsl-wash-1: oklch(0.5 0.11 250 / 0.4);
+        --qsl-wash-2: oklch(0.5 0.1 170 / 0.3);
+        --qsl-wash-3: oklch(0.48 0.11 310 / 0.3);
+        --qsl-wash-4: oklch(0.55 0.09 75 / 0.24);
+    }
+}
+
+:root[data-theme="dark"] {
+    --qsl-ink: #dbe6f2;
+    --qsl-muted: #8ea6bf;
+    --qsl-line: #33465c;
+    --qsl-line-soft: #2b3c4f;
+    --qsl-surface: #223142;
+    --qsl-panel: #1b2938;
+    --qsl-content: #16212d;
+    --qsl-accent: #58aaff;
+    --qsl-danger: #ff4d7d;
+    --qsl-app-bg: #131c26;
+    --qsl-text: #dbe6f2;
+    --qsl-shadow-bar: 0 2px 10px rgba(0, 0, 0, 0.4);
+    --qsl-shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --qsl-wash-1: oklch(0.5 0.11 250 / 0.4);
+    --qsl-wash-2: oklch(0.5 0.1 170 / 0.3);
+    --qsl-wash-3: oklch(0.48 0.11 310 / 0.3);
+    --qsl-wash-4: oklch(0.55 0.09 75 / 0.24);
+}

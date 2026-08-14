@@ -1,0 +1,11 @@
+{
+  "name": "@quassel/foundation",
+  "version": "0.1.0",
+  "description": "Design-Tokens, Farbwaschung und Glas-Panel als reines CSS",
+  "style": "css/index.css",
+  "exports": {
+    ".": "./css/index.css",
+    "./base.css": "./css/base.css",
+    "./css/*": "./css/*"
+  }
+}

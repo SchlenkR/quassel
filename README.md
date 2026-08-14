@@ -36,9 +36,10 @@ und Glas-Panel) und dem PXL-Studio (Eingabe-Karte mit Toolbar).
   (Settings, Modelle, Skills, Extensions) - also so gut vorkonfiguriert wie die CLI.
 - **@quassel/events** - die gemeinsame Sprache: `ChatEvent`-Typen und der pure
   Reducer `applyEvent`. Frontend und Backend teilen genau dieses Paket.
-- **gallery** - die Schubladen-Demo (Vite): jede Komposition einmal live, mit
-  geskriptetem Fake-Agenten inklusive Stop und Zwischenrufen - und einer
-  Live-Schublade gegen den Beispiel-Server.
+- **gallery** - die Schubladen-Demo (Vite): jede Komposition einmal live. Nur lesen,
+  schlichte Eingabe, Eingabe-Karte (mit geskriptetem Fake-Agenten inklusive Stop und
+  Zwischenrufen), Panel-Bausteine, Stile (Token-Overrides) sowie zwei echte Backends:
+  Live (agent-node) und Pi (agent-pi).
 
 ## Loslegen
 
@@ -46,20 +47,35 @@ und Glas-Panel) und dem PXL-Studio (Eingabe-Karte mit Toolbar).
 pnpm install
 pnpm dev        # Galerie auf http://localhost:3210
 
-# Beispiel-Backend (fuer die Live-Schublade), Konfiguration per Env:
+# Beispiel-Backend für die Live-Schublade (OpenAI-kompatibel, Konfiguration per Env):
 QUASSEL_BASE_URL=http://localhost:11434/v1 QUASSEL_MODEL=qwen3:4b \
   pnpm --filter @quassel/agent-node demo
+
+# Beispiel-Backend für die Pi-Schublade (nutzt die Pi-Konfiguration aus ~/.pi):
+pnpm --filter @quassel/agent-pi demo
 ```
 
 ## Verwenden in einem Projekt
 
+Aus einem anderen lokalen Projekt per `link:` referenzieren (die Pakete sind Quellpakete,
+der Bundler des Konsumenten kompiliert sie mit - Änderungen hier sind sofort drüben):
+
+```json
+"@quassel/foundation": "link:../quassel/packages/foundation",
+"@quassel/chat-react": "link:../quassel/packages/chat-react",
+"@quassel/events": "link:../quassel/packages/events"
+```
+
 ```tsx
 import "@quassel/foundation";
 import "@quassel/chat-react/chat.css";
-import { ChatMessages, ChatInputToolbar, applyEvent } from "@quassel/chat-react";
+import { ChatMessages, ChatInputToolbar, useChat } from "@quassel/chat-react";
+
+const { messages, running, connected, send, stop } = useChat("http://localhost:3300/chat/meine-session");
 ```
 
 Die Komponenten sind bewusst dumm: sie bekommen `messages` und Callbacks, Zustand und
-Transport gehören dem Host. Texte sind deutsch vorbelegt und über die `texts`-Prop
-austauschbar. Dark Mode folgt `prefers-color-scheme`, ein Host kann mit
-`data-theme="dark"` oder `data-theme="light"` auf `<html>` übersteuern.
+Transport gehören dem Host - `useChat` verdrahtet sie mit einem agent-node- oder
+agent-pi-Endpunkt (SSE mit Verlauf-Replay und Reconnect). Texte sind deutsch vorbelegt
+und über die `texts`-Prop austauschbar. Dark Mode folgt `prefers-color-scheme`, ein Host
+kann mit `data-theme="dark"` oder `data-theme="light"` auf `<html>` übersteuern.

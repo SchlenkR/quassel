@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { ChatEvent } from "@quassel/events";
 import { ChatSessionLike } from "@quassel/agent-node";
 import {
@@ -56,7 +57,11 @@ export class PiSession implements ChatSessionLike {
 
     let model;
     if (config.model) {
-      const runtime = await ModelRuntime.create();
+      const runtime = await ModelRuntime.create({
+        authPath: join(agentDir, "auth.json"),
+        modelsPath: join(agentDir, "models.json"),
+        modelsStorePath: join(agentDir, "models-store.json"),
+      });
       model = runtime.getModel(config.model.provider, config.model.id);
       if (!model) {
         throw new Error(`Modell nicht gefunden: ${config.model.provider}/${config.model.id}`);

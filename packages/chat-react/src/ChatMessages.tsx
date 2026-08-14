@@ -25,6 +25,7 @@ export function ChatMessages({
   running = false,
   working,
   workingTimeoutMs = 20000,
+  stepsExpandable = true,
   texts,
   toolArgumentsText = defaultArgumentsText,
   onAnswerQuestion,
@@ -37,6 +38,8 @@ export function ChatMessages({
   working?: ReactNode;
   /** Ohne neue Events verschwindet der Working-Indikator nach dieser Zeit, Default 20s. */
   workingTimeoutMs?: number;
+  /** false = Denk- und Werkzeug-Schritte lassen sich nicht aufklappen (kein Popover). */
+  stepsExpandable?: boolean;
   texts?: Partial<ChatTexts>;
   toolArgumentsText?: (tool: ToolInfo) => string;
   onAnswerQuestion?: (callId: string, text: string) => void;
@@ -112,6 +115,7 @@ export function ChatMessages({
     if (gruppe.length > 0) {
       bloecke.push(
         <StepRow
+          expandierbar={stepsExpandable}
           key={gruppe[0].key}
           messages={gruppe}
           mitText={detailMode === "chips"}
@@ -132,6 +136,7 @@ export function ChatMessages({
       <Bubble
         detailMode={detailMode}
         dicht={istSchritt(message) && istSchritt(visible[index - 1])}
+        expandierbar={stepsExpandable}
         key={message.key}
         message={message}
         texts={alleTexte}
@@ -168,16 +173,18 @@ export function ChatMessages({
 function StepRow({
   messages,
   mitText,
+  expandierbar,
   texts,
   toolArgumentsText,
 }: {
   messages: Message[];
   mitText: boolean;
+  expandierbar: boolean;
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
 }) {
   const [detail, setDetail] = useState<{ key: string; position: { x: number; y: number } }>();
-  const offen = detail && messages.find((message) => message.key === detail.key);
+  const offen = expandierbar && detail && messages.find((message) => message.key === detail.key);
 
   return (
     <div className="qsl-step qsl-steprow">
@@ -186,6 +193,22 @@ function StepRow({
         const tool = message.tool;
         const laeuft = tool !== undefined && tool.result === undefined;
         const label = thinking ? texts.thinkingChip : tool?.name ?? message.text;
+        if (!expandierbar) {
+          return (
+            <span
+              className={`qsl-chip qsl-chip--still${mitText ? "" : " qsl-chip--icon"}${laeuft ? " qsl-pulse" : ""}`}
+              key={message.key}
+              title={label}
+            >
+              {thinking ? (
+                <IconSpark size={11} />
+              ) : (
+                <IconTool className={tool?.isError ? "qsl-chip__icon--error" : undefined} size={11} />
+              )}
+              {mitText && <span className="qsl-chip__label">{label}</span>}
+            </span>
+          );
+        }
         return (
           <button
             aria-haspopup="dialog"
@@ -221,6 +244,7 @@ function Bubble({
   message,
   detailMode,
   dicht,
+  expandierbar,
   texts,
   toolArgumentsText,
   onAnswerQuestion,
@@ -228,6 +252,7 @@ function Bubble({
   message: Message;
   detailMode: DetailMode;
   dicht: boolean;
+  expandierbar: boolean;
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
   onAnswerQuestion?: (callId: string, text: string) => void;
@@ -258,6 +283,14 @@ function Bubble({
     );
 
     if (detailMode === "compact") {
+      if (!expandierbar) {
+        return (
+          <div className={`${schritt} qsl-trace qsl-trace--compact${thinking ? " qsl-trace--thinking" : ""}`}>
+            {icon}
+            <span className="qsl-trace__line">{zeile}</span>
+          </div>
+        );
+      }
       return (
         <>
           <button

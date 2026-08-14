@@ -153,6 +153,14 @@ button.qsl-trace:focus-visible {
     transition: background-color .12s ease, color .12s ease, border-color .12s ease;
 }
 
+span.qsl-chip--still,
+span.qsl-chip--still:hover {
+    cursor: default;
+    background: none;
+    border-color: var(--qsl-line-soft);
+    color: var(--qsl-muted);
+}
+
 .qsl-chip:hover,
 .qsl-chip:focus-visible {
     background: var(--qsl-surface);

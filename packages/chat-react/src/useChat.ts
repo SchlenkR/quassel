@@ -7,7 +7,7 @@ import { applyEvent, ChatEvent, Message } from "@quassel/events";
  * und erreichen so auch einen laufenden Turn. Bricht der Strom ab, verbindet der Hook
  * nach 3 Sekunden neu.
  */
-export function useChat(baseUrl: string): {
+export function useChat(baseUrl: string, headers: Record<string, string> = {}): {
   messages: Message[];
   running: boolean;
   connected: boolean;
@@ -19,6 +19,8 @@ export function useChat(baseUrl: string): {
   const [connected, setConnected] = useState(false);
   const url = useRef(baseUrl);
   url.current = baseUrl;
+  const zusatz = useRef(headers);
+  zusatz.current = headers;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -28,7 +30,7 @@ export function useChat(baseUrl: string): {
       while (active) {
         try {
           const response = await fetch(`${url.current}/stream`, {
-            headers: { Accept: "text/event-stream" },
+            headers: { Accept: "text/event-stream", ...zusatz.current },
             signal: controller.signal,
           });
           if (!response.ok || !response.body) {
@@ -82,13 +84,13 @@ export function useChat(baseUrl: string): {
   const send = useCallback(async (text: string) => {
     await fetch(`${url.current}/send`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...zusatz.current },
       body: JSON.stringify({ text }),
     });
   }, []);
 
   const stop = useCallback(async () => {
-    await fetch(`${url.current}/stop`, { method: "POST" });
+    await fetch(`${url.current}/stop`, { method: "POST", headers: { ...zusatz.current } });
   }, []);
 
   return { messages, running, connected, send, stop };

@@ -6,6 +6,7 @@ export { useChat } from "./useChat";
 export { ChatMessages } from "./ChatMessages";
 export { ChatInputPlain } from "./ChatInputPlain";
 export { ChatInputToolbar } from "./ChatInputToolbar";
+export type { ToolbarAction } from "./ChatInputToolbar";
 export { Markdown } from "./Markdown";
 export { QuestionCard } from "./QuestionCard";
 export { StepPopover } from "./StepPopover";

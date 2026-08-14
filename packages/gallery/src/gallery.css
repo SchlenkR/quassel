@@ -96,6 +96,15 @@
     font-size: 12.5px;
 }
 
+.mein-working {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--qsl-muted);
+}
+
 .verbindung {
     display: flex;
     align-items: center;

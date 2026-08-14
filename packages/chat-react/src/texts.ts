@@ -2,6 +2,7 @@ export interface ChatTexts {
   working: string;
   toolRunning: string;
   toolStillRunning: string;
+  thinkingChip: string;
   thinkingTitle: string;
   toolTitle: string;
   argumentsLabel: string;
@@ -20,6 +21,7 @@ export const defaultTexts: ChatTexts = {
   working: "Arbeitet ...",
   toolRunning: "läuft ...",
   toolStillRunning: "Werkzeug läuft ...",
+  thinkingChip: "Denken",
   thinkingTitle: "Thinking-Trace",
   toolTitle: "Tool-Call",
   argumentsLabel: "Argumente",

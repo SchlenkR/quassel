@@ -5,16 +5,29 @@ import { IconSend, IconStop } from "./icons";
 // Unter dieser Panel-Breite klappen Beschriftungen mit .qsl-collapsible zu ihren Symbolen.
 const COMPACT_WIDTH_PX = 480;
 
+/** Ein Toolbar-Knopf, deklarativ: Symbol, Text oder beides - plus Klick-Handler. */
+export interface ToolbarAction {
+  icon?: ReactNode;
+  label?: string;
+  title?: string;
+  disabled?: boolean;
+  active?: boolean;
+  onClick: () => void;
+}
+
 /**
- * Die Eingabe-Karte: rahmenlose Textarea oben, Toolbar unter einer Haarlinie. Links und
- * rechts nehmen eigene Knöpfe auf; der Senden-Knopf morpht im Lauf zu Stop, und Tippen
- * während des Laufs wird zum Dazwischenfunken.
+ * Die Eingabe-Karte: rahmenlose Textarea oben, Toolbar unter einer Haarlinie. Eigene
+ * Knöpfe kommen deklarativ über `actions` oder frei über die Slots links/rechts; der
+ * Senden-Knopf morpht im Lauf zu Stop, und Tippen während des Laufs wird zum
+ * Dazwischenfunken. `rows` bestimmt die Höhe der Textarea.
  */
 export function ChatInputToolbar({
   onSend,
   onStop,
   running = false,
   disabled = false,
+  rows = 3,
+  actions,
   toolbarLeft,
   toolbarRight,
   texts,
@@ -23,6 +36,8 @@ export function ChatInputToolbar({
   onStop?: () => void;
   running?: boolean;
   disabled?: boolean;
+  rows?: number;
+  actions?: ToolbarAction[];
   toolbarLeft?: ReactNode;
   toolbarRight?: ReactNode;
   texts?: Partial<ChatTexts>;
@@ -71,11 +86,26 @@ export function ChatInputToolbar({
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={onKeyDown}
         placeholder={running ? alleTexte.steeringPlaceholder : alleTexte.placeholder}
-        rows={3}
+        rows={rows}
         value={draft}
       />
       <div className="qsl-input-card__toolbar">
-        <div className="qsl-input-card__left">{toolbarLeft}</div>
+        <div className="qsl-input-card__left">
+          {actions?.map((action, index) => (
+            <button
+              className={action.active ? "qsl-icon-button qsl-icon-button--active" : "qsl-icon-button"}
+              disabled={action.disabled}
+              key={index}
+              onClick={action.onClick}
+              title={action.title ?? action.label}
+              type="button"
+            >
+              {action.icon}
+              {action.label && <span className={action.icon ? "qsl-collapsible" : undefined}>{action.label}</span>}
+            </button>
+          ))}
+          {toolbarLeft}
+        </div>
         <div className="qsl-input-card__right">
           {toolbarRight}
           {running && !hatText && onStop ? (

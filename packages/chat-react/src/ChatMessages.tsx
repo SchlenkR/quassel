@@ -22,6 +22,7 @@ export function ChatMessages({
   messages,
   detailMode = "compact",
   running = false,
+  working,
   texts,
   toolArgumentsText = defaultArgumentsText,
   onAnswerQuestion,
@@ -31,6 +32,7 @@ export function ChatMessages({
   messages: Message[];
   detailMode?: DetailMode;
   running?: boolean;
+  working?: ReactNode;
   texts?: Partial<ChatTexts>;
   toolArgumentsText?: (tool: ToolInfo) => string;
   onAnswerQuestion?: (callId: string, text: string) => void;
@@ -89,24 +91,52 @@ export function ChatMessages({
     [messages, detailMode],
   );
 
+  // In den Chip-Modi ruecken aufeinanderfolgende Schritte in eine umbrechende Zeile zusammen.
+  const chipModus = detailMode === "chips" || detailMode === "icons";
+  const bloecke: ReactNode[] = [];
+  let gruppe: Message[] = [];
+  const schliesseGruppe = () => {
+    if (gruppe.length > 0) {
+      bloecke.push(
+        <StepRow
+          key={gruppe[0].key}
+          messages={gruppe}
+          mitText={detailMode === "chips"}
+          texts={alleTexte}
+          toolArgumentsText={toolArgumentsText}
+        />,
+      );
+      gruppe = [];
+    }
+  };
+  visible.forEach((message, index) => {
+    if (chipModus && istSchritt(message)) {
+      gruppe = [...gruppe, message];
+      return;
+    }
+    schliesseGruppe();
+    bloecke.push(
+      <Bubble
+        detailMode={detailMode}
+        dicht={istSchritt(message) && istSchritt(visible[index - 1])}
+        key={message.key}
+        message={message}
+        texts={alleTexte}
+        toolArgumentsText={toolArgumentsText}
+        onAnswerQuestion={onAnswerQuestion}
+      />,
+    );
+  });
+  schliesseGruppe();
+
   return (
     <div className={className ? `qsl-chat ${className}` : "qsl-chat"} onScroll={pruefeEnde} ref={scrollBereich}>
       {visible.length === 0 && !running ? (
         emptyState ?? null
       ) : (
         <div aria-live="polite" className="qsl-thread">
-          {visible.map((message, index) => (
-            <Bubble
-              detailMode={detailMode}
-              dicht={istSchritt(message) && istSchritt(visible[index - 1])}
-              key={message.key}
-              message={message}
-              texts={alleTexte}
-              toolArgumentsText={toolArgumentsText}
-              onAnswerQuestion={onAnswerQuestion}
-            />
-          ))}
-          {running && <div className="qsl-busy">{alleTexte.working}</div>}
+          {bloecke}
+          {running && (working ?? <div className="qsl-busy">{alleTexte.working}</div>)}
           <div ref={ende} />
         </div>
       )}
@@ -116,6 +146,59 @@ export function ChatMessages({
             <IconChevronDown />
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Aufeinanderfolgende Schritte als Chips nebeneinander; bei Platzmangel bricht die Zeile um. */
+function StepRow({
+  messages,
+  mitText,
+  texts,
+  toolArgumentsText,
+}: {
+  messages: Message[];
+  mitText: boolean;
+  texts: ChatTexts;
+  toolArgumentsText: (tool: ToolInfo) => string;
+}) {
+  const [detail, setDetail] = useState<{ key: string; position: { x: number; y: number } }>();
+  const offen = detail && messages.find((message) => message.key === detail.key);
+
+  return (
+    <div className="qsl-step qsl-steprow">
+      {messages.map((message) => {
+        const thinking = message.role === "thinking";
+        const tool = message.tool;
+        const laeuft = tool !== undefined && tool.result === undefined;
+        const label = thinking ? texts.thinkingChip : tool?.name ?? message.text;
+        return (
+          <button
+            aria-haspopup="dialog"
+            className={`qsl-chip${mitText ? "" : " qsl-chip--icon"}${laeuft ? " qsl-pulse" : ""}`}
+            key={message.key}
+            onClick={(event) => setDetail({ key: message.key, position: { x: event.clientX, y: event.clientY } })}
+            title={label}
+            type="button"
+          >
+            {thinking ? (
+              <IconSpark size={11} />
+            ) : (
+              <IconTool className={tool?.isError ? "qsl-chip__icon--error" : undefined} size={11} />
+            )}
+            {mitText && <span className="qsl-chip__label">{label}</span>}
+          </button>
+        );
+      })}
+      {offen && detail && (
+        <StepPopover
+          message={offen}
+          position={detail.position}
+          texts={texts}
+          toolArgumentsText={toolArgumentsText}
+          onClose={() => setDetail(undefined)}
+        />
       )}
     </div>
   );

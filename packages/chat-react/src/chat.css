@@ -126,6 +126,61 @@ button.qsl-trace:focus-visible {
     opacity: .6;
 }
 
+/* --- Schritte als Chips: nebeneinander, Umbruch bei Platzmangel --- */
+
+.qsl-steprow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    padding-left: 24px;
+}
+
+.qsl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 220px;
+    padding: 2px 9px;
+    border: 1px solid var(--qsl-line-soft);
+    border-radius: 999px;
+    background: none;
+    color: var(--qsl-muted);
+    font-family: var(--qsl-mono);
+    font-size: 10.5px;
+    line-height: 1.6;
+    cursor: pointer;
+    transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+
+.qsl-chip:hover,
+.qsl-chip:focus-visible {
+    background: var(--qsl-surface);
+    border-color: var(--qsl-line);
+    color: var(--qsl-ink);
+    outline: none;
+}
+
+.qsl-chip--icon {
+    padding: 4px;
+}
+
+.qsl-chip__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qsl-chip__icon--error {
+    color: var(--qsl-danger);
+}
+
+.qsl-icon-button--active {
+    color: var(--qsl-ink);
+    background: var(--qsl-surface);
+}
+
 .qsl-details {
     margin-top: 2px;
     padding-left: 8px;

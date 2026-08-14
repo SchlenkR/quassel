@@ -22,6 +22,32 @@ const DEMOS = [
 
 type DemoId = (typeof DEMOS)[number]["id"];
 
+const MODI: { id: DetailMode; label: string }[] = [
+  { id: "off", label: "nur Antworten" },
+  { id: "icons", label: "Symbole" },
+  { id: "chips", label: "kompakt" },
+  { id: "compact", label: "einzeilig" },
+  { id: "full", label: "alles" },
+];
+
+function ModusToggles({ modus, setModus }: { modus: DetailMode; setModus: (wert: DetailMode) => void }) {
+  return (
+    <div className="toggles">
+      {MODI.map((eintrag) => (
+        <button
+          aria-pressed={modus === eintrag.id}
+          className="toggle"
+          key={eintrag.id}
+          onClick={() => setModus(eintrag.id)}
+          type="button"
+        >
+          {eintrag.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function App() {
   const [demo, setDemo] = useState<DemoId>("toolbar");
 
@@ -69,19 +95,7 @@ function LeseDemo() {
           <h2>Nur lesen</h2>
           <p>ChatMessages ohne Eingabe - ein Verlauf als Dokument, Schritte je nach Detailgrad.</p>
         </div>
-        <div className="toggles">
-          {(["off", "compact", "full"] as const).map((mode) => (
-            <button
-              aria-pressed={detailMode === mode}
-              className="toggle"
-              key={mode}
-              onClick={() => setDetailMode(mode)}
-              type="button"
-            >
-              {mode === "off" ? "nur Antworten" : mode === "compact" ? "einzeilig" : "alles"}
-            </button>
-          ))}
-        </div>
+        <ModusToggles modus={detailMode} setModus={setDetailMode} />
       </div>
       <ChatMessages detailMode={detailMode} messages={transcript} />
     </>
@@ -112,44 +126,52 @@ function SchlichtDemo() {
 
 function ToolbarDemo() {
   const { messages, running, agent } = useFakeAgent();
-  const [detailMode, setDetailMode] = useState<DetailMode>("compact");
+  const [detailMode, setDetailMode] = useState<DetailMode>("chips");
+  const [zeilen, setZeilen] = useState(2);
   return (
     <>
       <div className="stage-head">
         <div>
           <h2>Eingabe-Karte</h2>
           <p>
-            ChatInputToolbar: Karte mit Toolbar-Slots. Während des Laufs wird Senden zu Stop, Tippen zum
-            Dazwischenfunken.
+            ChatInputToolbar: Höhe über rows, eigene Knöpfe über actions (Icon, Text oder beides), eigener
+            Working-Indikator. Während des Laufs wird Senden zu Stop, Tippen zum Dazwischenfunken.
           </p>
         </div>
+        <ModusToggles modus={detailMode} setModus={setDetailMode} />
       </div>
       <ChatMessages
         detailMode={detailMode}
         emptyState={<div className="empty">Stell eine Frage - und funk ruhig dazwischen, während der Agent läuft.</div>}
         messages={messages}
         running={running}
+        working={
+          <div className="mein-working">
+            <span className="qsl-dot qsl-dot--working" />
+            Der Demo-Agent bastelt an der Antwort ...
+          </div>
+        }
       />
       <div className="stage-foot">
         <ChatInputToolbar
+          actions={[
+            {
+              icon: <IconSpark size={14} />,
+              label: MODI.find((eintrag) => eintrag.id === detailMode)?.label,
+              title: "Detailgrad weiterschalten",
+              onClick: () =>
+                setDetailMode(MODI[(MODI.findIndex((eintrag) => eintrag.id === detailMode) + 1) % MODI.length].id),
+            },
+            {
+              label: zeilen === 2 ? "hoch" : "flach",
+              title: "Eingabehöhe umschalten (rows)",
+              onClick: () => setZeilen(zeilen === 2 ? 6 : 2),
+            },
+          ]}
           onSend={(text) => agent.send(text)}
           onStop={() => agent.stop()}
+          rows={zeilen}
           running={running}
-          toolbarLeft={
-            <button
-              className="qsl-icon-button"
-              onClick={() =>
-                setDetailMode(detailMode === "off" ? "compact" : detailMode === "compact" ? "full" : "off")
-              }
-              title="Detailgrad umschalten"
-              type="button"
-            >
-              <IconSpark size={14} />
-              <span className="qsl-collapsible">
-                {detailMode === "off" ? "nur Antworten" : detailMode === "compact" ? "einzeilig" : "alles"}
-              </span>
-            </button>
-          }
         />
       </div>
     </>

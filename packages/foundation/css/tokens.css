@@ -16,6 +16,7 @@
     --qsl-mono: "Noto Sans Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
     --qsl-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --qsl-radius-panel: 14px;
+    --qsl-radius-large: 12px;
     --qsl-radius: 8px;
     --qsl-radius-small: 4px;
     --qsl-wash-1: oklch(0.93 0.055 245 / 0.75);

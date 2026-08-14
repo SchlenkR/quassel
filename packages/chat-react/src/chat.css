@@ -202,7 +202,7 @@ button.qsl-trace:focus-visible {
     width: min(680px, calc(100vw - 32px));
     overflow: hidden;
     border: 1px solid var(--qsl-line);
-    border-radius: 12px;
+    border-radius: var(--qsl-radius-large);
     background: var(--qsl-content);
     box-shadow: var(--qsl-shadow-pop);
     font-family: var(--qsl-font);
@@ -313,7 +313,7 @@ button.qsl-trace:focus-visible {
 .qsl-question {
     padding: 12px 14px;
     border: 1px solid var(--qsl-line);
-    border-radius: 12px;
+    border-radius: var(--qsl-radius-large);
     background: var(--qsl-content);
 }
 
@@ -370,7 +370,7 @@ button.qsl-trace:focus-visible {
     gap: 8px;
     padding: 8px 12px;
     border: 1px solid var(--qsl-line-soft);
-    border-radius: 12px;
+    border-radius: var(--qsl-radius-large);
     background: var(--qsl-content);
     box-shadow: var(--qsl-shadow-bar);
     transition: border-color .12s ease;
@@ -455,7 +455,7 @@ button.qsl-trace:focus-visible {
     flex-direction: column;
     flex-shrink: 0;
     border: 1px solid var(--qsl-line);
-    border-radius: 12px;
+    border-radius: var(--qsl-radius-large);
     background: var(--qsl-content);
     overflow: hidden;
     font-family: var(--qsl-font);

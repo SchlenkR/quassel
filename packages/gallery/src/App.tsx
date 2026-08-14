@@ -6,6 +6,7 @@ import {
   DetailMode,
   IconSpark,
 } from "@quassel/chat-react";
+import "./themes.css";
 import { useFakeAgent } from "./fakeAgent";
 import { transcript } from "./transcript";
 
@@ -14,6 +15,7 @@ const DEMOS = [
   { id: "schlicht", title: "Schlichte Eingabe", note: "Text rein, senden, fertig" },
   { id: "toolbar", title: "Eingabe-Karte", note: "Toolbar, Stop und Dazwischenfunken" },
   { id: "bausteine", title: "Panel-Bausteine", note: "Glas, Felder, Punkte" },
+  { id: "stile", title: "Stile", note: "Dieselben Bausteine, andere Tokens" },
 ] as const;
 
 type DemoId = (typeof DEMOS)[number]["id"];
@@ -49,6 +51,7 @@ export function App() {
         {demo === "schlicht" && <SchlichtDemo />}
         {demo === "toolbar" && <ToolbarDemo />}
         {demo === "bausteine" && <BausteineDemo />}
+        {demo === "stile" && <StilDemo />}
       </main>
     </div>
   );
@@ -145,6 +148,48 @@ function ToolbarDemo() {
             </button>
           }
         />
+      </div>
+    </>
+  );
+}
+
+const STILE = [
+  { id: "", title: "Standard" },
+  { id: "theme-tinte", title: "Tinte" },
+  { id: "theme-abendrot", title: "Abendrot" },
+  { id: "theme-smaragd", title: "Smaragd" },
+] as const;
+
+function StilDemo() {
+  const [stil, setStil] = useState<string>("theme-abendrot");
+  const { messages, running, agent } = useFakeAgent();
+  const verlauf = messages.length > 0 ? messages : transcript;
+  return (
+    <>
+      <div className="stage-head">
+        <div>
+          <h2>Stile</h2>
+          <p>Kein Komponenten-Code angefasst: nur Token-Overrides auf dem Wrapper (siehe themes.css).</p>
+        </div>
+        <div className="toggles">
+          {STILE.map((eintrag) => (
+            <button
+              aria-pressed={stil === eintrag.id}
+              className="toggle"
+              key={eintrag.id}
+              onClick={() => setStil(eintrag.id)}
+              type="button"
+            >
+              {eintrag.title}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className={`stil-canvas qsl-wash qsl-wash--clip ${stil}`}>
+        <ChatMessages messages={verlauf} running={running} />
+        <div className="stage-foot">
+          <ChatInputPlain onSend={(text) => agent.send(text)} onStop={() => agent.stop()} running={running} showHint={false} />
+        </div>
       </div>
     </>
   );

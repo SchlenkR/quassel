@@ -1,6 +1,7 @@
 /* Vier blasse Farbwaschungen, bewusst statisch. inset -25% laesst die Raender nie anschneiden. */
 .qsl-wash {
     position: relative;
+    isolation: isolate;
 }
 
 .qsl-wash::before {

@@ -96,6 +96,21 @@
     font-size: 12.5px;
 }
 
+.stil-canvas {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin: 0 20px 16px;
+    border: 1px solid var(--qsl-line);
+    border-radius: var(--qsl-radius-panel);
+    background: var(--qsl-app-bg);
+}
+
+.stil-canvas .stage-foot {
+    padding-bottom: 12px;
+}
+
 .bausteine {
     flex: 1;
     min-height: 0;

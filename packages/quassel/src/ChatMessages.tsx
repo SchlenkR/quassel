@@ -84,6 +84,8 @@ export function ChatMessages({
   const alleTexte = { ...defaultTexts, ...texts };
   const scrollBereich = useRef<HTMLDivElement>(null);
   const [amEnde, setAmEnde] = useState(true);
+  const folgt = useRef(amEnde);
+  folgt.current = amEnde;
   const panel = useContext(ChatSendContext);
   useLayoutEffect(() => panel?.registerJump(() => {
     setAmEnde(true);
@@ -139,14 +141,19 @@ export function ChatMessages({
     }
   }, [bottomThreshold]);
 
-  // Beim Streamen waechst der Inhalt, ohne dass jemand scrollt - ohne diesen Beobachter bliebe
-  // die Antwort auf "bin ich unten?" stehen und der Knopf sichtbar, obwohl man unten ist.
+  // Wächst der Inhalt oder der Fußraum der Eingabe, bleibt ein folgender Verlauf am Ende.
   useEffect(() => {
     const bereich = scrollBereich.current;
     if (!bereich) {
       return;
     }
-    const beobachter = new ResizeObserver(pruefeEnde);
+    const beobachter = new ResizeObserver(() => {
+      if (folgt.current) {
+        bereich.scrollTop = bereich.scrollHeight;
+      } else {
+        pruefeEnde();
+      }
+    });
     beobachter.observe(bereich);
     for (const kind of bereich.children) {
       beobachter.observe(kind);

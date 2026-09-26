@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode, type Ref } from "react";
+import { useLayoutEffect, useMemo, useRef, type ReactNode, type Ref } from "react";
 import { ChatSendContext } from "./ChatSendContext";
 import { appearanceStyle, type ChatAppearance } from "./options";
 
@@ -36,7 +36,7 @@ export function ChatPanel({
   const eingabe = useRef<HTMLDivElement>(null);
   const mitEingabe = composer !== undefined;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = eingabe.current;
     const rahmen = wurzel.current;
     if (!rahmen) {

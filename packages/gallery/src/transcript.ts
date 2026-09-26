@@ -1,6 +1,6 @@
 import { Message } from "@quassel/chat-react";
 
-/** Ein fertiger Verlauf für die Nur-Lesen-Schublade. */
+/** Ein Verlauf für die Nur-Lesen-Schublade; die letzte Schrittzeile zeigt alle vier Zustände. */
 export const transcript: Message[] = [
   {
     key: "1",
@@ -71,5 +71,76 @@ export const transcript: Message[] = [
     role: "assistant",
     text: "Beim Mittwoch gibt es eine Lücke in der Zeitreihe (02:00 bis 04:00) - die Stundenauflösung ist darum nur teilweise belastbar. Die Spitze lag am Nachmittag zwischen 14:00 und 16:00.",
     closed: true,
+  },
+  {
+    key: "7a",
+    role: "user",
+    text: "Wie sieht das im Vergleich zu den Wochen davor aus?",
+    closed: true,
+  },
+  ...Array.from({ length: 12 }, (_, index): Message => ({
+    key: `7b-${index}`,
+    role: "tool",
+    text: `lade_tageswerte { woche: -${index + 1} }`,
+    closed: true,
+    tool: {
+      id: `w${index}`,
+      name: "lade_tageswerte",
+      arguments: `{ "woche": -${index + 1}, "einheit": "kWh" }`,
+      result: `{ "summe": ${1180 + ((index * 37) % 90)} }`,
+    },
+  })),
+  {
+    key: "7c",
+    role: "assistant",
+    text: "Über die letzten zwölf Wochen lag die Summe zwischen 1180 und 1270 kWh - die letzte Woche liegt knapp darüber.",
+    closed: true,
+  },
+  {
+    key: "8",
+    role: "user",
+    text: "Kannst du die Lücke schließen?",
+    closed: true,
+  },
+  {
+    key: "9",
+    role: "tool",
+    text: 'pruefe_ersatzquelle { tag: "Mittwoch" }',
+    closed: true,
+    tool: {
+      id: "t3",
+      name: "pruefe_ersatzquelle",
+      arguments: '{ "tag": "Mittwoch" }',
+      result: '{ "quelle": "zaehler_b", "abdeckung": "02:00-04:00" }',
+    },
+  },
+  {
+    key: "10",
+    role: "tool",
+    text: 'schreibe_ersatzwerte { quelle: "zaehler_b" }',
+    closed: true,
+    tool: {
+      id: "t4",
+      name: "schreibe_ersatzwerte",
+      arguments: '{ "quelle": "zaehler_b", "tag": "Mittwoch" }',
+      result: '{ "fehler": "Schreibrecht auf zaehler_b fehlt" }',
+      isError: true,
+    },
+  },
+  {
+    key: "11",
+    role: "tool",
+    text: 'frage_rechte_an { quelle: "zaehler_b" }',
+    closed: true,
+    tool: {
+      id: "t5",
+      name: "frage_rechte_an",
+      arguments: '{ "quelle": "zaehler_b" }',
+    },
+  },
+  {
+    key: "12",
+    role: "thinking",
+    text: "Solange die Anfrage offen ist, kann ich nur den bereinigten Tagesschnitt anbieten.",
   },
 ];

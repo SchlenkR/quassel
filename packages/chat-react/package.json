@@ -11,7 +11,8 @@
     "./chat.css": "./src/chat.css"
   },
   "dependencies": {
-    "@quassel/events": "workspace:*"
+    "@quassel/events": "workspace:*",
+    "@quassel/foundation": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18 || ^19",

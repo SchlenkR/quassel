@@ -23,20 +23,25 @@ export interface Message {
   closed?: boolean;
   tool?: ToolInfo;
   question?: Question;
+  /** ISO-Zeitpunkt der Nachricht; Anzeige optional (ChatMessages showTimestamps). */
+  at?: string;
+  /** Farbige Sprechblase statt Fliesstext, z.B. fuer Mehrparteien-Gespraeche. */
+  bubble?: { color: string; side: "start" | "end"; label?: string };
 }
 
 export type ChatEvent =
   | { kind: "reset" }
-  | { kind: "user"; text: string }
-  | { kind: "text"; delta: string }
-  | { kind: "thinking"; delta: string }
-  | { kind: "tool"; id: string; name: string; arguments: string; label?: string }
+  | { kind: "user"; text: string; at?: string }
+  | { kind: "text"; delta: string; at?: string }
+  | { kind: "thinking"; delta: string; at?: string }
+  | { kind: "tool"; id: string; name: string; arguments: string; label?: string; at?: string }
   | { kind: "tool-result"; id: string; result: string; isError?: boolean }
-  | { kind: "question"; callId: string; text: string; options: string[]; multi?: boolean }
+  | { kind: "question"; callId: string; text: string; options: string[]; multi?: boolean; at?: string }
   | { kind: "question-answered"; callId: string; answer: string }
-  | { kind: "system"; text: string }
+  | { kind: "system"; text: string; at?: string }
   | { kind: "status"; running: boolean }
-  | { kind: "turn-done" };
+  | { kind: "turn-done" }
+  | { kind: "extension"; pluginId: string; type: string; payload?: unknown; at?: string };
 
 function closeLast(messages: Message[]): Message[] {
   const last = messages[messages.length - 1];
@@ -46,12 +51,12 @@ function closeLast(messages: Message[]): Message[] {
   return [...messages.slice(0, -1), { ...last, closed: true }];
 }
 
-function appendDelta(messages: Message[], role: Role, delta: string): Message[] {
+function appendDelta(messages: Message[], role: Role, delta: string, at?: string): Message[] {
   const last = messages[messages.length - 1];
   if (last && last.role === role && !last.closed) {
     return [...messages.slice(0, -1), { ...last, text: last.text + delta }];
   }
-  return [...closeLast(messages), { key: crypto.randomUUID(), role, text: delta }];
+  return [...closeLast(messages), { key: crypto.randomUUID(), role, text: delta, at }];
 }
 
 /** Der Streaming-Kern: Deltas verschmelzen mit dem letzten offenen Block, alles andere schließt ihn. */
@@ -60,11 +65,11 @@ export function applyEvent(messages: Message[], event: ChatEvent): Message[] {
     case "reset":
       return [];
     case "user":
-      return [...closeLast(messages), { key: crypto.randomUUID(), role: "user", text: event.text }];
+      return [...closeLast(messages), { key: crypto.randomUUID(), role: "user", text: event.text, at: event.at }];
     case "text":
-      return appendDelta(messages, "assistant", event.delta);
+      return appendDelta(messages, "assistant", event.delta, event.at);
     case "thinking":
-      return appendDelta(messages, "thinking", event.delta);
+      return appendDelta(messages, "thinking", event.delta, event.at);
     case "tool":
       return [
         ...closeLast(messages),
@@ -74,6 +79,7 @@ export function applyEvent(messages: Message[], event: ChatEvent): Message[] {
           text: event.label ?? event.name,
           closed: true,
           tool: { id: event.id, name: event.name, arguments: event.arguments },
+          at: event.at,
         },
       ];
     case "tool-result":
@@ -91,6 +97,7 @@ export function applyEvent(messages: Message[], event: ChatEvent): Message[] {
           text: event.text,
           closed: true,
           question: { callId: event.callId, options: event.options, multi: event.multi },
+          at: event.at,
         },
       ];
     case "question-answered":
@@ -100,11 +107,11 @@ export function applyEvent(messages: Message[], event: ChatEvent): Message[] {
           : message,
       );
     case "system":
-      return [...closeLast(messages), { key: crypto.randomUUID(), role: "system", text: event.text, closed: true }];
-    case "status":
-      return messages;
+      return [...closeLast(messages), { key: crypto.randomUUID(), role: "system", text: event.text, closed: true, at: event.at }];
     case "turn-done":
       return closeLast(messages);
+    default:
+      return messages;
   }
 }
 

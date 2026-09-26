@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChatInputPlain,
   ChatInputToolbar,
   ChatMessages,
   DetailMode,
+  DetailModeSwitch,
+  TimestampSwitch,
   IconSpark,
   useChat,
 } from "@quassel/chat-react";
+import "@quassel/question-element";
 import "./themes.css";
 import { useFakeAgent } from "./fakeAgent";
 import { transcript } from "./transcript";
@@ -15,6 +18,7 @@ const DEMOS = [
   { id: "lesen", title: "Nur lesen", note: "Verlauf ohne Eingabe" },
   { id: "schlicht", title: "Schlichte Eingabe", note: "Text rein, senden, fertig" },
   { id: "toolbar", title: "Eingabe-Karte", note: "Toolbar, Stop und Dazwischenfunken" },
+  { id: "frage", title: "Frage-Element", note: "Web Component ohne React" },
   { id: "bausteine", title: "Panel-Bausteine", note: "Glas, Felder, Punkte" },
   { id: "stile", title: "Stile", note: "Dieselben Bausteine, andere Tokens" },
   { id: "live", title: "Live-Backend", note: "Echtes LLM über @quassel/agent-node" },
@@ -27,6 +31,7 @@ const MODI: { id: DetailMode; label: string }[] = [
   { id: "off", label: "nur Antworten" },
   { id: "icons", label: "Symbole" },
   { id: "chips", label: "kompakt" },
+  { id: "grouped", label: "gruppiert" },
   { id: "compact", label: "einzeilig" },
   { id: "full", label: "alles" },
 ];
@@ -79,6 +84,7 @@ export function App() {
         {demo === "lesen" && <LeseDemo />}
         {demo === "schlicht" && <SchlichtDemo />}
         {demo === "toolbar" && <ToolbarDemo />}
+        {demo === "frage" && <FrageDemo />}
         {demo === "bausteine" && <BausteineDemo />}
         {demo === "stile" && <StilDemo />}
         {demo === "live" && <LiveDemo />}
@@ -95,7 +101,10 @@ function LeseDemo() {
       <div className="stage-head">
         <div>
           <h2>Nur lesen</h2>
-          <p>ChatMessages ohne Eingabe - ein Verlauf als Dokument, Schritte je nach Detailgrad.</p>
+          <p>
+            ChatMessages ohne Eingabe - ein Verlauf als Dokument, Schritte je nach Detailgrad. Die letzte
+            Schrittzeile zeigt die vier Zustände: fertig, Fehler, laufend, Denken.
+          </p>
         </div>
         <ModusToggles modus={detailMode} setModus={setDetailMode} />
       </div>
@@ -130,6 +139,7 @@ function ToolbarDemo() {
   const { messages, running, agent } = useFakeAgent();
   const [detailMode, setDetailMode] = useState<DetailMode>("chips");
   const [zeilen, setZeilen] = useState(2);
+  const [showTimestamps, setShowTimestamps] = useState(false);
   return (
     <>
       <div className="stage-head">
@@ -144,6 +154,7 @@ function ToolbarDemo() {
       </div>
       <ChatMessages
         detailMode={detailMode}
+        showTimestamps={showTimestamps}
         emptyState={<div className="empty">Stell eine Frage - und funk ruhig dazwischen, während der Agent läuft.</div>}
         messages={messages}
         running={running}
@@ -158,13 +169,6 @@ function ToolbarDemo() {
         <ChatInputToolbar
           actions={[
             {
-              icon: <IconSpark size={14} />,
-              label: MODI.find((eintrag) => eintrag.id === detailMode)?.label,
-              title: "Detailgrad weiterschalten",
-              onClick: () =>
-                setDetailMode(MODI[(MODI.findIndex((eintrag) => eintrag.id === detailMode) + 1) % MODI.length].id),
-            },
-            {
               label: zeilen === 2 ? "hoch" : "flach",
               title: "Eingabehöhe umschalten (rows)",
               onClick: () => setZeilen(zeilen === 2 ? 6 : 2),
@@ -174,6 +178,10 @@ function ToolbarDemo() {
           onStop={() => agent.stop()}
           rows={zeilen}
           running={running}
+          toolbarLeft={<>
+            <DetailModeSwitch mode={detailMode} onChange={setDetailMode} />
+            <TimestampSwitch showTimestamps={showTimestamps} onChange={setShowTimestamps} />
+          </>}
         />
       </div>
     </>
@@ -292,6 +300,86 @@ function PiDemo() {
       />
       <div className="stage-foot">
         <ChatInputToolbar disabled={!connected} onSend={(text) => void send(text)} onStop={() => void stop()} running={running} />
+      </div>
+    </>
+  );
+}
+
+/** Bewusst ohne JSX gebaut: die Karten entstehen mit reinem DOM, React haelt nur das Protokoll. */
+function FrageDemo() {
+  const buehne = useRef<HTMLDivElement>(null);
+  const [runde, setRunde] = useState(0);
+  const [protokoll, setProtokoll] = useState<string[]>([]);
+
+  useEffect(() => {
+    const stage = buehne.current;
+    if (!stage) return;
+
+    const timers: number[] = [];
+    const notieren = (zeile: string) => setProtokoll((bisher) => [zeile, ...bisher].slice(0, 6));
+
+    const karte = (text: string, options: string[], extras: Partial<HTMLElementTagNameMap["qsl-question"]> = {}) => {
+      const element = document.createElement("qsl-question");
+      element.text = text;
+      element.options = options;
+      Object.assign(element, extras);
+      element.addEventListener("answer", (event) => {
+        notieren(`answer: ${JSON.stringify(event.detail)}`);
+        element.busy = true;
+        timers.push(
+          window.setTimeout(() => {
+            element.busy = false;
+            element.answer = event.detail.value;
+          }, 500),
+        );
+      });
+      element.addEventListener("dismiss", () => {
+        notieren("dismiss");
+        element.answer = "Verworfen";
+      });
+      return element;
+    };
+
+    stage.append(
+      karte("Welchen Zeitraum soll die Auswertung abdecken?", ["Letzte Woche", "Letzter Monat", "Letztes Quartal"]),
+      karte("Welche Anlagen sollen mit hinein?", ["Halle 1", "Halle 2", "Kesselhaus", "Außenlager"], {
+        multi: true,
+        dismissible: true,
+      }),
+      karte("Womit soll ich weitermachen?", ["Bericht schreiben", "Rohdaten exportieren"], {
+        answer: "Bericht schreiben",
+      }),
+    );
+
+    return () => {
+      timers.forEach((id) => window.clearTimeout(id));
+      stage.replaceChildren();
+    };
+  }, [runde]);
+
+  return (
+    <>
+      <div className="stage-head">
+        <div>
+          <h2>Frage-Element</h2>
+          <p>
+            &lt;qsl-question&gt; aus @quassel/question-element: Custom Element im Light DOM, dieselben
+            qsl-question-Klassen wie die React-Karte - hier per document.createElement gesetzt, ohne React im Spiel.
+          </p>
+        </div>
+        <div className="toggles">
+          <button className="toggle" onClick={() => setRunde((wert) => wert + 1)} type="button">
+            zurücksetzen
+          </button>
+        </div>
+      </div>
+      <div className="fragen">
+        <div className="fragen-buehne" ref={buehne} />
+        <div className="fragen-log">
+          {protokoll.length === 0
+            ? "Noch nichts beantwortet - die Ereignisse landen hier."
+            : protokoll.map((zeile, index) => <div key={index}>{zeile}</div>)}
+        </div>
       </div>
     </>
   );

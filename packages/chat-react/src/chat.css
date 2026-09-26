@@ -1,29 +1,113 @@
 /* Chat-Bausteine auf Basis der @quassel/foundation-Tokens. */
+@import "@quassel/foundation/css/tokens.css";
+/* Die Rueckfrage-Optik teilen sich QuestionCard und <qsl-question>; relativ, damit sie auch ohne Paket-Aufloesung traegt. */
+@import "../../question-element/css/question.css";
+
+/* Eigenes Fundament, damit die Bausteine ohne foundation/base.css eines Hosts tragen. */
+:is(.qsl-chat-panel, .qsl-chat-wrap, .qsl-input-plain-wrap, .qsl-input-card, .qsl-popover, .qsl-popover-backdrop),
+:is(.qsl-chat-panel, .qsl-chat-wrap, .qsl-input-plain-wrap, .qsl-input-card, .qsl-popover, .qsl-popover-backdrop) * {
+    box-sizing: border-box;
+}
+
+/* Waagerechte Rollbalken bleiben sichtbar - sonst ist der Ueberlauf nicht auffindbar. */
+:is(.qsl-md-scroll, .qsl-md pre) {
+    scrollbar-width: thin;
+}
+
+:is(.qsl-md-scroll, .qsl-md pre)::-webkit-scrollbar {
+    display: block;
+    height: 8px;
+}
+
+:is(.qsl-md-scroll, .qsl-md pre)::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: var(--qsl-line);
+}
+
+.qsl-chat-panel {
+    --qsl-thread-pad-bottom: calc(var(--qsl-composer-height, 0px) + 16px);
+    --qsl-jump-bottom: calc(var(--qsl-composer-height, 0px) + 12px);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.qsl-chat-panel__composer {
+    position: absolute;
+    z-index: 5;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.qsl-chat-wrap {
+    container: qsl-chat / inline-size;
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
 
 .qsl-chat {
-    position: relative;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     font-family: var(--qsl-font);
-    font-size: 13px;
+    font-size: var(--qsl-chat-font-size, 13px);
     color: var(--qsl-ink);
 }
 
 .qsl-thread {
     width: 100%;
-    max-width: 760px;
+    max-width: var(--qsl-thread-max-width, none);
     margin: 0 auto;
-    padding: 8px 20px 40px;
+    padding: 8px var(--qsl-thread-padding-inline, 0px) var(--qsl-thread-pad-bottom, 40px);
 }
 
 .qsl-step {
     display: block;
-    margin-top: 16px;
+    margin-top: var(--qsl-message-gap, 16px);
 }
 
 .qsl-step--dense {
-    margin-top: 8px;
+    margin-top: var(--qsl-dense-message-gap, 8px);
+}
+
+/* Optionale Zeitspalte: schmal, tabellarische Ziffern, bewusst zurueckhaltend. */
+
+.qsl-line {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-top: var(--qsl-message-gap, 16px);
+}
+
+/* Der Zeilenabstand haengt an der Zeile statt am ersten Schritt: so fluchtet die Zeit mit dem Text. */
+.qsl-line:has(> .qsl-line-body > .qsl-step--dense:first-child) {
+    margin-top: var(--qsl-dense-message-gap, 8px);
+}
+
+.qsl-line > .qsl-line-body > .qsl-step:first-child {
+    margin-top: 0;
+}
+
+.qsl-line > .qsl-time {
+    flex-shrink: 0;
+    width: 34px;
+    padding-top: 2px;
+    color: var(--qsl-muted);
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.85;
+}
+
+.qsl-line-body {
+    flex: 1;
+    min-width: 0;
 }
 
 .qsl-user {
@@ -37,14 +121,100 @@
     border-radius: var(--qsl-radius);
     background: var(--qsl-accent);
     color: #ffffff;
-    line-height: 1.625;
-    white-space: pre-wrap;
+    line-height: var(--qsl-chat-line-height, 1.625);
     overflow-wrap: anywhere;
 }
 
+/* Farbige Sprechblasen (Mehrparteien): Seite und Farbe kommen aus Message.bubble. */
+
+.qsl-bubble {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.qsl-bubble--end {
+    justify-content: flex-end;
+}
+
+.qsl-bubble > div {
+    max-width: 86%;
+    padding: 8px 12px;
+    border-radius: var(--qsl-radius);
+    color: #ffffff;
+    line-height: var(--qsl-chat-line-height, 1.625);
+    overflow-wrap: anywhere;
+}
+
+.qsl-bubble__label {
+    display: table;
+    margin-bottom: 5px;
+    padding: 1px 7px;
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.14);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.45;
+}
+
+/* Markdown in farbigen Bubbles: weiss auf Farbe, Code und Links bleiben lesbar. */
+
+.qsl-user .qsl-md,
+.qsl-bubble > div .qsl-md {
+    color: inherit;
+}
+
+.qsl-user .qsl-md-scroll,
+.qsl-bubble > div .qsl-md-scroll {
+    --qsl-scroll-cover: var(--qsl-accent);
+}
+
+.qsl-user .qsl-md a,
+.qsl-bubble > div .qsl-md a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.qsl-user .qsl-md code,
+.qsl-bubble > div .qsl-md code {
+    background: rgba(255, 255, 255, 0.18);
+    color: inherit;
+}
+
+.qsl-user .qsl-md pre,
+.qsl-bubble > div .qsl-md pre {
+    background: rgba(0, 0, 0, 0.28);
+    color: inherit;
+}
+
+.qsl-user .qsl-md blockquote,
+.qsl-bubble > div .qsl-md blockquote {
+    border-left-color: rgba(255, 255, 255, 0.5);
+    color: inherit;
+}
+
+.qsl-user .qsl-md-bullet > span:first-child,
+.qsl-bubble > div .qsl-md-bullet > span:first-child {
+    color: inherit;
+}
+
+.qsl-user .qsl-md th,
+.qsl-bubble > div .qsl-md th {
+    background: rgba(255, 255, 255, 0.14);
+    color: inherit;
+}
+
+.qsl-user .qsl-md th,
+.qsl-user .qsl-md td,
+.qsl-bubble > div .qsl-md th,
+.qsl-bubble > div .qsl-md td {
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
 .qsl-answer {
-    max-width: 92%;
-    line-height: 1.625;
+    max-width: 100%;
+    line-height: var(--qsl-chat-line-height, 1.625);
     color: var(--qsl-ink);
 }
 
@@ -126,6 +296,34 @@ button.qsl-trace:focus-visible {
     opacity: .6;
 }
 
+/* --- Schritte gruppiert: Kopfzeile klappt die einzeiligen Schritte auf und zu --- */
+
+button.qsl-stepgroup__toggle {
+    align-items: center;
+    padding-left: 4px;
+}
+
+.qsl-stepgroup__chevron {
+    flex: 0 0 auto;
+    opacity: .6;
+    transition: transform .12s ease;
+}
+
+.qsl-stepgroup__toggle[aria-expanded="true"] > .qsl-stepgroup__chevron {
+    transform: rotate(90deg);
+}
+
+.qsl-stepgroup__collapse > .qsl-stepgroup__chevron {
+    transform: rotate(-90deg);
+}
+
+.qsl-stepgroup__lines {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+}
+
 /* --- Schritte als Chips: nebeneinander, Umbruch bei Platzmangel --- */
 
 .qsl-steprow {
@@ -180,8 +378,38 @@ span.qsl-chip--still:hover {
     white-space: nowrap;
 }
 
+/* Fixed slot for the state mark, so a state change never resizes the chip. */
+.qsl-chip__state {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 10px;
+    color: var(--qsl-success);
+}
+
 .qsl-chip__icon--error {
     color: var(--qsl-danger);
+}
+
+/* The four step states; doubled class beats the border of the non-clickable chip. */
+
+.qsl-chip.qsl-chip--running,
+.qsl-chip.qsl-chip--thinking {
+    border-color: color-mix(in srgb, var(--qsl-accent) 40%, var(--qsl-line-soft));
+}
+
+.qsl-chip.qsl-chip--error {
+    border-color: color-mix(in srgb, var(--qsl-danger) 45%, var(--qsl-line-soft));
+}
+
+.qsl-chip--done {
+    opacity: .85;
+}
+
+.qsl-chip--done:hover,
+.qsl-chip--done:focus-visible {
+    opacity: 1;
 }
 
 .qsl-icon-button--active {
@@ -213,7 +441,7 @@ span.qsl-chip--still:hover {
 }
 
 .qsl-busy {
-    margin-top: 16px;
+    margin-top: var(--qsl-message-gap, 16px);
     font-size: 11px;
     color: var(--qsl-muted);
     animation: qsl-pulse 1.9s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
@@ -221,11 +449,11 @@ span.qsl-chip--still:hover {
 
 /* Der Default-Working-Indikator: kleine Text-Szenen auf fester Buehne. */
 .qsl-working {
-    margin-top: 16px;
+    margin-top: var(--qsl-message-gap, 16px);
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 13px;
+    font-size: var(--qsl-chat-font-size, 13px);
     color: var(--qsl-ink);
 }
 
@@ -265,12 +493,13 @@ span.qsl-chip--still:hover {
 
 .qsl-jump {
     pointer-events: none;
-    position: sticky;
-    bottom: 12px;
+    position: absolute;
+    right: 0;
+    bottom: var(--qsl-jump-bottom, 12px);
+    left: 0;
     z-index: 10;
     display: flex;
     justify-content: center;
-    margin-top: -36px;
 }
 
 .qsl-jump button {
@@ -313,7 +542,7 @@ span.qsl-chip--still:hover {
     background: var(--qsl-content);
     box-shadow: var(--qsl-shadow-pop);
     font-family: var(--qsl-font);
-    font-size: 13px;
+    font-size: var(--qsl-chat-font-size, 13px);
     color: var(--qsl-ink);
 }
 
@@ -371,7 +600,7 @@ span.qsl-chip--still:hover {
 .qsl-popover__thinking {
     white-space: pre-wrap;
     font-size: 12px;
-    line-height: 1.625;
+    line-height: var(--qsl-chat-line-height, 1.625);
 }
 
 .qsl-popover__sections {
@@ -401,7 +630,7 @@ span.qsl-chip--still:hover {
     background: var(--qsl-surface);
     font-family: var(--qsl-mono);
     font-size: 11px;
-    line-height: 1.625;
+    line-height: var(--qsl-chat-line-height, 1.625);
     white-space: pre-wrap;
     word-break: break-all;
 }
@@ -413,129 +642,6 @@ span.qsl-chip--still:hover {
 .qsl-popover__running {
     font-size: 12px;
     color: var(--qsl-muted);
-}
-
-/* --- Rueckfrage-Karte --- */
-
-.qsl-question {
-    padding: 12px 14px;
-    border: 1px solid var(--qsl-line);
-    border-radius: var(--qsl-radius-large);
-    background: var(--qsl-content);
-}
-
-.qsl-question__text {
-    margin-bottom: 10px;
-    line-height: 1.5;
-}
-
-.qsl-question__options {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-}
-
-.qsl-question__option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 12px;
-    border: 1px solid var(--qsl-line);
-    border-radius: var(--qsl-radius);
-    background: none;
-    color: var(--qsl-ink);
-    font: inherit;
-    font-size: 12px;
-    text-align: left;
-    cursor: pointer;
-    transition: border-color .12s ease, background-color .12s ease;
-}
-
-.qsl-question__option:hover {
-    border-color: var(--qsl-accent);
-    background: var(--qsl-surface);
-}
-
-.qsl-question__option--gewaehlt {
-    border-color: var(--qsl-accent);
-    background: color-mix(in srgb, var(--qsl-accent) 8%, transparent);
-}
-
-.qsl-question__kasten {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    border: 1px solid var(--qsl-line);
-    border-radius: 4px;
-    color: var(--qsl-accent);
-}
-
-.qsl-question__option--gewaehlt .qsl-question__kasten {
-    border-color: var(--qsl-accent);
-}
-
-.qsl-question__uebernehmen {
-    margin-top: 8px;
-    padding: 6px 12px;
-    border: none;
-    border-radius: var(--qsl-radius);
-    background: var(--qsl-accent);
-    color: #ffffff;
-    font: inherit;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.qsl-question__uebernehmen:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-
-.qsl-question__frei {
-    display: flex;
-    gap: 6px;
-    margin-top: 10px;
-}
-
-.qsl-question__frei-feld {
-    flex: 1;
-    font-size: 12px;
-}
-
-.qsl-question__frei-senden {
-    padding: 5px 11px;
-    border: 1px solid var(--qsl-line);
-    border-radius: var(--qsl-radius);
-    background: none;
-    color: var(--qsl-ink);
-    font: inherit;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.qsl-question__frei-senden:hover:not(:disabled) {
-    border-color: var(--qsl-accent);
-}
-
-.qsl-question__frei-senden:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-
-.qsl-question__answered {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--qsl-muted);
-}
-
-.qsl-question__check {
-    color: var(--qsl-success);
 }
 
 /* --- Schlichte Eingabe: eine Zeile, Senden, sonst nichts --- */
@@ -571,8 +677,8 @@ span.qsl-chip--still:hover {
     padding: 4px 0;
     color: var(--qsl-ink);
     font: inherit;
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: var(--qsl-chat-font-size, 13px);
+    line-height: var(--qsl-chat-line-height, 1.5);
 }
 
 .qsl-input-plain textarea:focus {
@@ -636,7 +742,7 @@ span.qsl-chip--still:hover {
     flex-direction: column;
     flex-shrink: 0;
     border: 1px solid var(--qsl-line);
-    border-radius: var(--qsl-radius-large);
+    border-radius: var(--qsl-input-card-radius, var(--qsl-radius-large));
     background: var(--qsl-content);
     overflow: hidden;
     font-family: var(--qsl-font);
@@ -654,8 +760,8 @@ span.qsl-chip--still:hover {
     padding: 12px 12px 8px;
     color: var(--qsl-ink);
     font: inherit;
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: var(--qsl-chat-font-size, 13px);
+    line-height: var(--qsl-chat-line-height, 1.5);
 }
 
 .qsl-input-card textarea:focus {
@@ -821,6 +927,7 @@ span.qsl-chip--still:hover {
     background: var(--qsl-surface);
     font-family: var(--qsl-mono);
     font-size: 12px;
+    overflow-wrap: anywhere;
 }
 
 .qsl-md pre {
@@ -830,7 +937,7 @@ span.qsl-chip--still:hover {
     background: var(--qsl-surface);
     font-family: var(--qsl-mono);
     font-size: 12px;
-    line-height: 1.625;
+    line-height: var(--qsl-chat-line-height, 1.625);
     overflow-x: auto;
 }
 
@@ -842,15 +949,24 @@ span.qsl-chip--still:hover {
 .qsl-md-scroll {
     margin: 8px 0;
     overflow-x: auto;
+    background:
+        linear-gradient(to right, var(--qsl-scroll-cover, var(--qsl-content)) 50%, transparent) left / 20px 100% no-repeat local,
+        linear-gradient(to left, var(--qsl-scroll-cover, var(--qsl-content)) 50%, transparent) right / 20px 100% no-repeat local,
+        linear-gradient(to right, rgba(0, 0, 0, 0.28), transparent) left / 14px 100% no-repeat scroll,
+        linear-gradient(to left, rgba(0, 0, 0, 0.28), transparent) right / 14px 100% no-repeat scroll;
 }
 
+/* Ohne max-content schrumpft die Tabelle auf den Container und stapelt Buchstaben. */
 .qsl-md table {
+    width: max-content;
+    min-width: 100%;
     border-collapse: collapse;
     font-size: 12px;
 }
 
 .qsl-md th,
 .qsl-md td {
+    max-width: 44ch;
     border: 1px solid var(--qsl-line);
     padding: 4px 8px;
     text-align: left;
@@ -860,4 +976,43 @@ span.qsl-chip--still:hover {
 .qsl-md th {
     background: var(--qsl-surface);
     font-weight: 500;
+}
+
+@container qsl-chat (max-width: 620px) {
+    .qsl-user > div,
+    .qsl-bubble > div,
+    .qsl-answer {
+        max-width: 100%;
+    }
+}
+
+.qsl-message-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.qsl-action-error {
+    color: var(--qsl-danger);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.qsl-day-separator {
+    margin-top: var(--qsl-message-gap, 16px);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--qsl-line-soft);
+    color: var(--qsl-muted);
+    font-size: 12px;
+    text-align: center;
+}
+
+.qsl-code-block {
+    margin: 8px 0;
+}
+
+.qsl-code-block > pre {
+    margin-top: 4px;
 }

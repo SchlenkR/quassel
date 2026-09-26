@@ -11,6 +11,7 @@
   "dependencies": {
     "@quassel/chat-react": "workspace:*",
     "@quassel/foundation": "workspace:*",
+    "@quassel/question-element": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

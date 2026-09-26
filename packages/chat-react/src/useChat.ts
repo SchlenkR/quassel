@@ -7,7 +7,7 @@ import { applyEvent, ChatEvent, Message } from "@quassel/events";
  * und erreichen so auch einen laufenden Turn. Bricht der Strom ab, verbindet der Hook
  * nach 3 Sekunden neu.
  */
-export function useChat(baseUrl: string, headers: Record<string, string> = {}): {
+export function useChat(baseUrl: string, headers: Record<string, string> = {}, onEvent?: (event: ChatEvent) => void): {
   messages: Message[];
   running: boolean;
   connected: boolean;
@@ -21,6 +21,8 @@ export function useChat(baseUrl: string, headers: Record<string, string> = {}): 
   url.current = baseUrl;
   const zusatz = useRef(headers);
   zusatz.current = headers;
+  const observer = useRef(onEvent);
+  observer.current = onEvent;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -61,6 +63,7 @@ export function useChat(baseUrl: string, headers: Record<string, string> = {}): 
               if (event.kind === "status") {
                 setRunning(event.running);
               }
+              observer.current?.(event);
               dispatch(event);
             }
           }

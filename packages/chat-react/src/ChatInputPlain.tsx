@@ -1,5 +1,7 @@
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ChatTexts, defaultTexts } from "./texts";
+import { isSendKey, useChatSubmit } from "./ChatSendContext";
+import type { SendShortcut } from "./options";
 import { IconSend, IconStop } from "./icons";
 
 /** Die schlichte Eingabe: Textzeile plus Senden, sonst nichts. Stop erscheint nur im Lauf. */
@@ -10,16 +12,19 @@ export function ChatInputPlain({
   disabled = false,
   showHint = true,
   texts,
+  sendShortcut = "enter",
 }: {
-  onSend: (text: string) => void;
+  onSend: (text: string) => void | Promise<void>;
   onStop?: () => void;
   running?: boolean;
   disabled?: boolean;
   showHint?: boolean;
   texts?: Partial<ChatTexts>;
+  sendShortcut?: SendShortcut;
 }) {
   const alleTexte = { ...defaultTexts, ...texts };
   const [draft, setDraft] = useState("");
+  const { submit, sending, error } = useChatSubmit(onSend);
   const textarea = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -30,29 +35,29 @@ export function ChatInputPlain({
     textarea.current.style.height = `${Math.min(textarea.current.scrollHeight, 190)}px`;
   }, [draft]);
 
-  const send = () => {
+  const send = async () => {
     const text = draft.trim();
-    if (!text || disabled) {
+    if (!text || disabled || sending) {
       return;
     }
-    setDraft("");
-    onSend(text);
+    if (await submit(text)) setDraft(current => current === draft ? "" : current);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (isSendKey(event, sendShortcut)) {
       event.preventDefault();
-      send();
+      if (!event.repeat) void send();
     }
   };
 
   return (
     <div className="qsl-input-plain-wrap">
+      {error && <p className="qsl-action-error" role="alert">{error}</p>}
       <form
         className="qsl-input-plain"
         onSubmit={(event) => {
           event.preventDefault();
-          send();
+          void send();
         }}
       >
         <textarea
@@ -73,14 +78,14 @@ export function ChatInputPlain({
         <button
           aria-label={alleTexte.send}
           className="qsl-input-plain__send"
-          disabled={disabled || !draft.trim()}
+          disabled={disabled || sending || !draft.trim()}
           title={running ? alleTexte.sendIntoRun : alleTexte.send}
           type="submit"
         >
           <IconSend />
         </button>
       </form>
-      {showHint && <p className="qsl-input-hint">{alleTexte.inputHint}</p>}
+      {showHint && <p className="qsl-input-hint">{texts?.inputHint ?? (sendShortcut === "mod-enter" ? alleTexte.inputHintModEnter : alleTexte.inputHint)}</p>}
     </div>
   );
 }

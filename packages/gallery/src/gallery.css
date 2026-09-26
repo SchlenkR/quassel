@@ -141,6 +141,33 @@
     padding-bottom: 12px;
 }
 
+.fragen {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 4px 20px 24px;
+}
+
+.fragen-buehne {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.fragen-log {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--qsl-line-soft);
+    font-family: var(--qsl-mono);
+    font-size: 10.5px;
+    line-height: 1.7;
+    color: var(--qsl-muted);
+    overflow-wrap: anywhere;
+}
+
 .bausteine {
     flex: 1;
     min-height: 0;

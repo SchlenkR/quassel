@@ -58,6 +58,24 @@ export function IconChevronDown(props: IconProps) {
   );
 }
 
+export function IconChevronRight(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m9 18 6-6-6-6" />
+    </Svg>
+  );
+}
+
+export function IconLayers(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m12 2 10 5-10 5L2 7Z" />
+      <path d="m2 17 10 5 10-5" />
+      <path d="m2 12 10 5 10-5" />
+    </Svg>
+  );
+}
+
 export function IconCheck(props: IconProps) {
   return (
     <Svg {...props}>
@@ -70,6 +88,15 @@ export function IconSpark(props: IconProps) {
   return (
     <Svg {...props}>
       <path d="M12 3l1.9 6.1L20 11l-6.1 1.9L12 19l-1.9-6.1L4 11l6.1-1.9Z" />
+    </Svg>
+  );
+}
+
+export function IconClock(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx={12} cy={12} r={9} />
+      <path d="M12 7v5l3 2" />
     </Svg>
   );
 }

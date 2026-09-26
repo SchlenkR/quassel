@@ -29,7 +29,7 @@ aber rate nicht bei Grundsatzentscheidungen:
 4. **Eingabe**: Keine / schlicht (`ChatInputPlain`) / Karte mit Toolbar
    (`ChatInputToolbar`)? Bei der Karte: Höhe (`rows`), welche eigenen Knöpfe (`actions`)?
 5. **Darstellung der Schritte**: Welcher Detailgrad als Default (`off` / `icons` /
-   `chips` / `compact` / `full`)? Soll der Nutzer umschalten können? Eigener
+   `chips` / `grouped` / `compact` / `full`)? Soll der Nutzer umschalten können? Eigener
    Working-Indikator?
 6. **Optik**: Farbwaschung als Seitenhintergrund? Glas-Panels? Eigene Akzentfarbe,
    Radien, eigenes Stil-Preset (Token-Overrides)? Dark Mode automatisch oder per Toggle?
@@ -59,6 +59,7 @@ als Dependency haben):
 "@quassel/foundation": "link:../quassel/packages/foundation",
 "@quassel/chat-react": "link:../quassel/packages/chat-react",
 "@quassel/events": "link:../quassel/packages/events",
+"@quassel/question-element": "link:../quassel/packages/question-element",
 "@quassel/agent-node": "link:../quassel/packages/agent-node",
 "@quassel/agent-pi": "link:../quassel/packages/agent-pi"
 ```
@@ -97,7 +98,7 @@ Immer importieren: `import "@quassel/chat-react/chat.css"` (setzt foundation-Tok
 ```ts
 {
   messages: Message[];
-  detailMode?: "off" | "icons" | "chips" | "compact" | "full";  // Default "compact"
+  detailMode?: "off" | "icons" | "chips" | "grouped" | "compact" | "full";  // Default "compact"
   running?: boolean;                    // zeigt Working-Indikator, Autoscroll haerter
   working?: ReactNode;                  // eigener Working-Indikator statt Pulszeile
   texts?: Partial<ChatTexts>;           // Beschriftungen ersetzen
@@ -105,15 +106,135 @@ Immer importieren: `import "@quassel/chat-react/chat.css"` (setzt foundation-Tok
   onAnswerQuestion?: (callId, text) => void;       // fuer Rueckfrage-Karten
   emptyState?: ReactNode;               // Anzeige bei leerem Verlauf
   className?: string;
+  showTimestamps?: boolean;             // default false; displays Message.at as HH:MM
+  bottomThreshold?: number;             // default 120 pixels; bottom tolerance for following and jump button
 }
 ```
 
 Eigener Scroll-Container mit Autoscroll (folgt nur, wenn man unten ist) und
 Zum-Ende-Knopf. Detailgrade: `off` = nur Antworten; `icons` = Schritte als reine
 Symbole nebeneinander; `chips` = Symbol + Kurztext nebeneinander mit Umbruch;
-`compact` = einzeilig; `full` = alles ausgeklappt. In `icons`/`chips`/`compact`
-öffnet Klick ein Detail-Popover (Escape schließt). Ohne Eingabe read-only nutzbar.
+`grouped` = aufeinanderfolgende Schritte hinter einer Kopfzeile ("12 Schritte"), die sie
+einzeilig auf- und zuklappt, ab 11 Schritten zusätzlich mit "Einklappen" am Ende der Gruppe;
+`compact` = einzeilig; `full` = alles ausgeklappt. In `icons`/`chips`/`grouped`/`compact`
+öffnet Klick auf einen Schritt ein Detail-Popover (Escape schließt). Ohne Eingabe read-only nutzbar.
 Markdown in Antworten (Tabellen, Code, Listen) wird gerendert, streaming-fest.
+
+#### Width and timestamps
+
+The transcript uses the full available width without extra horizontal padding by default.
+Hosts can set `--qsl-thread-max-width` (for example `760px`) and
+`--qsl-thread-padding-inline` (for example `20px`) on a wrapper. Set the shared
+`ChatPanel` width to constrain both transcript and composer together.
+
+`showTimestamps` controls the optional timestamp column. `TimestampSwitch` is a controlled
+button for `ChatInputToolbar.toolbarLeft` or `toolbarRight`; the host decides whether to
+render it, owns the state and decides whether to persist it. Omitting the button leaves
+`showTimestamps` independently configurable. Text comes from `texts.timestamps`;
+`collapsible` (default true) hides the label in compact toolbars, and `className` customizes styling.
+
+```tsx
+const [showTimestamps, setShowTimestamps] = useState(false);
+
+<ChatPanel composer={
+  <ChatInputToolbar onSend={send} toolbarLeft={
+    <TimestampSwitch showTimestamps={showTimestamps} onChange={setShowTimestamps} />
+  } />
+}>
+  <ChatMessages messages={messages} showTimestamps={showTimestamps} bottomThreshold={120} />
+</ChatPanel>
+```
+
+#### Optional chat configuration
+
+All new settings are opt-in. They add no settings UI and do not persist preferences.
+Hosts own configuration and action callbacks. Existing presentation and send behavior
+remain the defaults when the props are omitted.
+
+| Component / prop | Options | Default |
+| --- | --- | --- |
+| `ChatPanel.appearance`, `ChatMessages.appearance` | `fontSize`, `lineHeight`, `messageGap`, `denseMessageGap` | Existing 13px message text, line heights and 16px/8px gaps |
+| Both inputs: `sendShortcut` | `"enter"`, `"mod-enter"` (Ctrl or Cmd + Enter) | `"enter"`; Shift+Enter inserts a newline |
+| `ChatMessages.messageActions` | `copy` boolean/predicate, `edit`, `retry`, `custom` | No actions |
+| `ChatMessages.timestampOptions` | `format`: `"time"`, `"date-time"`, `"relative"`; `locale`, `timeZone`, `showDaySeparators` | Local HH:MM; no day separators; timestamp column still controlled by `showTimestamps` |
+| `ChatMessages.codeBlockOptions` | `wrap`, `maxHeight`, `showCopyButton` | No wrapping, no height limit, no copy button |
+| `ChatMessages.bubbleOptions` | `variant`: `"default"`, `"plain"`, `"bubbles"`; `maxWidth`, `userSide`, `assistantSide`, `showSender`, `senderLabel(message)` | Existing bubbles, metadata labels and alignment; 86% width, 100% in narrow chats |
+| `ChatPanel.scrollOnSend` | Boolean | `false`: no forced jump; ordinary following at the bottom remains active |
+
+Appearance lengths accept CSS strings or numbers (pixels); numeric `lineHeight` is a
+multiplier. Set appearance on `ChatPanel` to include its composer, or on `ChatMessages`
+to style only the transcript. Bubble width overrides also apply in narrow chats. Explicit
+side options override message metadata. `showSender: false` hides labels, `true` also
+allows a role label when no metadata label exists; `senderLabel` supplies host labels.
+
+Editing is offered for user messages and retry for assistant messages. Callbacks receive
+the original message; the host opens its editor or performs the retry. Quassel does not
+rewrite history or contact a model. `custom(message)` returns an array of
+`{ id, label, icon?, disabled?, onClick(message) }`. Copy can be restricted with a predicate.
+Async actions disable their button while pending and display errors. Copy uses the browser
+clipboard API; unavailable or rejected access is shown as an error. All action labels can
+be replaced through `texts`.
+
+Day separators are independent of timestamp visibility, use the selected time zone,
+and split groups of steps across day boundaries. Missing or invalid dates create no
+separator or timestamp. Relative timestamps refresh while visible. Invalid Intl locale
+or time zone options throw rather than silently changing the requested formatting.
+
+`scrollOnSend` applies to the input and transcript in the same `ChatPanel`, after a
+successful `onSend`. Empty, disabled or failed submissions do not trigger a jump. A
+successful jump resumes following, including messages arriving after `onSend` resolves.
+With `false`, sending preserves the reading position when the user has scrolled up.
+Custom composers can perform their own scrolling via `scrollerRef`. Both provided inputs
+accept async `onSend`, show failures, retain failed drafts and ignore IME composition
+and repeated Enter events.
+
+```tsx
+<ChatPanel
+  appearance={{ fontSize: 15, lineHeight: 1.7, messageGap: 20 }}
+  scrollOnSend={true}
+  composer={<ChatInputToolbar onSend={send} sendShortcut="mod-enter" />}
+>
+  <ChatMessages
+    messages={messages}
+    showTimestamps
+    timestampOptions={{ format: "date-time", locale: "de-DE", timeZone: "Europe/Berlin", showDaySeparators: true }}
+    codeBlockOptions={{ wrap: true, maxHeight: 320, showCopyButton: true }}
+    bubbleOptions={{ maxWidth: "90%", showSender: false }}
+    messageActions={{ copy: true, edit: openEditor, retry: retryAnswer }}
+  />
+</ChatPanel>
+```
+
+The exported option types are `ChatAppearance`, `TimestampOptions`, `CodeBlockOptions`,
+`BubbleOptions`, `MessageAction`, `MessageActionsOptions` and `SendShortcut`. Standalone
+Markdown can use `<MarkdownCodeBlocks options={...} texts={...}>` around `<Markdown>`.
+
+#### Schritt-Zustände
+
+`stepState(message): "running" | "thinking" | "done" | "error"` ist die einzige Ableitung:
+Werkzeug ohne Ergebnis = `running`, offener Denk-Block = `thinking`, `isError` = `error`,
+sonst `done`. In `icons`/`chips` trägt jeder Chip die Klasse `qsl-chip--<zustand>`:
+`running`/`thinking` pulsen mit angedeuteter Akzent-Kontur, `error` bekommt rotes Symbol
+und rötliche Kontur, `done` ein kleines Häkchen und einen leicht gedämpften Chip. Das
+Häkchen sitzt in einem festen Feld, der Zustandswechsel ändert die Chipbreite also nicht.
+
+### DetailModeSwitch
+
+```ts
+{
+  mode: DetailMode;
+  onChange: (mode: DetailMode) => void;
+  modes?: readonly DetailMode[];  // Auswahl und Reihenfolge, Default alle sechs
+  collapsible?: boolean;          // false = Beschriftung bleibt auch schmal stehen
+  texts?: Partial<ChatTexts>;
+  className?: string;
+}
+```
+
+Ein Knopf, der den Detailgrad weiterschaltet und den aktuellen als Beschriftung zeigt.
+Gedacht fuer die Toolbar (`toolbarLeft`) oder eine eigene Kopfzeile; der Host haelt den
+Wert und reicht ihn an `ChatMessages.detailMode` weiter. `detailModeLabel(mode, texts)`
+liefert dieselbe Beschriftung fuer eigene Bedienelemente, `DETAIL_MODES` die Reihenfolge.
 
 ### Eingaben
 
@@ -141,11 +262,89 @@ nach 3s. `send` = `POST .../send`, `stop` = `POST .../stop`.
 
 ### Sonstiges
 
-`Markdown`, `QuestionCard`, `StepPopover`, Icons (`IconSend`, `IconStop`, `IconX`,
-`IconChevronDown`, `IconCheck`, `IconSpark`, `IconTool`) sind einzeln exportiert.
+`QuestionCard` ist die Rückfrage-Karte für React; ihre Optik liegt in
+`@quassel/question-element/question.css`, die `chat.css` mitimportiert - für Hosts ohne React
+gibt es dieselbe Karte als `<qsl-question>` (siehe unten).
+
+`Markdown`, `QuestionCard`, `StepPopover`, `DetailModeSwitch`, Icons (`IconSend`, `IconStop`, `IconX`,
+`IconChevronDown`, `IconChevronRight`, `IconLayers`, `IconCheck`, `IconSpark`, `IconTool`) sind einzeln exportiert.
 `ChatTexts`-Schlüssel (alle deutsch vorbelegt): working, toolRunning, toolStillRunning,
-thinkingChip, thinkingTitle, toolTitle, argumentsLabel, resultLabel, close, jumpToEnd,
-send, sendIntoRun, stop, placeholder, steeringPlaceholder, inputHint.
+thinkingChip, stepGroupOne, stepGroupMany, stepGroupCollapse, thinkingTitle, toolTitle, argumentsLabel, resultLabel, close, jumpToEnd,
+send, sendIntoRun, stop, placeholder, steeringPlaceholder, inputHint, detailModeTitle,
+detailModeOff, detailModeIcons, detailModeChips, detailModeGrouped, detailModeCompact, detailModeFull.
+
+## @quassel/question-element - die Rückfrage-Karte ohne Framework
+
+`<qsl-question>` ist dieselbe Karte wie `QuestionCard`, nur als Custom Element - für Hosts
+ohne React (Vanilla-JS-Canvas, Server-gerendertes HTML, andere Frameworks). Reines
+JavaScript, kein Bauschritt, keine Abhängigkeiten: die Datei ist direkt ladbar.
+
+```html
+<link rel="stylesheet" href="/vendor/question.css">
+<script type="module" src="/vendor/qsl-question.js"></script>
+
+<qsl-question text="Welchen Zeitraum?" options='["Woche","Monat"]'></qsl-question>
+```
+
+```js
+const karte = document.createElement("qsl-question");
+karte.text = "Welche Anlagen sollen mit hinein?";
+karte.options = ["Halle 1", "Halle 2", "Kesselhaus"];
+karte.multi = true;
+karte.dismissible = true;
+karte.addEventListener("answer", (event) => {
+  karte.busy = true;                       // Antwort unterwegs
+  send(event.detail.value).then(() => { karte.busy = false; karte.answer = event.detail.value; });
+});
+karte.addEventListener("dismiss", () => karte.remove());
+raum.appendChild(karte);
+```
+
+**Eigenschaften** (jeweils auch als Attribut, Boolesche als An-/Abwesenheit):
+
+```
+text          string    Fragetext
+options       string[]  Optionen; als Attribut JSON-Array oder eine Option je Zeile
+multi         boolean   Mehrfachauswahl mit Kästchen und "Auswahl übernehmen"
+placeholder   string    Freitext-Platzhalter, Default "... oder frei antworten"
+answer        string    gesetzt = beantwortet: die Karte ist nur noch Beleg (Häkchen + Text)
+disabled      boolean   nichts anklickbar
+busy          boolean   Antwort unterwegs: gedämpft (qsl-question--busy) und nimmt nichts an
+dismissible   boolean   zeigt den Verwerfen-Knopf, der dismiss auslöst
+submit-label / answer-label / dismiss-label   Beschriftungen ersetzen (nur als Attribut)
+selectedOptions / freeText                    schreibgeschützter Blick auf den Zwischenstand
+```
+
+**Ereignisse** (beide `bubbles` und `composed`, ein Host kann also delegieren):
+
+```
+answer   CustomEvent<{ options: string[]; text: string; value: string }>
+dismiss  CustomEvent<void>
+```
+
+Eigenschaften dürfen bei jedem Render neu gesetzt werden: gleiche Werte sind folgenlos,
+auch `options` - Auswahl und Entwurfstext überleben das. Ein Host, der die Karte über
+Renderzyklen hinweg am Leben halten will, hält das Element selbst fest (nicht sein Markup)
+und hängt es wieder ein; Entwurf und Auswahl hängen an der Instanz.
+
+`value` ist der fertige Antworttext und entspricht genau dem, was `QuestionCard.onAnswer`
+liefert: Einfachauswahl = die Option, Mehrfachauswahl = die Auswahl mit `"; "` verbunden,
+Freitext = der getippte Text. `options` und `text` liegen daneben, wenn ein Host beides
+getrennt braucht. Das Element wechselt nach einer Antwort NICHT von selbst in den
+Beleg-Zustand - der Host setzt `busy` und danach `answer`, so wie im React-Chat auch.
+
+**CSS-Voraussetzung**: `question.css` aus diesem Paket (enthält alle `.qsl-question*`-Regeln)
+plus die `--qsl-*`-Tokens - entweder aus `@quassel/foundation` oder aus eigenen Token-Werten
+des Hosts. `chat.css` importiert dieselbe Datei, React-Karte und Element sehen deshalb
+zwangsläufig gleich aus; wer den Chat schon lädt, braucht nichts zusätzlich einzubinden.
+
+**Light DOM, kein Shadow DOM** - bewusst so: die Hosts laufen unter
+`style-src 'self'` ohne `unsafe-inline`, ein `<style>`-Block im Shadow-Root wäre dort
+blockiert. Bliebe `adoptedStyleSheets` (formal an der CSP vorbei, aber nur mit
+zusätzlichem Fetch der CSS) - und die Karte hätte dann ein eigenes Stylesheet statt
+desselben wie die React-Karte. Light DOM heißt: das Element trägt selbst die Klasse
+`qsl-question`, füllt sich mit den bekannten Kind-Klassen und erbt Tokens, Theme-Overrides
+und Schrift des Hosts. Inline-Styles setzt es keine.
 
 ## @quassel/foundation - CSS-Fundament
 

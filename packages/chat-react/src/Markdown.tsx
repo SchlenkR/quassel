@@ -1,4 +1,32 @@
-import { ReactNode } from "react";
+import { createContext, ReactNode, useContext } from "react";
+import type { CodeBlockOptions } from "./options";
+import { defaultTexts, type ChatTexts } from "./texts";
+import { ActionButton, copyText } from "./MessageActions";
+
+const CodeBlockContext = createContext<{ options?: CodeBlockOptions; texts?: Partial<ChatTexts> }>({});
+
+export function MarkdownCodeBlocks({ children, options, texts }: {
+  children: ReactNode;
+  options?: CodeBlockOptions;
+  texts?: Partial<ChatTexts>;
+}) {
+  return <CodeBlockContext.Provider value={{ options, texts }}>{children}</CodeBlockContext.Provider>;
+}
+
+function CodeBlock({ text }: { text: string }) {
+  const { options, texts } = useContext(CodeBlockContext);
+  const labels = { ...defaultTexts, ...texts };
+  const content = <pre style={{
+    whiteSpace: options?.wrap ? "pre-wrap" : undefined,
+    overflowWrap: options?.wrap ? "anywhere" : undefined,
+    maxHeight: options?.maxHeight,
+    overflowY: options?.maxHeight === undefined ? undefined : "auto",
+  }}><code>{text}</code></pre>;
+  return options?.showCopyButton ? <div className="qsl-code-block">
+    <ActionButton label={labels.copyCode} successLabel={labels.copied} onClick={() => copyText(text, labels.copyFailed)} />
+    {content}
+  </div> : content;
+}
 
 /**
  * Schlanker Markdown-Renderer ohne Abhängigkeit: Überschriften, **fett**, *kursiv*,
@@ -6,6 +34,34 @@ import { ReactNode } from "react";
  * React, kein dangerouslySetInnerHTML) und streaming-robust: zeilenbasiert, unvollständige
  * Blöcke werden so weit gerendert wie vorhanden.
  */
+/** true = der Host hat den Link behandelt, der Browser folgt ihm nicht. */
+export type LinkClickHandler = (href: string, label: string) => boolean;
+
+const LinkClickContext = createContext<LinkClickHandler | undefined>(undefined);
+
+/** Faengt Klicks auf Markdown-Links im Teilbaum ab, z.B. fuer eigene Ziele der Gastseite. */
+export function MarkdownLinks({ children, onLinkClick }: { children: ReactNode; onLinkClick?: LinkClickHandler }) {
+  return <LinkClickContext.Provider value={onLinkClick}>{children}</LinkClickContext.Provider>;
+}
+
+function MarkdownLink({ href, label }: { href: string; label: string }) {
+  const onLinkClick = useContext(LinkClickContext);
+  return (
+    <a
+      href={href}
+      onClick={(event) => {
+        if (onLinkClick?.(href, label)) {
+          event.preventDefault();
+        }
+      }}
+      rel="noreferrer"
+      target="_blank"
+    >
+      {label}
+    </a>
+  );
+}
+
 export function Markdown({ text }: { text: string }) {
   const lines = text.split("\n");
   const blocks: ReactNode[] = [];
@@ -27,9 +83,7 @@ export function Markdown({ text }: { text: string }) {
         i++;
       }
       blocks.push(
-        <pre key={key++}>
-          <code>{body.join("\n")}</code>
-        </pre>,
+        <CodeBlock key={key++} text={body.join("\n")} />,
       );
       continue;
     }
@@ -137,11 +191,7 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
       out.push(text.slice(last, match.index));
     }
     if (match[1] !== undefined) {
-      out.push(
-        <a href={match[2]} key={`${keyPrefix}a${i}`} rel="noreferrer" target="_blank">
-          {match[1]}
-        </a>,
-      );
+      out.push(<MarkdownLink href={match[2]} key={`${keyPrefix}a${i}`} label={match[1]} />);
     } else if (match[3] !== undefined) {
       out.push(<strong key={`${keyPrefix}b${i}`}>{match[3]}</strong>);
     } else if (match[4] !== undefined) {

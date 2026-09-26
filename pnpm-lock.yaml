@@ -51,6 +51,9 @@ importers:
       '@quassel/events':
         specifier: workspace:*
         version: link:../events
+      '@quassel/foundation':
+        specifier: workspace:*
+        version: link:../foundation
       react:
         specifier: ^18 || ^19
         version: 19.2.8
@@ -77,6 +80,9 @@ importers:
       '@quassel/foundation':
         specifier: workspace:*
         version: link:../foundation
+      '@quassel/question-element':
+        specifier: workspace:*
+        version: link:../question-element
       react:
         specifier: ^19.2.0
         version: 19.2.8
@@ -99,6 +105,8 @@ importers:
       vite:
         specifier: ^7.3.0
         version: 7.3.6(@types/node@22.20.1)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)
+
+  packages/question-element: {}
 
 packages:
 

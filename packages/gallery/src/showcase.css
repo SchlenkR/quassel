@@ -1,0 +1,45 @@
+.showcase {
+    display: flex;
+    gap: 20px;
+    padding: 24px;
+    width: max-content;
+}
+
+.showcase-frame {
+    display: flex;
+    flex-direction: column;
+    width: 640px;
+    height: 620px;
+    overflow: hidden;
+    --qsl-thread-padding-inline: 16px;
+}
+
+.showcase-frame--small {
+    width: 340px;
+    height: 460px;
+}
+
+.showcase-frame--tall {
+    height: 560px;
+}
+
+.showcase-frame--short {
+    height: auto;
+    padding-bottom: 8px;
+}
+
+.showcase-frame .qsl-chat-panel {
+    flex: 1;
+}
+
+.showcase-caption {
+    padding: 12px 16px 4px;
+    font-family: var(--qsl-font);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--qsl-muted);
+}
+
+.showcase-frame .qsl-chat-panel__composer {
+    padding: 0 12px 12px;
+}

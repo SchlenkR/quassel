@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
-import "@quassel/foundation";
-import "@quassel/foundation/base.css";
-import "@quassel/chat-react/chat.css";
+import "quassel/foundation.css";
+import "quassel/base.css";
+import "quassel/chat.css";
 import "./gallery.css";
 import { App } from "./App";
 

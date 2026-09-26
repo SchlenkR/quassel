@@ -1,4 +1,4 @@
-import { applyEvent, ChatEvent, Message } from "@quassel/chat-react";
+import { applyEvent, ChatEvent, Message } from "quassel";
 import { useMemo, useReducer, useRef, useState } from "react";
 
 /**

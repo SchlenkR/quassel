@@ -1,8 +1,11 @@
 {
-  "name": "quassel",
+  "name": "quassel-workspace",
   "private": true,
   "scripts": {
     "dev": "pnpm --filter gallery dev",
-    "build": "pnpm --filter gallery build"
+    "build": "pnpm --filter gallery build",
+    "demo:server": "pnpm --filter quassel demo:server",
+    "check": "pnpm --filter quassel check && pnpm --filter gallery exec tsc --noEmit",
+    "release": "node scripts/publish.mjs"
   }
 }

@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
-  ChatInputPlain,
   ChatInputToolbar,
   ChatMessages,
   DetailMode,
@@ -8,21 +7,17 @@ import {
   TimestampSwitch,
   IconSpark,
   useChat,
-} from "@quassel/chat-react";
-import "@quassel/question-element";
+} from "quassel";
 import "./themes.css";
 import { useFakeAgent } from "./fakeAgent";
 import { transcript } from "./transcript";
 
 const DEMOS = [
   { id: "lesen", title: "Nur lesen", note: "Verlauf ohne Eingabe" },
-  { id: "schlicht", title: "Schlichte Eingabe", note: "Text rein, senden, fertig" },
   { id: "toolbar", title: "Eingabe-Karte", note: "Toolbar, Stop und Dazwischenfunken" },
-  { id: "frage", title: "Frage-Element", note: "Web Component ohne React" },
   { id: "bausteine", title: "Panel-Bausteine", note: "Glas, Felder, Punkte" },
   { id: "stile", title: "Stile", note: "Dieselben Bausteine, andere Tokens" },
-  { id: "live", title: "Live-Backend", note: "Echtes LLM über @quassel/agent-node" },
-  { id: "pi", title: "Pi-Backend", note: "Der Pi Coding Agent über @quassel/agent-pi" },
+  { id: "live", title: "Live-Backend", note: "Echtes LLM über quassel/server" },
 ] as const;
 
 type DemoId = (typeof DEMOS)[number]["id"];
@@ -78,17 +73,14 @@ export function App() {
             </button>
           ))}
         </div>
-        <div className="qsl-panel__foot">@quassel/foundation + @quassel/chat-react</div>
+        <div className="qsl-panel__foot">quassel</div>
       </aside>
       <main className="stage">
         {demo === "lesen" && <LeseDemo />}
-        {demo === "schlicht" && <SchlichtDemo />}
         {demo === "toolbar" && <ToolbarDemo />}
-        {demo === "frage" && <FrageDemo />}
         {demo === "bausteine" && <BausteineDemo />}
         {demo === "stile" && <StilDemo />}
         {demo === "live" && <LiveDemo />}
-        {demo === "pi" && <PiDemo />}
       </main>
     </div>
   );
@@ -109,28 +101,6 @@ function LeseDemo() {
         <ModusToggles modus={detailMode} setModus={setDetailMode} />
       </div>
       <ChatMessages detailMode={detailMode} messages={transcript} />
-    </>
-  );
-}
-
-function SchlichtDemo() {
-  const { messages, running, agent } = useFakeAgent();
-  return (
-    <>
-      <div className="stage-head">
-        <div>
-          <h2>Schlichte Eingabe</h2>
-          <p>ChatInputPlain: nur Text und Senden. Der Stop-Knopf erscheint erst im Lauf.</p>
-        </div>
-      </div>
-      <ChatMessages
-        emptyState={<div className="empty">Stell eine Frage - der Demo-Agent antwortet geskriptet.</div>}
-        messages={messages}
-        running={running}
-      />
-      <div className="stage-foot">
-        <ChatInputPlain onSend={(text) => agent.send(text)} onStop={() => agent.stop()} running={running} />
-      </div>
     </>
   );
 }
@@ -223,7 +193,7 @@ function StilDemo() {
       <div className={`stil-canvas qsl-wash qsl-wash--clip ${stil}`}>
         <ChatMessages messages={verlauf} running={running} />
         <div className="stage-foot">
-          <ChatInputPlain onSend={(text) => agent.send(text)} onStop={() => agent.stop()} running={running} showHint={false} />
+          <ChatInputToolbar onSend={(text) => agent.send(text)} onStop={() => agent.stop()} rows={1} running={running} />
         </div>
       </div>
     </>
@@ -238,7 +208,7 @@ function LiveDemo() {
         <div>
           <h2>Live-Backend</h2>
           <p>
-            useChat gegen den Beispiel-Server (packages/agent-node, pnpm --filter @quassel/agent-node demo) -
+            useChat gegen den Beispiel-Server (quassel/server, pnpm demo:server) -
             dahinter ein OpenAI-kompatibles LLM.
           </p>
         </div>
@@ -252,7 +222,7 @@ function LiveDemo() {
           <div className="empty">
             {connected
               ? "Verbunden - stell dem Modell eine Frage (Uhrzeit fragen zeigt den Tool-Call)."
-              : "Beispiel-Server starten: pnpm --filter @quassel/agent-node demo"}
+              : "Beispiel-Server starten: pnpm demo:server"}
           </div>
         }
         messages={messages}
@@ -260,126 +230,6 @@ function LiveDemo() {
       />
       <div className="stage-foot">
         <ChatInputToolbar disabled={!connected} onSend={(text) => void send(text)} onStop={() => void stop()} running={running} />
-      </div>
-    </>
-  );
-}
-
-function PiDemo() {
-  const { messages, running, connected, send, stop } = useChat("http://localhost:3301/chat/pi-demo");
-  const [detailMode, setDetailMode] = useState<DetailMode>("chips");
-  return (
-    <>
-      <div className="stage-head">
-        <div>
-          <h2>Pi-Backend</h2>
-          <p>
-            Gleiches Frontend, anderes Backend: der Pi Coding Agent hinter demselben Event-Kontrakt
-            (pnpm --filter @quassel/agent-pi demo).
-          </p>
-        </div>
-        <div className="pi-kopf">
-          <ModusToggles modus={detailMode} setModus={setDetailMode} />
-          <span className={connected ? "verbindung verbindung--da" : "verbindung"}>
-            <span className={connected ? "qsl-dot qsl-dot--live" : "qsl-dot"} />
-            {connected ? "verbunden" : "Server nicht erreichbar"}
-          </span>
-        </div>
-      </div>
-      <ChatMessages
-        detailMode={detailMode}
-        emptyState={
-          <div className="empty">
-            {connected
-              ? "Verbunden - frag z.B. nach den Dateien im Projekt, dann siehst du Pi-Tool-Calls."
-              : "Pi-Server starten: pnpm --filter @quassel/agent-pi demo"}
-          </div>
-        }
-        messages={messages}
-        running={running}
-      />
-      <div className="stage-foot">
-        <ChatInputToolbar disabled={!connected} onSend={(text) => void send(text)} onStop={() => void stop()} running={running} />
-      </div>
-    </>
-  );
-}
-
-/** Bewusst ohne JSX gebaut: die Karten entstehen mit reinem DOM, React haelt nur das Protokoll. */
-function FrageDemo() {
-  const buehne = useRef<HTMLDivElement>(null);
-  const [runde, setRunde] = useState(0);
-  const [protokoll, setProtokoll] = useState<string[]>([]);
-
-  useEffect(() => {
-    const stage = buehne.current;
-    if (!stage) return;
-
-    const timers: number[] = [];
-    const notieren = (zeile: string) => setProtokoll((bisher) => [zeile, ...bisher].slice(0, 6));
-
-    const karte = (text: string, options: string[], extras: Partial<HTMLElementTagNameMap["qsl-question"]> = {}) => {
-      const element = document.createElement("qsl-question");
-      element.text = text;
-      element.options = options;
-      Object.assign(element, extras);
-      element.addEventListener("answer", (event) => {
-        notieren(`answer: ${JSON.stringify(event.detail)}`);
-        element.busy = true;
-        timers.push(
-          window.setTimeout(() => {
-            element.busy = false;
-            element.answer = event.detail.value;
-          }, 500),
-        );
-      });
-      element.addEventListener("dismiss", () => {
-        notieren("dismiss");
-        element.answer = "Verworfen";
-      });
-      return element;
-    };
-
-    stage.append(
-      karte("Welchen Zeitraum soll die Auswertung abdecken?", ["Letzte Woche", "Letzter Monat", "Letztes Quartal"]),
-      karte("Welche Anlagen sollen mit hinein?", ["Halle 1", "Halle 2", "Kesselhaus", "Außenlager"], {
-        multi: true,
-        dismissible: true,
-      }),
-      karte("Womit soll ich weitermachen?", ["Bericht schreiben", "Rohdaten exportieren"], {
-        answer: "Bericht schreiben",
-      }),
-    );
-
-    return () => {
-      timers.forEach((id) => window.clearTimeout(id));
-      stage.replaceChildren();
-    };
-  }, [runde]);
-
-  return (
-    <>
-      <div className="stage-head">
-        <div>
-          <h2>Frage-Element</h2>
-          <p>
-            &lt;qsl-question&gt; aus @quassel/question-element: Custom Element im Light DOM, dieselben
-            qsl-question-Klassen wie die React-Karte - hier per document.createElement gesetzt, ohne React im Spiel.
-          </p>
-        </div>
-        <div className="toggles">
-          <button className="toggle" onClick={() => setRunde((wert) => wert + 1)} type="button">
-            zurücksetzen
-          </button>
-        </div>
-      </div>
-      <div className="fragen">
-        <div className="fragen-buehne" ref={buehne} />
-        <div className="fragen-log">
-          {protokoll.length === 0
-            ? "Noch nichts beantwortet - die Ereignisse landen hier."
-            : protokoll.map((zeile, index) => <div key={index}>{zeile}</div>)}
-        </div>
       </div>
     </>
   );

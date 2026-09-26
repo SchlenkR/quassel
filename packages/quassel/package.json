@@ -1,0 +1,45 @@
+{
+  "name": "quassel",
+  "version": "0.1.0",
+  "description": "Composable chat building blocks for React: streaming transcript, steps, questions, inputs, CSS foundation and event contract",
+  "license": "MIT",
+  "author": "Ronald Schlenker",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SchlenkR/quassel.git"
+  },
+  "homepage": "https://github.com/SchlenkR/quassel#readme",
+  "keywords": ["chat", "react", "llm", "agent", "streaming", "ui"],
+  "type": "module",
+  "sideEffects": ["*.css"],
+  "exports": {
+    ".": "./src/index.ts",
+    "./events": "./src/events.ts",
+    "./server": "./src/server/index.ts",
+    "./chat.css": "./src/css/chat.css",
+    "./foundation.css": "./src/css/foundation/index.css",
+    "./base.css": "./src/css/foundation/base.css"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "demo:server": "tsx examples/server.ts"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true },
+    "react-dom": { "optional": true }
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "^0.28.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.0"
+  }
+}

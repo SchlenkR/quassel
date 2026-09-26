@@ -1,0 +1,68 @@
+import { ChatEvent } from "../events";
+
+/** Konfiguration gegen ein OpenAI-kompatibles Backend (OpenRouter, Ollama, vLLM, ...). */
+export interface AgentConfig {
+  baseUrl: string;
+  model: string;
+  apiKey?: string;
+  systemPrompt?: string;
+  temperature?: number;
+  topP?: number;
+  maxTokens?: number;
+  headers?: Record<string, string>;
+  tools?: AgentTool[];
+}
+
+export interface AgentTool {
+  name: string;
+  description: string;
+  parameters: object;
+  run: (args: unknown) => Promise<string> | string;
+}
+
+export interface OpenAiToolCall {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+}
+
+export interface OpenAiMessage {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string | null;
+  tool_calls?: OpenAiToolCall[];
+  tool_call_id?: string;
+}
+
+export interface SessionState {
+  id: string;
+  events: ChatEvent[];
+  history: OpenAiMessage[];
+  updatedAt: number;
+}
+
+export interface SessionInfo {
+  id: string;
+  title: string;
+  updatedAt: number;
+}
+
+/** Was der HTTP-Adapter von einer Unterhaltung braucht - AgentSession erfüllt das, andere Backends auch. */
+export interface ChatSessionLike {
+  readonly running: boolean;
+  subscribe(listener: (event: import("../events").ChatEvent) => void): () => void;
+  send(text: string): void;
+  stop(): void;
+}
+
+export interface ChatSessionProvider {
+  get(id: string): Promise<ChatSessionLike>;
+  list(): Promise<SessionInfo[]>;
+  delete(id: string): Promise<void>;
+}
+
+export interface SessionStore {
+  load(id: string): Promise<SessionState | undefined>;
+  save(state: SessionState): Promise<void>;
+  list(): Promise<SessionInfo[]>;
+  delete(id: string): Promise<void>;
+}

@@ -1,4 +1,4 @@
-import { Message } from "@quassel/chat-react";
+import { Message } from "quassel";
 
 /** Ein Verlauf für die Nur-Lesen-Schublade; die letzte Schrittzeile zeigt alle vier Zustände. */
 export const transcript: Message[] = [

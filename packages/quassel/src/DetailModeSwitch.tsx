@@ -1,11 +1,13 @@
+import { SparklesIcon } from "lucide-react";
+import { useQuasselComponents } from "./QuasselProvider";
 import { DetailMode } from "./types";
 import { ChatTexts, defaultTexts } from "./texts";
-import { IconSpark } from "./icons";
 
-export const DETAIL_MODES: readonly DetailMode[] = ["off", "icons", "chips", "grouped", "compact", "full"];
+export const DETAIL_MODES: readonly DetailMode[] = ["off", "current", "icons", "chips", "grouped", "compact", "full"];
 
 const TEXT_KEYS: Record<DetailMode, keyof ChatTexts> = {
   off: "detailModeOff",
+  current: "detailModeCurrent",
   icons: "detailModeIcons",
   chips: "detailModeChips",
   grouped: "detailModeGrouped",
@@ -30,7 +32,7 @@ export function DetailModeSwitch({
 }: {
   mode: DetailMode;
   onChange: (mode: DetailMode) => void;
-  /** Auswahl und Reihenfolge des Weiterschaltens; Default sind alle sechs Modi. */
+  /** Auswahl und Reihenfolge des Weiterschaltens; Default sind alle Modi. */
   modes?: readonly DetailMode[];
   /** false = die Beschriftung bleibt auch in einer schmalen Eingabe-Karte stehen. */
   collapsible?: boolean;
@@ -38,18 +40,20 @@ export function DetailModeSwitch({
   className?: string;
 }) {
   const alleTexte = { ...defaultTexts, ...texts };
+  const { Button } = useQuasselComponents();
   const aktuell = modes.indexOf(mode);
   const naechster = modes[(aktuell < 0 ? 0 : aktuell + 1) % modes.length];
   return (
-    <button
+    <Button
       aria-label={`${alleTexte.detailModeTitle}: ${detailModeLabel(mode, texts)}`}
-      className={className ? `qsl-icon-button ${className}` : "qsl-icon-button"}
+      className={className}
       onClick={() => onChange(naechster)}
+      size="sm"
       title={`${alleTexte.detailModeTitle}: ${detailModeLabel(mode, texts)}`}
-      type="button"
+      variant="ghost"
     >
-      <IconSpark size={14} />
-      <span className={collapsible ? "qsl-collapsible" : undefined}>{detailModeLabel(mode, texts)}</span>
-    </button>
+      <SparklesIcon />
+      <span className={collapsible ? "qsl:in-data-[compact=true]:hidden" : undefined}>{detailModeLabel(mode, texts)}</span>
+    </Button>
   );
 }

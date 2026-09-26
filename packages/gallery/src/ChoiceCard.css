@@ -1,0 +1,15 @@
+.choice-card {
+    padding-inline: 14px;
+    background: var(--qsl-background);
+    font-size: 13px;
+}
+
+.choice-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.choice-answer {
+    color: var(--qsl-muted-foreground);
+}

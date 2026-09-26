@@ -1,0 +1,335 @@
+/* quassel: Tailwind with the qsl prefix, no global preflight; the reset below applies only inside [data-quassel]. */
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme) prefix(qsl);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "tw-animate-css/prefix";
+
+@source "./";
+@source inline("qsl:space-y-0 qsl:whitespace-normal qsl:[&>*:first-child]:mt-0 qsl:[&>*:last-child]:mb-0 qsl:text-inherit");
+
+@custom-variant dark {
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+        @slot;
+    }
+    @media (prefers-color-scheme: dark) {
+        &:where([data-theme="system"], [data-theme="system"] *) {
+            @slot;
+        }
+    }
+}
+
+@custom-variant scheme-dark {
+    &:where([data-theme="dark"]) {
+        @slot;
+    }
+    @media (prefers-color-scheme: dark) {
+        &:where([data-theme="system"]) {
+            @slot;
+        }
+    }
+}
+
+@custom-variant data-open {
+    &:where([data-state="open"]),
+    &:where([data-open]:not([data-open="false"])) {
+        @slot;
+    }
+}
+
+@custom-variant data-closed {
+    &:where([data-state="closed"]),
+    &:where([data-closed]:not([data-closed="false"])) {
+        @slot;
+    }
+}
+
+@theme {
+    --spacing: 0.235rem;
+    --text-xs: 0.68rem;
+    --text-xs--line-height: 1.45;
+    --text-sm: 0.78rem;
+    --text-sm--line-height: 1.45;
+    --text-base: 0.875rem;
+    --text-base--line-height: 1.5;
+    --text-lg: 1rem;
+    --text-lg--line-height: 1.45;
+    --text-xl: 1.15rem;
+    --text-xl--line-height: 1.35;
+    --radius-panel: 17px;
+    --animate-fade-pulse: qsl-fade-pulse 1.9s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+    --animate-working-pulse: qsl-working-pulse 1.6s ease-in-out infinite;
+    --animate-spin: qsl-spin 1s linear infinite;
+
+    @keyframes qsl-spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes qsl-fade-pulse {
+        50% { opacity: 0.35; }
+    }
+
+    @keyframes qsl-working-pulse {
+        0%, 100% {
+            border-color: color-mix(in srgb, var(--qsl-primary) 55%, var(--qsl-card));
+            box-shadow: var(--qsl-card-shadow), 0 0 0 1px color-mix(in srgb, var(--qsl-primary) 12%, transparent);
+        }
+        50% {
+            border-color: var(--qsl-primary);
+            box-shadow: var(--qsl-card-shadow), 0 0 0 4px color-mix(in srgb, var(--qsl-primary) 30%, transparent);
+        }
+    }
+}
+
+@theme inline {
+    --font-sans: var(--qsl-font);
+    --font-mono: var(--qsl-mono);
+    --color-background: var(--qsl-background);
+    --color-foreground: var(--qsl-foreground);
+    --color-card: var(--qsl-card);
+    --color-card-foreground: var(--qsl-foreground);
+    --color-popover: var(--qsl-background);
+    --color-popover-foreground: var(--qsl-foreground);
+    --color-primary: var(--qsl-primary);
+    --color-primary-foreground: var(--qsl-primary-foreground);
+    --color-secondary: var(--qsl-secondary);
+    --color-secondary-foreground: var(--qsl-foreground);
+    --color-muted: var(--qsl-secondary);
+    --color-muted-foreground: var(--qsl-muted-foreground);
+    --color-destructive: var(--qsl-destructive);
+    --color-success: var(--qsl-success);
+    --color-border: var(--qsl-border);
+    --color-border-soft: var(--qsl-border-soft);
+    --color-border-strong: var(--qsl-border-strong);
+    --color-input: var(--qsl-border);
+    --color-ring: var(--qsl-primary);
+    --color-glass-edge: var(--qsl-glass-edge);
+    --radius-sm: calc(var(--qsl-radius) * 0.6);
+    --radius-md: calc(var(--qsl-radius) * 0.8);
+    --radius-lg: var(--qsl-radius);
+    --radius-xl: calc(var(--qsl-radius) * 1.4);
+    --radius-2xl: calc(var(--qsl-radius) * 1.8);
+    --shadow-bar: var(--qsl-bar-shadow);
+    --shadow-pop: var(--qsl-pop-shadow);
+    --shadow-card: var(--qsl-card-shadow);
+}
+
+/* The theming API: override these on :root or on any wrapper; data-theme="dark" | "light" | "system" on an ancestor switches the scheme. */
+@layer theme {
+    :where(:root, :host, [data-theme="light"], [data-theme="system"]) {
+        --qsl-color-scheme: light;
+        --qsl-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --qsl-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+        --qsl-radius: 0.5rem;
+        --qsl-background: #f3f2f7;
+        --qsl-foreground: #34303d;
+        --qsl-card: #e7eaf2;
+        --qsl-primary: #79638d;
+        --qsl-primary-foreground: #ffffff;
+        --qsl-secondary: #e1ddeb;
+        --qsl-muted-foreground: #62586e;
+        --qsl-destructive: #a94360;
+        --qsl-success: #3b705f;
+        --qsl-border: #c9c4d5;
+        --qsl-border-soft: #dad6e3;
+        --qsl-border-strong: #a397b2;
+        --qsl-glass-edge: #a498aa;
+        --qsl-bar-shadow: 0 2px 5px #49384e14, 0 8px 20px #49384e12;
+        --qsl-pop-shadow: 0 12px 36px #49384e26;
+        --qsl-card-shadow: 0 12px 22px #49384e2c;
+    }
+
+    :where([data-quassel]) {
+        --qsl-radius-md: calc(var(--qsl-radius) * 0.8);
+        --qsl-radius-xl: calc(var(--qsl-radius) * 1.4);
+    }
+
+    * {
+        @variant scheme-dark {
+            --qsl-color-scheme: dark;
+            --qsl-background: #292735;
+            --qsl-foreground: #e9e2ed;
+            --qsl-card: #2b303e;
+            --qsl-primary: #bda6cf;
+            --qsl-primary-foreground: #2d2235;
+            --qsl-secondary: #373247;
+            --qsl-muted-foreground: #b6a9bd;
+            --qsl-destructive: #ffa2b0;
+            --qsl-success: #8dceae;
+            --qsl-border: #555065;
+            --qsl-border-soft: #403c50;
+            --qsl-border-strong: #8e809f;
+            --qsl-glass-edge: #8a7994;
+            --qsl-bar-shadow: 0 2px 5px #00000033, 0 8px 20px #00000040;
+            --qsl-pop-shadow: 0 12px 36px #00000055;
+            --qsl-card-shadow: 0 12px 22px #00000055;
+        }
+    }
+}
+
+/* Tailwind's preflight, limited to quassel's own elements and what a host renders inside them. */
+@layer base {
+    :where([data-quassel], [data-quassel] *),
+    :where([data-quassel], [data-quassel] *)::after,
+    :where([data-quassel], [data-quassel] *)::before,
+    :where([data-quassel], [data-quassel] *)::backdrop,
+    :where([data-quassel], [data-quassel] *)::file-selector-button {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        border: 0 solid;
+    }
+
+    :where([data-quassel]) {
+        color-scheme: var(--qsl-color-scheme);
+    }
+
+    :where([data-quassel]:not([data-quassel] *)) {
+        line-height: 1.5;
+        -webkit-text-size-adjust: 100%;
+        tab-size: 4;
+        font-family: var(--qsl-font);
+        font-feature-settings: normal;
+        font-variation-settings: normal;
+        font-size: 14px;
+        color: var(--qsl-foreground);
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(hr) {
+        height: 0;
+        color: inherit;
+        border-top-width: 1px;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(abbr[title]) {
+        -webkit-text-decoration: underline dotted;
+        text-decoration: underline dotted;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(h1, h2, h3, h4, h5, h6) {
+        font-size: inherit;
+        font-weight: inherit;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(a) {
+        color: inherit;
+        -webkit-text-decoration: inherit;
+        text-decoration: inherit;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(b, strong) {
+        font-weight: bolder;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(code, kbd, samp, pre) {
+        font-family: var(--qsl-mono);
+        font-feature-settings: normal;
+        font-variation-settings: normal;
+        font-size: 1em;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(small) {
+        font-size: 80%;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(sub, sup) {
+        font-size: 75%;
+        line-height: 0;
+        position: relative;
+        vertical-align: baseline;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(sub) {
+        bottom: -0.25em;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(sup) {
+        top: -0.5em;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(table) {
+        text-indent: 0;
+        border-color: inherit;
+        border-collapse: collapse;
+    }
+
+    :where([data-quassel], [data-quassel] *):-moz-focusring:where(:not(iframe)) {
+        outline: auto;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(progress) {
+        vertical-align: baseline;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(summary) {
+        display: list-item;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(ol, ul, menu) {
+        list-style: none;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(img, svg, video, canvas, audio, iframe, embed, object) {
+        display: block;
+        vertical-align: middle;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(img, video) {
+        max-width: 100%;
+        height: auto;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(button, input, select, optgroup, textarea),
+    :where([data-quassel], [data-quassel] *)::file-selector-button {
+        font: inherit;
+        font-feature-settings: inherit;
+        font-variation-settings: inherit;
+        letter-spacing: inherit;
+        color: inherit;
+        border-radius: 0;
+        background-color: transparent;
+        opacity: 1;
+    }
+
+    :where([data-quassel], [data-quassel] *)::file-selector-button {
+        margin-inline-end: 4px;
+    }
+
+    :where([data-quassel], [data-quassel] *)::placeholder {
+        opacity: 1;
+    }
+
+    @supports (not (-webkit-appearance: -apple-pay-button)) or (contain-intrinsic-size: 1px) {
+        :where([data-quassel], [data-quassel] *)::placeholder {
+            color: color-mix(in oklab, currentcolor 50%, transparent);
+        }
+    }
+
+    :where([data-quassel], [data-quassel] *):where(textarea) {
+        resize: vertical;
+    }
+
+    :where([data-quassel], [data-quassel] *)::-webkit-search-decoration {
+        -webkit-appearance: none;
+    }
+
+    :where([data-quassel], [data-quassel] *):where(button, input:where([type="button"], [type="reset"], [type="submit"])),
+    :where([data-quassel], [data-quassel] *)::file-selector-button {
+        appearance: button;
+    }
+
+    :where([data-quassel], [data-quassel] *)::-webkit-inner-spin-button,
+    :where([data-quassel], [data-quassel] *)::-webkit-outer-spin-button {
+        height: auto;
+    }
+
+    :where([data-quassel], [data-quassel] *):where([hidden]:not([hidden="until-found"])) {
+        display: none !important;
+    }
+
+    /* Like the RAgents host: WebKit scrollbars stay hidden unless a component shows them. */
+    :where([data-quassel], [data-quassel] *)::-webkit-scrollbar {
+        display: none;
+    }
+}

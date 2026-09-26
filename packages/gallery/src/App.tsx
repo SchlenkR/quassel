@@ -1,278 +1,183 @@
-import { useState } from "react";
+import { useReducer, useState, type ReactNode } from "react";
 import {
+  applyEvent,
   ChatInputToolbar,
   ChatMessages,
-  DetailMode,
+  ChatPanel,
   DetailModeSwitch,
+  QuasselProvider,
   TimestampSwitch,
-  IconSpark,
-  useChat,
+  type DetailMode,
+  type Message,
+  type QuasselButtonProps,
 } from "quassel";
-import "./themes.css";
+import { ChoiceCard } from "./ChoiceCard";
 import { useFakeAgent } from "./fakeAgent";
-import { transcript } from "./transcript";
+import { actions, research, steps } from "./samples";
 
 const DEMOS = [
   { id: "lesen", title: "Nur lesen", note: "Verlauf ohne Eingabe" },
-  { id: "toolbar", title: "Eingabe-Karte", note: "Toolbar, Stop und Dazwischenfunken" },
-  { id: "bausteine", title: "Panel-Bausteine", note: "Glas, Felder, Punkte" },
-  { id: "stile", title: "Stile", note: "Dieselben Bausteine, andere Tokens" },
-  { id: "live", title: "Live-Backend", note: "Echtes LLM über quassel/server" },
+  { id: "eingabe", title: "Eingabe-Karte", note: "Stop, Dazwischenfunken, Anhänge" },
+  { id: "aktionen", title: "Aktionen", note: "Wartende Aktionen, eigene Karte" },
+  { id: "stile", title: "Stile", note: "Nur --qsl-* überschrieben" },
+  { id: "slots", title: "Slots", note: "Eigene Knöpfe per QuasselProvider" },
 ] as const;
 
 type DemoId = (typeof DEMOS)[number]["id"];
 
-const MODI: { id: DetailMode; label: string }[] = [
-  { id: "off", label: "nur Antworten" },
-  { id: "icons", label: "Symbole" },
-  { id: "chips", label: "kompakt" },
-  { id: "grouped", label: "gruppiert" },
-  { id: "compact", label: "einzeilig" },
-  { id: "full", label: "alles" },
-];
+const MODI: DetailMode[] = ["off", "current", "icons", "chips", "grouped", "compact", "full"];
 
-function ModusToggles({ modus, setModus }: { modus: DetailMode; setModus: (wert: DetailMode) => void }) {
+function Toggles<T extends string>({ values, value, onChange }: { values: readonly T[]; value: T; onChange: (value: T) => void }) {
   return (
     <div className="toggles">
-      {MODI.map((eintrag) => (
-        <button
-          aria-pressed={modus === eintrag.id}
-          className="toggle"
-          key={eintrag.id}
-          onClick={() => setModus(eintrag.id)}
-          type="button"
-        >
-          {eintrag.label}
-        </button>
+      {values.map((entry) => (
+        <button aria-pressed={entry === value} className="toggle" key={entry} onClick={() => onChange(entry)} type="button">{entry}</button>
       ))}
     </div>
   );
 }
 
-export function App() {
-  const [demo, setDemo] = useState<DemoId>("toolbar");
+function Stage({ title, note, head, children }: { title: string; note: string; head?: ReactNode; children: ReactNode }) {
+  return (
+    <>
+      <div className="stage-head">
+        <div>
+          <h2>{title}</h2>
+          <p>{note}</p>
+        </div>
+        {head}
+      </div>
+      <div className="stage-body">{children}</div>
+    </>
+  );
+}
 
+export function App() {
+  const [demo, setDemo] = useState<DemoId>("eingabe");
   return (
     <div className="shell">
-      <aside className="qsl-panel">
-        <div className="qsl-panel__head">
-          <IconSpark size={16} />
-          <h1>quassel</h1>
-        </div>
-        <div className="qsl-panel__body">
-          <div className="qsl-label">Schubladen</div>
-          {DEMOS.map((eintrag) => (
-            <button
-              className={eintrag.id === demo ? "qsl-ghost qsl-ghost--active" : "qsl-ghost"}
-              key={eintrag.id}
-              onClick={() => setDemo(eintrag.id)}
-              type="button"
-            >
-              <span className="demo-title">{eintrag.title}</span>
-              <span className="demo-note">{eintrag.note}</span>
-            </button>
-          ))}
-        </div>
-        <div className="qsl-panel__foot">quassel</div>
+      <aside className="menu">
+        <h1>quassel</h1>
+        {DEMOS.map((entry) => (
+          <button aria-pressed={entry.id === demo} className="menu-item" key={entry.id} onClick={() => setDemo(entry.id)} type="button">
+            <span className="menu-title">{entry.title}</span>
+            <span className="menu-note">{entry.note}</span>
+          </button>
+        ))}
       </aside>
       <main className="stage">
-        {demo === "lesen" && <LeseDemo />}
-        {demo === "toolbar" && <ToolbarDemo />}
-        {demo === "bausteine" && <BausteineDemo />}
-        {demo === "stile" && <StilDemo />}
-        {demo === "live" && <LiveDemo />}
+        {demo === "lesen" && <ReadDemo />}
+        {demo === "eingabe" && <InputDemo />}
+        {demo === "aktionen" && <ActionDemo />}
+        {demo === "stile" && <ThemeDemo />}
+        {demo === "slots" && <SlotDemo />}
       </main>
     </div>
   );
 }
 
-function LeseDemo() {
-  const [detailMode, setDetailMode] = useState<DetailMode>("compact");
+function ReadDemo() {
+  const [detailMode, setDetailMode] = useState<DetailMode>("grouped");
   return (
-    <>
-      <div className="stage-head">
-        <div>
-          <h2>Nur lesen</h2>
-          <p>
-            ChatMessages ohne Eingabe - ein Verlauf als Dokument, Schritte je nach Detailgrad. Die letzte
-            Schrittzeile zeigt die vier Zustände: fertig, Fehler, laufend, Denken.
-          </p>
-        </div>
-        <ModusToggles modus={detailMode} setModus={setDetailMode} />
-      </div>
-      <ChatMessages detailMode={detailMode} messages={transcript} />
-    </>
+    <Stage head={<Toggles onChange={setDetailMode} value={detailMode} values={MODI} />} note="ChatMessages ohne Eingabe, Detailgrad der Schritte umschaltbar." title="Nur lesen">
+      <ChatMessages detailMode={detailMode} messages={[...research, ...steps]} showTimestamps timestampOptions={{ timeZone: "UTC" }} />
+    </Stage>
   );
 }
 
-function ToolbarDemo() {
+function InputDemo() {
   const { messages, running, agent } = useFakeAgent();
   const [detailMode, setDetailMode] = useState<DetailMode>("chips");
-  const [zeilen, setZeilen] = useState(2);
   const [showTimestamps, setShowTimestamps] = useState(false);
   return (
-    <>
-      <div className="stage-head">
-        <div>
-          <h2>Eingabe-Karte</h2>
-          <p>
-            ChatInputToolbar: Höhe über rows, eigene Knöpfe über actions (Icon, Text oder beides), eigener
-            Working-Indikator. Während des Laufs wird Senden zu Stop, Tippen zum Dazwischenfunken.
-          </p>
-        </div>
-        <ModusToggles modus={detailMode} setModus={setDetailMode} />
-      </div>
-      <ChatMessages
-        detailMode={detailMode}
-        showTimestamps={showTimestamps}
-        emptyState={<div className="empty">Stell eine Frage - und funk ruhig dazwischen, während der Agent läuft.</div>}
-        messages={messages}
-        running={running}
-        working={
-          <div className="mein-working">
-            <span className="qsl-dot qsl-dot--working" />
-            Der Demo-Agent bastelt an der Antwort ...
-          </div>
+    <Stage note="ChatPanel mit ChatInputToolbar: während des Laufs Stop, Tippen funkt dazwischen." title="Eingabe-Karte">
+      <ChatPanel
+        className="panel"
+        composer={
+          <ChatInputToolbar
+            maxRows={6}
+            onSend={(text) => agent.send(text)}
+            onStop={() => agent.stop()}
+            rows={1}
+            running={running}
+            toolbarLeft={<>
+              <DetailModeSwitch collapsible={false} mode={detailMode} onChange={setDetailMode} />
+              <TimestampSwitch collapsible={false} onChange={setShowTimestamps} showTimestamps={showTimestamps} />
+            </>}
+          />
         }
-      />
-      <div className="stage-foot">
-        <ChatInputToolbar
-          actions={[
-            {
-              label: zeilen === 2 ? "hoch" : "flach",
-              title: "Eingabehöhe umschalten (rows)",
-              onClick: () => setZeilen(zeilen === 2 ? 6 : 2),
-            },
-          ]}
-          onSend={(text) => agent.send(text)}
-          onStop={() => agent.stop()}
-          rows={zeilen}
+        maxWidth={760}
+        scrollOnSend
+      >
+        <ChatMessages
+          codeBlockOptions={{ showCopyButton: true }}
+          detailMode={detailMode}
+          emptyState={<div className="empty">Stell eine Frage und funk ruhig dazwischen, während der Agent läuft.</div>}
+          messageActions={{ copy: true }}
+          messages={messages}
           running={running}
-          toolbarLeft={<>
-            <DetailModeSwitch mode={detailMode} onChange={setDetailMode} />
-            <TimestampSwitch showTimestamps={showTimestamps} onChange={setShowTimestamps} />
-          </>}
+          showTimestamps={showTimestamps}
         />
-      </div>
-    </>
+      </ChatPanel>
+    </Stage>
   );
 }
 
-const STILE = [
-  { id: "", title: "Standard" },
-  { id: "theme-tinte", title: "Tinte" },
-  { id: "theme-abendrot", title: "Abendrot" },
-  { id: "theme-smaragd", title: "Smaragd" },
-] as const;
-
-function StilDemo() {
-  const [stil, setStil] = useState<string>("theme-abendrot");
-  const { messages, running, agent } = useFakeAgent();
-  const verlauf = messages.length > 0 ? messages : transcript;
+function ActionDemo() {
+  const [messages, dispatch] = useReducer(applyEvent, actions);
+  const resolve = (actionId: string, status: "approved" | "dismissed", result: unknown) =>
+    dispatch({ kind: "action-resolved", actionId, status, result });
   return (
-    <>
-      <div className="stage-head">
-        <div>
-          <h2>Stile</h2>
-          <p>Kein Komponenten-Code angefasst: nur Token-Overrides auf dem Wrapper (siehe themes.css).</p>
-        </div>
-        <div className="toggles">
-          {STILE.map((eintrag) => (
-            <button
-              aria-pressed={stil === eintrag.id}
-              className="toggle"
-              key={eintrag.id}
-              onClick={() => setStil(eintrag.id)}
-              type="button"
-            >
-              {eintrag.title}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className={`stil-canvas qsl-wash qsl-wash--clip ${stil}`}>
-        <ChatMessages messages={verlauf} running={running} />
-        <div className="stage-foot">
-          <ChatInputToolbar onSend={(text) => agent.send(text)} onStop={() => agent.stop()} rows={1} running={running} />
-        </div>
-      </div>
-    </>
-  );
-}
-
-function LiveDemo() {
-  const { messages, running, connected, send, stop } = useChat("http://localhost:3300/chat/demo");
-  return (
-    <>
-      <div className="stage-head">
-        <div>
-          <h2>Live-Backend</h2>
-          <p>
-            useChat gegen den Beispiel-Server (quassel/server, pnpm demo:server) -
-            dahinter ein OpenAI-kompatibles LLM.
-          </p>
-        </div>
-        <span className={connected ? "verbindung verbindung--da" : "verbindung"}>
-          <span className={connected ? "qsl-dot qsl-dot--live" : "qsl-dot"} />
-          {connected ? "verbunden" : "Server nicht erreichbar"}
-        </span>
-      </div>
+    <Stage note="Aktionen ohne Eigentümer zeigen die Standardkarte, renderAction ersetzt sie." title="Aktionen">
       <ChatMessages
-        emptyState={
-          <div className="empty">
-            {connected
-              ? "Verbunden - stell dem Modell eine Frage (Uhrzeit fragen zeigt den Tool-Call)."
-              : "Beispiel-Server starten: pnpm demo:server"}
-          </div>
-        }
         messages={messages}
-        running={running}
+        onDismissAction={(actionId) => resolve(actionId, "dismissed", null)}
+        renderAction={(action, text) => action.owner === "choice"
+          ? <ChoiceCard action={action} onChoose={(option) => resolve(action.actionId, "approved", option)} text={text} />
+          : undefined}
       />
-      <div className="stage-foot">
-        <ChatInputToolbar disabled={!connected} onSend={(text) => void send(text)} onStop={() => void stop()} running={running} />
-      </div>
-    </>
+    </Stage>
   );
 }
 
-function BausteineDemo() {
+const THEMES = ["default", "theme-sunset", "theme-emerald"] as const;
+const SCHEMES = ["light", "dark"] as const;
+
+function ThemeDemo() {
+  const [theme, setTheme] = useState<(typeof THEMES)[number]>("theme-sunset");
+  const [scheme, setScheme] = useState<(typeof SCHEMES)[number]>("light");
   return (
-    <>
-      <div className="stage-head">
-        <div>
-          <h2>Panel-Bausteine</h2>
-          <p>Die foundation pur: Glas-Panel auf der Waschung, Feld, Geister-Liste, Status-Punkte.</p>
-        </div>
+    <Stage
+      head={<div className="toggles"><Toggles onChange={setTheme} value={theme} values={THEMES} /><Toggles onChange={setScheme} value={scheme} values={SCHEMES} /></div>}
+      note="Kein Komponenten-Code: ein Wrapper setzt --qsl-* (themes.css) und data-theme."
+      title="Stile"
+    >
+      <div className={`theme-canvas ${theme}`} data-theme={scheme}>
+        <ChatPanel className="panel" composer={<ChatInputToolbar onSend={() => undefined} rows={1} />}>
+          <ChatMessages detailMode="chips" messages={steps as Message[]} />
+        </ChatPanel>
       </div>
-      <div className="bausteine">
-        <div className="qsl-panel baustein-panel">
-          <div className="qsl-panel__head">
-            <h2>Sitzungen</h2>
-            <span className="baustein-counter">3</span>
-          </div>
-          <input className="qsl-field baustein-filter" placeholder="Filtern ..." />
-          <div className="qsl-panel__body">
-            <div className="qsl-label">Heute</div>
-            <button className="qsl-ghost qsl-ghost--active" type="button">
-              <span className="baustein-item">
-                <span className="qsl-dot qsl-dot--working" /> Energiebericht Woche 32
-              </span>
-            </button>
-            <button className="qsl-ghost" type="button">
-              <span className="baustein-item">
-                <span className="qsl-dot qsl-dot--live" /> Sensor-Diagnose Halle 2
-              </span>
-            </button>
-            <div className="qsl-label">Gestern</div>
-            <button className="qsl-ghost" type="button">
-              <span className="baustein-item">
-                <span className="qsl-dot" /> Abgeschlossene Analyse
-              </span>
-            </button>
-          </div>
-          <div className="qsl-panel__foot">~/demo/sitzungen</div>
-        </div>
-      </div>
-    </>
+    </Stage>
+  );
+}
+
+function PlainButton({ children, onClick, disabled, title, className, variant, size, ...rest }: QuasselButtonProps) {
+  return (
+    <button {...rest} className={`plain-button ${variant ?? "default"} ${size?.startsWith("icon") ? "icon" : ""} ${className ?? ""}`} disabled={disabled} onClick={onClick} title={title} type="button">
+      {children}
+    </button>
+  );
+}
+
+function SlotDemo() {
+  const { messages, running, agent } = useFakeAgent();
+  return (
+    <Stage note="QuasselProvider ersetzt den Button durch einen des Hosts; Layout-Klassen von quassel bleiben wirksam." title="Slots">
+      <QuasselProvider components={{ Button: PlainButton }}>
+        <ChatPanel className="panel" composer={<ChatInputToolbar onSend={(text) => agent.send(text)} onStop={() => agent.stop()} rows={1} running={running} />}>
+          <ChatMessages messageActions={{ copy: true }} messages={messages.length ? messages : research} running={running} />
+        </ChatPanel>
+      </QuasselProvider>
+    </Stage>
   );
 }

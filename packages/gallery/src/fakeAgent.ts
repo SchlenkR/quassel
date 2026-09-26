@@ -1,4 +1,4 @@
-import { applyEvent, ChatEvent, Message } from "quassel";
+import { applyEvent, type ChatEvent, type ChatTextCursor, type Message } from "quassel";
 import { useMemo, useReducer, useRef, useState } from "react";
 
 /**
@@ -10,6 +10,7 @@ export class FakeAgent {
   private steering: string[] = [];
   private cancelled = false;
   private running = false;
+  private turn = 0;
 
   constructor(
     private emit: (event: ChatEvent) => void,
@@ -17,7 +18,7 @@ export class FakeAgent {
   ) {}
 
   send(text: string) {
-    this.emit({ kind: "user", text });
+    this.emit({ kind: "user", text, at: new Date().toISOString() });
     if (this.running) {
       this.steering.push(text);
       return;
@@ -37,6 +38,7 @@ export class FakeAgent {
   }
 
   private async run(text: string) {
+    this.turn += 1;
     this.running = true;
     this.cancelled = false;
     this.setRunning(true);
@@ -47,13 +49,14 @@ export class FakeAgent {
       );
       if (this.cancelled) return;
 
-      const id = crypto.randomUUID();
+      const id = `tool-${this.turn}`;
       this.emit({
         kind: "tool",
         id,
         name: "suche_daten",
         arguments: JSON.stringify({ frage: text, limit: 3 }),
         label: `suche_daten { frage: "${kurz(text)}" }`,
+        at: new Date().toISOString(),
       });
       await this.sleep(1100);
       if (this.cancelled) return;
@@ -84,9 +87,14 @@ export class FakeAgent {
 
   private async stream(kind: "text" | "thinking", text: string) {
     const teile = text.match(/\S+\s*/g) ?? [];
+    const sequence = this.turn;
+    let offset = 0;
     for (const teil of teile) {
       if (this.cancelled) return;
-      this.emit({ kind, delta: teil });
+      offset += teil.replace(/\s/g, "").length;
+      const cursor: ChatTextCursor = { conversationId: "galerie", sequence, offset };
+      const at = new Date().toISOString();
+      this.emit(kind === "text" ? { kind, delta: teil, cursor, at } : { kind, delta: teil, at });
       await this.sleep(kind === "thinking" ? 30 : 45);
     }
   }

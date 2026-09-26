@@ -1,54 +1,52 @@
-/* Stil-Presets: nur Token-Overrides auf einem Wrapper, kein Komponenten-Code. */
+/* Themes are nothing but --qsl-* overrides on a wrapper; data-theme on the same or an outer element switches light and dark. */
 
-.theme-tinte {
-    --qsl-accent: var(--qsl-ink);
-    --qsl-radius-panel: 8px;
-    --qsl-radius: 5px;
-    --qsl-wash-1: oklch(0.95 0.008 250 / 0.7);
-    --qsl-wash-2: oklch(0.96 0.006 250 / 0.6);
-    --qsl-wash-3: oklch(0.94 0.008 250 / 0.5);
-    --qsl-wash-4: oklch(0.96 0.006 250 / 0.55);
+.theme-sunset {
+    --qsl-primary: #c8552b;
+    --qsl-primary-foreground: #ffffff;
+    --qsl-background: #fbf4ef;
+    --qsl-foreground: #3a2a23;
+    --qsl-secondary: #f3e0d4;
+    --qsl-muted-foreground: #7c5d4f;
+    --qsl-border: #e4c6b5;
+    --qsl-border-soft: #eed8cb;
+    --qsl-border-strong: #c79478;
+    --qsl-radius: 0.3rem;
 }
 
-.theme-abendrot {
-    --qsl-accent: #e2582d;
-    --qsl-wash-1: oklch(0.93 0.06 40 / 0.75);
-    --qsl-wash-2: oklch(0.94 0.05 85 / 0.7);
-    --qsl-wash-3: oklch(0.93 0.05 20 / 0.6);
-    --qsl-wash-4: oklch(0.95 0.045 340 / 0.65);
+:is([data-theme="dark"] .theme-sunset, .theme-sunset[data-theme="dark"]) {
+    --qsl-primary: #ff9166;
+    --qsl-primary-foreground: #2e1a12;
+    --qsl-background: #2d221e;
+    --qsl-foreground: #f2e4dc;
+    --qsl-secondary: #45322a;
+    --qsl-muted-foreground: #c9a998;
+    --qsl-border: #604637;
+    --qsl-border-soft: #4a372d;
+    --qsl-border-strong: #a07a64;
 }
 
-.theme-smaragd {
-    --qsl-accent: #14a06d;
-    --qsl-radius-panel: 20px;
-    --qsl-radius: 12px;
-    --qsl-wash-1: oklch(0.93 0.055 165 / 0.75);
-    --qsl-wash-2: oklch(0.94 0.05 200 / 0.7);
-    --qsl-wash-3: oklch(0.93 0.05 140 / 0.6);
-    --qsl-wash-4: oklch(0.95 0.045 110 / 0.65);
+.theme-emerald {
+    --qsl-primary: #11855c;
+    --qsl-primary-foreground: #ffffff;
+    --qsl-background: #f1f8f4;
+    --qsl-foreground: #1f3129;
+    --qsl-secondary: #dcefe5;
+    --qsl-muted-foreground: #4f6c5f;
+    --qsl-border: #bcd9ca;
+    --qsl-border-soft: #d3e8dc;
+    --qsl-border-strong: #86b39c;
+    --qsl-radius: 0.9rem;
+    --qsl-font: Georgia, "Times New Roman", serif;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .theme-tinte {
-        --qsl-wash-1: oklch(0.45 0.02 250 / 0.35);
-        --qsl-wash-2: oklch(0.48 0.015 250 / 0.3);
-        --qsl-wash-3: oklch(0.42 0.02 250 / 0.3);
-        --qsl-wash-4: oklch(0.5 0.015 250 / 0.25);
-    }
-
-    :root:not([data-theme="light"]) .theme-abendrot {
-        --qsl-accent: #ff7a4d;
-        --qsl-wash-1: oklch(0.5 0.11 40 / 0.4);
-        --qsl-wash-2: oklch(0.5 0.1 85 / 0.3);
-        --qsl-wash-3: oklch(0.48 0.11 20 / 0.3);
-        --qsl-wash-4: oklch(0.55 0.09 340 / 0.24);
-    }
-
-    :root:not([data-theme="light"]) .theme-smaragd {
-        --qsl-accent: #2fc98f;
-        --qsl-wash-1: oklch(0.5 0.11 165 / 0.4);
-        --qsl-wash-2: oklch(0.5 0.1 200 / 0.3);
-        --qsl-wash-3: oklch(0.48 0.11 140 / 0.3);
-        --qsl-wash-4: oklch(0.55 0.09 110 / 0.24);
-    }
+:is([data-theme="dark"] .theme-emerald, .theme-emerald[data-theme="dark"]) {
+    --qsl-primary: #5fd3a3;
+    --qsl-primary-foreground: #0f2a1f;
+    --qsl-background: #1b2a24;
+    --qsl-foreground: #e0f0e8;
+    --qsl-secondary: #26392f;
+    --qsl-muted-foreground: #9fc1b1;
+    --qsl-border: #3d5a4c;
+    --qsl-border-soft: #2f463b;
+    --qsl-border-strong: #6f9985;
 }

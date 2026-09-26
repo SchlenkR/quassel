@@ -1,5 +1,6 @@
-import { useLayoutEffect, useMemo, useRef, type ReactNode, type Ref } from "react";
-import { ChatSendContext } from "./ChatSendContext";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
+import { cn } from "./ui/cn";
+import { ChatSendContext, createChatSendScope } from "./ChatSendContext";
 import { appearanceStyle, type ChatAppearance } from "./options";
 
 /**
@@ -11,6 +12,8 @@ export function ChatPanel({
   composer,
   className,
   nodeRef,
+  maxWidth,
+  horizontalPadding,
   appearance,
   scrollOnSend = false,
 }: {
@@ -19,45 +22,45 @@ export function ChatPanel({
   composer?: ReactNode;
   className?: string;
   nodeRef?: Ref<HTMLDivElement>;
+  maxWidth?: CSSProperties["maxWidth"];
+  horizontalPadding?: CSSProperties["paddingInline"];
   appearance?: ChatAppearance;
   scrollOnSend?: boolean;
 }) {
-  const jump = useRef<(() => void) | undefined>(undefined);
-  const scrollOnSendRef = useRef(scrollOnSend);
-  useLayoutEffect(() => { scrollOnSendRef.current = scrollOnSend; }, [scrollOnSend]);
-  const sendContext = useMemo(() => ({
-    onSent: () => { if (scrollOnSendRef.current) jump.current?.(); },
-    registerJump: (callback: () => void) => {
-      jump.current = callback;
-      return () => { if (jump.current === callback) jump.current = undefined; };
-    },
-  }), []);
   const wurzel = useRef<HTMLDivElement>(null);
   const eingabe = useRef<HTMLDivElement>(null);
-  const mitEingabe = composer !== undefined;
+  const hasComposer = composer !== undefined;
+  const scrollOnSendRef = useRef(scrollOnSend);
+  const [sendScope] = useState(() => createChatSendScope(scrollOnSendRef));
+  useLayoutEffect(() => { scrollOnSendRef.current = scrollOnSend; }, [scrollOnSend]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const element = eingabe.current;
     const rahmen = wurzel.current;
-    if (!rahmen) {
-      return;
-    }
-    if (!element) {
-      rahmen.style.removeProperty("--qsl-composer-height");
+    if (!element || !rahmen) {
       return;
     }
     const messen = () => rahmen.style.setProperty("--qsl-composer-height", `${element.offsetHeight}px`);
     const beobachter = new ResizeObserver(messen);
     beobachter.observe(element);
     messen();
-    return () => beobachter.disconnect();
-  }, [mitEingabe]);
+    return () => {
+      beobachter.disconnect();
+      rahmen.style.removeProperty("--qsl-composer-height");
+    };
+  }, [hasComposer]);
 
   return (
-    <ChatSendContext.Provider value={sendContext}>
+    <ChatSendContext.Provider value={sendScope}>
     <div
-      className={className ? `qsl-chat-panel ${className}` : "qsl-chat-panel"}
-      style={appearanceStyle(appearance)}
+      className={cn("qsl:relative qsl:flex qsl:min-h-0 qsl:min-w-0 qsl:flex-col qsl:overflow-hidden", className)}
+      data-chat="panel"
+      data-quassel=""
+      style={{
+        ...appearanceStyle(appearance),
+        "--qsl-chat-content-max-width": typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth,
+        "--qsl-chat-horizontal-padding": typeof horizontalPadding === "number" ? `${horizontalPadding}px` : horizontalPadding,
+      } as CSSProperties}
       ref={(element) => {
         wurzel.current = element;
         if (typeof nodeRef === "function") {
@@ -68,8 +71,8 @@ export function ChatPanel({
       }}
     >
       {children}
-      {composer !== undefined && (
-        <div className="qsl-chat-panel__composer" ref={eingabe}>
+      {hasComposer && (
+        <div className="qsl:absolute qsl:inset-x-0 qsl:bottom-0 qsl:z-[5] qsl:px-[var(--qsl-chat-horizontal-padding,24px)] qsl:pb-3.5 qsl:*:mx-auto qsl:*:max-w-[var(--qsl-chat-content-max-width,none)]" data-chat="composer" ref={eingabe}>
           {composer}
         </div>
       )}

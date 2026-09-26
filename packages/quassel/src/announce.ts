@@ -41,7 +41,7 @@ function naechste(): void {
   const [text, ...rest] = wartend;
   wartend = rest;
   const ziel = ansageRegion();
-  ziel.textContent = ziel.textContent === text ? `${text} ` : text;
+  ziel.textContent = ziel.textContent === text ? `${text}\u00a0` : text;
   window.setTimeout(naechste, abstandMs);
 }
 

@@ -36,7 +36,6 @@ await build({
   entryPoints: {
     index: join(pkgDir, "src/index.ts"),
     events: join(pkgDir, "src/events.ts"),
-    "server/index": join(pkgDir, "src/server/index.ts"),
   },
   outdir: out,
   bundle: true,
@@ -46,11 +45,11 @@ await build({
   target: "es2022",
   jsx: "automatic",
   sourcemap: true,
-  external: ["react", "react-dom", "react/jsx-runtime", "node:*"],
+  external: ["react", "react-dom", "react/jsx-runtime", ...Object.keys(source.dependencies).flatMap((name) => [name, `${name}/*`])],
 });
 
 run("pnpm", ["exec", "tsc", "-p", "tsconfig.build.json"], pkgDir);
-cpSync(join(pkgDir, "src/css"), join(out, "css"), { recursive: true });
+run("pnpm", ["exec", "tailwindcss", "-i", "src/chat.css", "-o", join(out, "chat.css")], pkgDir);
 
 const readme = readFileSync(join(root, "README.md"), "utf8")
   .replaceAll("](docs/images/", `](${rawUrl}/docs/images/`)
@@ -74,11 +73,9 @@ const manifest = {
   exports: {
     ".": entry("index"),
     "./events": entry("events"),
-    "./server": entry("server/index"),
-    "./chat.css": "./css/chat.css",
-    "./foundation.css": "./css/foundation/index.css",
-    "./base.css": "./css/foundation/base.css",
+    "./chat.css": "./chat.css",
   },
+  dependencies: source.dependencies,
   peerDependencies: source.peerDependencies,
   peerDependenciesMeta: source.peerDependenciesMeta,
 };
@@ -89,6 +86,9 @@ if (process.env.NPM_TOKEN) {
 }
 if (!existsSync(join(out, "index.d.ts"))) {
   throw new Error("declarations missing in dist");
+}
+if (!readFileSync(join(out, "chat.css"), "utf8").includes(".qsl\\:flex")) {
+  throw new Error("chat.css in dist has no quassel utilities");
 }
 
 run("npm", ["publish", "--access", "public", ...(dryRun ? ["--dry-run"] : [])], out);

@@ -1,211 +1,137 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useCallback, useContext, useRef } from "react";
+import { Streamdown, type Components } from "streamdown";
+import { CheckIcon, CopyIcon } from "lucide-react";
+import { cn } from "./ui/cn";
+import { useAllowUrl, useQuasselComponents } from "./QuasselProvider";
 import type { CodeBlockOptions } from "./options";
-import { defaultTexts, type ChatTexts } from "./texts";
-import { ActionButton, copyText } from "./MessageActions";
+import { type ChatTexts, defaultTexts } from "./texts";
+import { copyChatText, useChatAction } from "./useChatAction";
 
-const CodeBlockContext = createContext<{ options?: CodeBlockOptions; texts?: Partial<ChatTexts> }>({});
-
-export function MarkdownCodeBlocks({ children, options, texts }: {
-  children: ReactNode;
-  options?: CodeBlockOptions;
-  texts?: Partial<ChatTexts>;
-}) {
-  return <CodeBlockContext.Provider value={{ options, texts }}>{children}</CodeBlockContext.Provider>;
-}
-
-function CodeBlock({ text }: { text: string }) {
-  const { options, texts } = useContext(CodeBlockContext);
-  const labels = { ...defaultTexts, ...texts };
-  const content = <pre style={{
-    whiteSpace: options?.wrap ? "pre-wrap" : undefined,
-    overflowWrap: options?.wrap ? "anywhere" : undefined,
-    maxHeight: options?.maxHeight,
-    overflowY: options?.maxHeight === undefined ? undefined : "auto",
-  }}><code>{text}</code></pre>;
-  return options?.showCopyButton ? <div className="qsl-code-block">
-    <ActionButton label={labels.copyCode} successLabel={labels.copied} onClick={() => copyText(text, labels.copyFailed)} />
-    {content}
-  </div> : content;
-}
-
-/**
- * Schlanker Markdown-Renderer ohne Abhängigkeit: Überschriften, **fett**, *kursiv*,
- * `code`, Links, Listen, Blockquotes, Code-Blöcke und Tabellen. Bewusst sicher (reines
- * React, kein dangerouslySetInnerHTML) und streaming-robust: zeilenbasiert, unvollständige
- * Blöcke werden so weit gerendert wie vorhanden.
- */
-/** true = der Host hat den Link behandelt, der Browser folgt ihm nicht. */
 export type LinkClickHandler = (href: string, label: string) => boolean;
 
 const LinkClickContext = createContext<LinkClickHandler | undefined>(undefined);
+const CodeBlockContext = createContext<{ options?: CodeBlockOptions; texts: ChatTexts }>({ texts: defaultTexts });
 
-/** Faengt Klicks auf Markdown-Links im Teilbaum ab, z.B. fuer eigene Ziele der Gastseite. */
+export function MarkdownCodeBlocks({ children, options, texts }: { children: ReactNode; options?: CodeBlockOptions; texts: ChatTexts }) {
+  return <CodeBlockContext.Provider value={{ options, texts }}>{children}</CodeBlockContext.Provider>;
+}
+
+function CodeBlock({ children }: { children?: ReactNode }) {
+  const { options, texts } = useContext(CodeBlockContext);
+  const { Button } = useQuasselComponents();
+  const code = useRef<HTMLPreElement>(null);
+  const action = useChatAction();
+  const label = action.status === "done" ? texts.copied : texts.copyCode;
+  const block = <pre ref={code} data-chat="code-block"
+    className={cn(scrollbar, "qsl:my-2 qsl:overflow-auto qsl:rounded-lg qsl:bg-secondary qsl:px-3 qsl:py-2 qsl:font-mono qsl:text-sm qsl:leading-relaxed qsl:in-data-[tone=on-color]:bg-black/30 qsl:in-data-[tone=on-color]:text-inherit")}
+    style={{ maxHeight: options?.maxHeight, whiteSpace: options?.wrap ? "pre-wrap" : undefined, overflowWrap: options?.wrap ? "anywhere" : undefined }}>{children}</pre>;
+  if (!options?.showCopyButton) return block;
+  return <div className="qsl:relative">
+    {block}
+    <Button aria-label={label} className="qsl:absolute qsl:top-1 qsl:right-1 qsl:bg-secondary" disabled={action.status === "pending"} size="icon-sm" title={label} variant="ghost"
+      onClick={() => { void action.invoke(() => copyChatText(code.current?.textContent ?? "", texts.clipboardUnavailable), texts.actionFailed); }}>
+      {action.status === "done" ? <CheckIcon /> : <CopyIcon />}
+    </Button>
+    {action.error && <p className="qsl:text-sm qsl:text-destructive" role="alert">{action.error}</p>}
+  </div>;
+}
+
 export function MarkdownLinks({ children, onLinkClick }: { children: ReactNode; onLinkClick?: LinkClickHandler }) {
   return <LinkClickContext.Provider value={onLinkClick}>{children}</LinkClickContext.Provider>;
 }
 
-function MarkdownLink({ href, label }: { href: string; label: string }) {
+function MarkdownLink({ href, children }: { href?: string; children?: ReactNode }) {
   const onLinkClick = useContext(LinkClickContext);
+  if (!href || href === "streamdown:incomplete-link") {
+    return <span>{children}</span>;
+  }
   return (
     <a
+      className="qsl:text-primary qsl:[text-underline-offset:2px] qsl:in-data-[tone=on-color]:text-inherit qsl:in-data-[tone=on-color]:underline"
       href={href}
       onClick={(event) => {
-        if (onLinkClick?.(href, label)) {
+        if (href && onLinkClick?.(href, event.currentTarget.textContent ?? "")) {
           event.preventDefault();
         }
       }}
       rel="noreferrer"
       target="_blank"
     >
-      {label}
+      {children}
     </a>
   );
 }
 
-export function Markdown({ text }: { text: string }) {
-  const lines = text.split("\n");
-  const blocks: ReactNode[] = [];
-  let i = 0;
-  let key = 0;
+// Waagerechte Rollbalken bleiben sichtbar - sonst ist der Ueberlauf nicht auffindbar.
+const scrollbar = "qsl:[scrollbar-width:thin] qsl:[&::-webkit-scrollbar]:block qsl:[&::-webkit-scrollbar]:h-2 qsl:[&::-webkit-scrollbar-thumb]:rounded-full qsl:[&::-webkit-scrollbar-thumb]:bg-border";
 
-  while (i < lines.length) {
-    const line = lines[i];
+// Die Deckstreifen verbergen den Umbruch am Rand; --qsl-scroll-cover kommt aus der umgebenden Blase.
+const scrollCover = "qsl:bg-[linear-gradient(to_right,var(--qsl-scroll-cover,var(--qsl-background))_50%,transparent)_left/20px_100%_no-repeat_local,linear-gradient(to_left,var(--qsl-scroll-cover,var(--qsl-background))_50%,transparent)_right/20px_100%_no-repeat_local,linear-gradient(to_right,#00000047,transparent)_left/14px_100%_no-repeat_scroll,linear-gradient(to_left,#00000047,transparent)_right/14px_100%_no-repeat_scroll]";
 
-    const fence = line.match(/^\s*```(\w*)\s*$/);
-    if (fence) {
-      const body: string[] = [];
-      i++;
-      while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) {
-        body.push(lines[i]);
-        i++;
-      }
-      if (i < lines.length) {
-        i++;
-      }
-      blocks.push(
-        <CodeBlock key={key++} text={body.join("\n")} />,
-      );
-      continue;
-    }
+const headingClasses = "qsl:mt-3 qsl:mb-1 qsl:text-[15px] qsl:font-medium";
+const cellClasses = "qsl:max-w-[44ch] qsl:border qsl:border-border qsl:px-2 qsl:py-1 qsl:text-left qsl:align-top qsl:in-data-[tone=on-color]:border-white/35";
 
-    if (line.includes("|") && i + 1 < lines.length && isTableDivider(lines[i + 1])) {
-      const header = splitTableRow(line);
-      i += 2;
-      const rows: string[][] = [];
-      while (i < lines.length && lines[i].includes("|") && lines[i].trim() !== "") {
-        rows.push(splitTableRow(lines[i]));
-        i++;
-      }
-      blocks.push(
-        <div className="qsl-md-scroll" key={key++}>
-          <table>
-            <thead>
-              <tr>
-                {header.map((cell, ci) => (
-                  <th key={ci}>{renderInline(cell, `th${key}_${ci}`)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, ri) => (
-                <tr key={ri}>
-                  {header.map((_, ci) => (
-                    <td key={ci}>{renderInline(row[ci] ?? "", `td${key}_${ri}_${ci}`)}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>,
-      );
-      continue;
-    }
+const components: Components = {
+  h1: ({ children }) => <h1 className="qsl:mt-3 qsl:mb-1 qsl:text-lg qsl:font-semibold">{children}</h1>,
+  h2: ({ children }) => <h2 className={headingClasses}>{children}</h2>,
+  h3: ({ children }) => <h3 className={headingClasses}>{children}</h3>,
+  h4: ({ children }) => <h4 className="qsl:mt-2 qsl:mb-1 qsl:text-base qsl:font-medium">{children}</h4>,
+  h5: ({ children }) => <h5 className="qsl:mt-2 qsl:mb-1 qsl:text-base qsl:font-medium">{children}</h5>,
+  h6: ({ children }) => <h6 className="qsl:mt-2 qsl:mb-1 qsl:text-base qsl:font-medium">{children}</h6>,
+  p: ({ children }) => <p className="qsl:[p+&]:mt-2">{children}</p>,
+  ul: ({ children }) => <ul className="qsl:my-2 qsl:list-disc qsl:pl-6 qsl:[li>&]:my-0">{children}</ul>,
+  ol: ({ children }) => <ol className="qsl:my-2 qsl:list-decimal qsl:pl-6 qsl:[li>&]:my-0">{children}</ol>,
+  li: ({ children }) => <li className="qsl:marker:text-muted-foreground qsl:in-data-[tone=on-color]:marker:text-inherit">{children}</li>,
+  hr: () => <hr className="qsl:my-3 qsl:border-t qsl:border-border" />,
+  img: ({ src, alt }) => <img alt={alt} className="qsl:h-auto qsl:max-w-full" src={typeof src === "string" ? src : undefined} />,
+  blockquote: ({ children }) => (
+    <blockquote className="qsl:my-1 qsl:border-l-2 qsl:border-border qsl:pl-3 qsl:text-muted-foreground qsl:in-data-[tone=on-color]:border-white/50 qsl:in-data-[tone=on-color]:text-inherit">{children}</blockquote>
+  ),
+  strong: ({ children }) => <strong className="qsl:font-medium">{children}</strong>,
+  em: ({ children }) => <em>{children}</em>,
+  a: ({ href, children }) => <MarkdownLink href={href}>{children}</MarkdownLink>,
+  pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
+  code: ({ children, className }) => (
+    <code className={cn(className, "qsl:rounded-sm qsl:bg-secondary qsl:px-1 qsl:py-0.5 qsl:font-mono qsl:text-sm qsl:[overflow-wrap:anywhere] qsl:in-data-[tone=on-color]:bg-white/20 qsl:in-data-[tone=on-color]:text-inherit", "qsl:[pre>&]:bg-transparent qsl:[pre>&]:p-0")}>{children}</code>
+  ),
+  // Ohne max-content schrumpft die Tabelle auf den Container und stapelt Buchstaben.
+  table: ({ children }) => (
+    <div className={cn(scrollbar, scrollCover, "qsl:my-2 qsl:overflow-x-auto")}>
+      <table className="qsl:w-max qsl:min-w-full qsl:border-collapse qsl:text-sm">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead>{children}</thead>,
+  tbody: ({ children }) => <tbody>{children}</tbody>,
+  tr: ({ children }) => <tr>{children}</tr>,
+  th: ({ children }) => <th className={cn(cellClasses, "qsl:bg-secondary qsl:font-medium qsl:in-data-[tone=on-color]:bg-white/15 qsl:in-data-[tone=on-color]:text-inherit")}>{children}</th>,
+  td: ({ children }) => <td className={cellClasses}>{children}</td>,
+};
 
-    const heading = line.match(/^(#{1,4})\s+(.*)$/);
-    if (heading) {
-      const level = heading[1].length;
-      blocks.push(
-        level === 1 ? (
-          <h3 key={key++}>{renderInline(heading[2], `h${key}`)}</h3>
-        ) : (
-          <h4 key={key++}>{renderInline(heading[2], `h${key}`)}</h4>
-        ),
-      );
-      i++;
-      continue;
-    }
-
-    const quote = line.match(/^\s*>\s?(.*)$/);
-    if (quote) {
-      blocks.push(<blockquote key={key++}>{renderInline(quote[1], `q${key}`)}</blockquote>);
-      i++;
-      continue;
-    }
-
-    const bullet = line.match(/^\s*[-*]\s+(.*)$/);
-    if (bullet) {
-      blocks.push(
-        <div className="qsl-md-bullet" key={key++}>
-          <span>&bull;</span>
-          <span>{renderInline(bullet[1], `l${key}`)}</span>
-        </div>,
-      );
-      i++;
-      continue;
-    }
-
-    const numbered = line.match(/^\s*(\d+)\.\s+(.*)$/);
-    if (numbered) {
-      blocks.push(
-        <div className="qsl-md-bullet" key={key++}>
-          <span>{numbered[1]}.</span>
-          <span>{renderInline(numbered[2], `l${key}`)}</span>
-        </div>,
-      );
-      i++;
-      continue;
-    }
-
-    if (line.trim() === "") {
-      blocks.push(<div className="qsl-md-gap" key={key++} />);
-      i++;
-      continue;
-    }
-
-    blocks.push(<p key={key++}>{renderInline(line, `l${key}`)}</p>);
-    i++;
-  }
-
-  return <div className="qsl-md">{blocks}</div>;
+function transformUrl(url: string, allowUrl?: (url: string) => boolean) {
+  if (allowUrl?.(url)) return url;
+  const scheme = /^[^/?#]*:/.exec(url);
+  return !scheme || /^(https?|mailto|tel|ftp|irc|ircs|xmpp):$/i.test(scheme[0]) ? url : "";
 }
 
-function renderInline(text: string, keyPrefix: string): ReactNode[] {
-  const out: ReactNode[] = [];
-  const pattern = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g;
-  let last = 0;
-  let match: RegExpExecArray | null;
-  let i = 0;
-
-  while ((match = pattern.exec(text)) !== null) {
-    if (match.index > last) {
-      out.push(text.slice(last, match.index));
-    }
-    if (match[1] !== undefined) {
-      out.push(<MarkdownLink href={match[2]} key={`${keyPrefix}a${i}`} label={match[1]} />);
-    } else if (match[3] !== undefined) {
-      out.push(<strong key={`${keyPrefix}b${i}`}>{match[3]}</strong>);
-    } else if (match[4] !== undefined) {
-      out.push(<em key={`${keyPrefix}i${i}`}>{match[4]}</em>);
-    } else if (match[5] !== undefined) {
-      out.push(<code key={`${keyPrefix}c${i}`}>{match[5]}</code>);
-    }
-    last = match.index + match[0].length;
-    i++;
-  }
-  if (last < text.length) {
-    out.push(text.slice(last));
-  }
-  return out;
+export function Markdown({ text, streaming = false }: { text: string; streaming?: boolean }) {
+  const allowUrl = useAllowUrl();
+  const urlTransform = useCallback((url: string) => transformUrl(url, allowUrl), [allowUrl]);
+  return (
+    <Streamdown
+      className="space-y-0 text-inherit"
+      prefix="qsl"
+      mode={streaming ? "streaming" : "static"}
+      isAnimating={streaming}
+      parseIncompleteMarkdown={streaming}
+      components={components}
+      controls={false}
+      rehypePlugins={[]}
+      urlTransform={urlTransform}
+      skipHtml
+    >
+      {text}
+    </Streamdown>
+  );
 }
 
 /** Dieselbe Syntax wie der Renderer, als Klartext ohne Markup, etwa für Screenreader-Ansagen. */
@@ -214,10 +140,10 @@ export function markdownPlainText(text: string): string {
     .split("\n")
     .filter((line) => !/^\s*```\w*\s*$/.test(line) && !isTableDivider(line))
     .map((line) => (line.trim().startsWith("|") ? splitTableRow(line).join(", ") : line)
-      .replace(/^(#{1,4})\s+/, "")
+      .replace(/^(#{1,6})\s+/, "")
       .replace(/^\s*>\s?/, "")
-      .replace(/^\s*[-*]\s+/, "")
-      .replace(/\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g, (_, link, _href, fett, kursiv, code) => link ?? fett ?? kursiv ?? code)
+      .replace(/^\s*([-*+]|\d+[.)])\s+/, "")
+      .replace(/!?\[([^\]]*)\]\(([^)]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|\*([^*]+)\*|`([^`]+)`/g, (_, link, _href, fett, fettUnterstrich, kursiv, code) => link ?? fett ?? fettUnterstrich ?? kursiv ?? code)
       .trim())
     .filter((line) => line !== "")
     .join("\n");

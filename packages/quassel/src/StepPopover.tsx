@@ -1,8 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useMemo } from "react";
+import { SparklesIcon, WrenchIcon, XIcon } from "lucide-react";
+import { cn } from "./ui/cn";
+import { useQuasselComponents } from "./QuasselProvider";
 import { Message, prettyJson } from "./types";
-import { IconSpark, IconTool, IconX } from "./icons";
 import { ChatTexts } from "./texts";
+
+const preClasses = "qsl:rounded-lg qsl:bg-secondary qsl:p-3 qsl:font-mono qsl:text-[11px] qsl:leading-[1.625] qsl:break-all qsl:whitespace-pre-wrap";
 
 export function StepPopover({
   message,
@@ -17,108 +20,65 @@ export function StepPopover({
   toolArgumentsText: (tool: NonNullable<Message["tool"]>) => string;
   onClose: () => void;
 }) {
-  const popover = useRef<HTMLDivElement>(null);
-  const [placement, setPlacement] = useState<{ left: number; top: number }>();
-
-  useLayoutEffect(() => {
-    const element = popover.current;
-    if (!element) {
-      return;
-    }
-    const margin = 16;
-    const gap = 10;
-    const bounds = element.getBoundingClientRect();
-    const preferredLeft = position.x + gap;
-    const preferredTop = position.y + gap;
-    const left =
-      preferredLeft + bounds.width <= window.innerWidth - margin
-        ? preferredLeft
-        : position.x - bounds.width - gap;
-    const top =
-      preferredTop + bounds.height <= window.innerHeight - margin
-        ? preferredTop
-        : position.y - bounds.height - gap;
-    setPlacement({
-      left: Math.max(margin, Math.min(left, window.innerWidth - bounds.width - margin)),
-      top: Math.max(margin, Math.min(top, window.innerHeight - bounds.height - margin)),
-    });
-  }, [message.text, message.tool?.result, position]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
-  // Klick daneben schliesst - auch wenn der Host etwas ueber den Backdrop legt.
-  useEffect(() => {
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!popover.current?.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-    document.addEventListener("pointerdown", handlePointerDown, true);
-    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
-  }, [onClose]);
-
+  const anchor = useMemo(() => ({
+    getBoundingClientRect: () => new DOMRect(position.x, position.y, 0, 0),
+    contextElement: document.documentElement,
+  }), [position]);
+  const { Button, Popover, PopoverContent } = useQuasselComponents();
   const tool = message.tool;
-  const title = message.role === "thinking" ? texts.thinkingTitle : texts.toolTitle;
+  const thinking = message.role === "thinking";
+  const title = thinking ? texts.thinkingTitle : texts.toolTitle;
 
-  return createPortal(
-    <>
-      <div className="qsl-popover-backdrop" onClick={onClose} />
-      <div
+  return (
+    <Popover open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <PopoverContent
+        align="start"
+        anchor={anchor}
         aria-label={title}
-        className="qsl-popover"
-        ref={popover}
-        role="dialog"
-        style={{
-          left: placement?.left ?? position.x,
-          top: placement?.top ?? position.y,
-          visibility: placement ? "visible" : "hidden",
-        }}
+        className={cn(
+          "qsl:w-[min(680px,calc(100vw-32px))] qsl:gap-0 qsl:overflow-hidden qsl:p-0 qsl:text-[13px] qsl:shadow-pop",
+          thinking ? "qsl:max-h-none" : "qsl:max-h-[min(70vh,620px)]",
+        )}
+        collisionPadding={16}
+        side="bottom"
+        sideOffset={10}
       >
-        <div className="qsl-popover__head">
-          {message.role === "thinking" ? (
-            <IconSpark className="qsl-popover__icon" />
+        <div className="qsl:flex qsl:flex-none qsl:items-center qsl:gap-2 qsl:border-b qsl:border-border-soft qsl:px-4 qsl:py-2.5">
+          {thinking ? (
+            <SparklesIcon className="qsl:text-muted-foreground" size={14} />
           ) : (
-            <IconTool className={tool?.isError ? "qsl-popover__icon qsl-popover__icon--error" : "qsl-popover__icon"} />
+            <WrenchIcon className={tool?.isError ? "qsl:text-destructive" : "qsl:text-muted-foreground"} size={14} />
           )}
-          <span className="qsl-popover__title">{title}</span>
-          <button aria-label={texts.close} className="qsl-popover__close" onClick={onClose} title={texts.close} type="button">
-            <IconX />
-          </button>
+          <span className="qsl:min-w-0 qsl:flex-1 qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap qsl:font-medium">{title}</span>
+          <Button aria-label={texts.close} className="qsl:flex-none" onClick={onClose} size="icon-sm" title={texts.close} variant="ghost">
+            <XIcon />
+          </Button>
         </div>
-        <div className="qsl-popover__body">
-          {message.role === "thinking" ? (
-            <div className="qsl-popover__thinking">{message.text}</div>
+        <div className={cn("qsl:min-h-0 qsl:p-4", thinking ? "qsl:overflow-visible" : "qsl:overflow-auto")}>
+          {thinking ? (
+            <div className="qsl:text-sm qsl:leading-[1.625] qsl:whitespace-pre-wrap">{message.text}</div>
           ) : tool ? (
-            <div className="qsl-popover__sections">
-              <div className="qsl-popover__toolname">{message.text}</div>
+            <div className="qsl:flex qsl:flex-col qsl:gap-4">
+              <div className="qsl:font-mono qsl:text-sm">{message.text}</div>
               <PopoverSection label={texts.argumentsLabel} value={toolArgumentsText(tool)} />
               {tool.result === undefined ? (
-                <div className="qsl-popover__running">{texts.toolStillRunning}</div>
+                <div className="qsl:text-sm qsl:text-muted-foreground">{texts.toolStillRunning}</div>
               ) : (
                 <PopoverSection error={tool.isError} label={texts.resultLabel} value={prettyJson(tool.result)} />
               )}
             </div>
           ) : null}
         </div>
-      </div>
-    </>,
-    document.body,
+      </PopoverContent>
+    </Popover>
   );
 }
 
 function PopoverSection({ label, value, error = false }: { label: string; value: string; error?: boolean }) {
   return (
     <section>
-      <h3>{label}</h3>
-      <pre className={error ? "qsl-popover__pre qsl-popover__pre--error" : "qsl-popover__pre"}>{value}</pre>
+      <h3 className="qsl:mb-1.5 qsl:text-[11px] qsl:font-semibold qsl:tracking-[0.04em] qsl:text-muted-foreground qsl:uppercase">{label}</h3>
+      <pre className={cn(preClasses, error && "qsl:text-destructive")}>{value}</pre>
     </section>
   );
 }

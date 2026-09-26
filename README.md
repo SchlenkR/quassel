@@ -1,30 +1,33 @@
 # quassel
 
-Composable chat building blocks for React: a streaming transcript with thinking and tool steps,
-clarifying questions, an input card, a small CSS foundation, and an event contract with a
-ready-made backend for OpenAI-compatible endpoints. One package, no runtime dependencies.
+Chat building blocks for React: a streaming transcript with thinking and tool steps, pending
+actions, an input card with attachments and steering, and a small event contract that works
+on the server as well. quassel is the chat of [RAgents](https://github.com/SchlenkR/RAgents),
+published as a library. It ships a compiled stylesheet, so hosts need no Tailwind, and every
+color, radius and font is a `--qsl-*` variable.
 
 ![An agent chat with grouped steps, timestamps, Markdown and the input card](docs/images/agent.png)
 
 ## What you can build
 
 **Agent chats that show their work.** Thinking and tool calls appear as steps. Pick how much
-of them the user sees - from answers only to fully expanded - and let them switch at runtime.
+of them the user sees - only the current step, icons, chips, a collapsible group, single lines
+or everything - and let them switch at runtime.
 
 ![The same steps as icons, chips and single lines](docs/images/details.png)
 
-**Clarifying questions.** The agent asks, the user picks one or several options or answers
-freely. Answered questions stay in the transcript as a record.
+**Pending actions.** The agent waits for input: a generic card with dismiss, or the host's own
+rendering per action owner. Resolved actions stay in the transcript as a record.
 
 **Multi-party conversations.** Colored bubbles with labels for agents that talk to each other.
 
 <p>
-  <img src="docs/images/questions.png" alt="Clarifying questions with single and multiple choice" width="49%">
+  <img src="docs/images/questions.png" alt="Pending actions: a host-rendered choice and the generic card" width="49%">
   <img src="docs/images/party.png" alt="Planner and reviewer as labeled bubbles" width="49%">
 </p>
 
-**Your look, not a fork.** Every color, radius and font is a `--qsl-*` token. A theme is a class
-that overrides tokens; dark mode follows the system or `data-theme`.
+**Your look, not a fork.** Override `--qsl-*` variables on any wrapper, switch light and dark
+with `data-theme`, or hand quassel your own Button, Toggle, Card and Popover components.
 
 ![Default, sunset and emerald themes](docs/images/themes.png)
 
@@ -32,11 +35,12 @@ that overrides tokens; dark mode follows the system or `data-theme`.
 
 ## Highlights
 
-- Streaming-safe Markdown with tables and code, no dependencies, no `dangerouslySetInnerHTML`.
-- Steering: typing while a run is active sends into the running turn.
-- Timestamps, day separators, message actions and copy buttons for code blocks.
+- Streaming-safe Markdown (tables, code with copy button, lists) via Streamdown.
+- Steering: typing while a turn runs sends into it; stop, retry and failed-send recovery built in.
+- Attachments by button, drag and drop or paste, with previews and size limits.
+- Timestamps, day separators, message actions, configurable bubbles and appearance.
 - Screen reader friendly: the transcript is not a live region; finished replies and new
-  questions are announced once, with the host in control of the wording.
+  actions are announced once, with the host in control of the wording.
 - All labels are replaceable through `texts` (defaults are German).
 
 ## Install
@@ -47,36 +51,32 @@ npm install quassel
 
 | Import | Contents |
 |---|---|
-| `quassel` | React components, `useChat`, types |
-| `quassel/events` | The event contract and the pure reducer `applyEvent`, without React |
-| `quassel/server` | Node backend for OpenAI-compatible endpoints with sessions and SSE |
-| `quassel/chat.css` | Component styles including the tokens |
-| `quassel/foundation.css` | Tokens, color wash and glass panel for the whole page |
+| `quassel` | React components, `QuasselProvider`, types, texts, `announce`, `markdownPlainText` |
+| `quassel/events` | The event contract, the pure reducer `applyEvent` and the attachment limits, without React |
+| `quassel/chat.css` | The compiled stylesheet: theme variables, scoped reset and all utilities quassel uses |
 
 ```tsx
-import { ChatInputToolbar, ChatMessages, ChatPanel, useChat } from "quassel";
+import { useReducer, useState } from "react";
+import { applyEvent, ChatInputToolbar, ChatMessages, ChatPanel, type Message } from "quassel";
 import "quassel/chat.css";
 
-export function Chat() {
-  const { messages, running, send, stop } = useChat("http://localhost:3300/chat/demo");
+export function Chat({ send, stop }: { send: (text: string) => Promise<void>; stop: () => void }) {
+  const [messages, dispatch] = useReducer(applyEvent, [] as Message[]);
+  const [running, setRunning] = useState(false);
+  // feed your backend's ChatEvent stream into dispatch(event) and setRunning(event.running) on "status"
   return (
-    <ChatPanel composer={<ChatInputToolbar onSend={send} onStop={stop} running={running} />}>
+    <ChatPanel composer={<ChatInputToolbar onSend={send} onStop={stop} running={running} rows={1} />}>
       <ChatMessages messages={messages} running={running} detailMode="grouped" />
     </ChatPanel>
   );
 }
 ```
 
-```ts
-import { createServer } from "node:http";
-import { createChatHandler, SessionManager } from "quassel/server";
-
-const manager = new SessionManager({ baseUrl: "http://localhost:11434/v1", model: "qwen3:4b" });
-const handler = createChatHandler({ manager });
-
-createServer(async (req, res) => {
-  if (!(await handler(req, res))) res.writeHead(404).end();
-}).listen(3300);
+```css
+.my-chat {
+    --qsl-primary: #11855c;
+    --qsl-radius: 0.9rem;
+}
 ```
 
 Any backend that emits the `quassel/events` stream works with the same components.
@@ -85,14 +85,15 @@ Any backend that emits the `quassel/events` stream works with the same component
 
 ```sh
 pnpm install
-pnpm dev          # gallery on http://localhost:3210
-pnpm check        # type check
-pnpm release      # build and publish to npm (see docs/guide.md)
+pnpm dev              # stylesheet in watch mode plus the gallery on http://localhost:3210
+pnpm check            # type check package and gallery
+pnpm build            # stylesheet and gallery build
+pnpm release --dry-run
 ```
 
-The full build guide - every prop, the event contract, the backend - is in
-[docs/guide.md](docs/guide.md) (German). It is written so that an AI assistant can build an
-application with quassel from it.
+The full guide - every prop, the event contract, theming, slots, dark mode and publishing -
+is in [docs/guide.md](docs/guide.md) (German). It is written so that an AI assistant can build
+an application with quassel from it.
 
 ## License
 

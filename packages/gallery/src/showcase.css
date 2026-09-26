@@ -1,8 +1,31 @@
+html, body {
+    margin: 0;
+}
+
+body {
+    min-height: 100vh;
+    background:
+        radial-gradient(ellipse at 48% 38%, #ffffff80, transparent 48%),
+        radial-gradient(ellipse at 4% 88%, #9ccfc5b3, transparent 58%),
+        radial-gradient(ellipse at 96% 12%, #9ec6e4b3, transparent 56%),
+        radial-gradient(ellipse at 28% 0%, #c4b0dfb3, transparent 58%),
+        linear-gradient(135deg, #edf0f2, #e1dbe8);
+}
+
+[data-theme="dark"] body {
+    background:
+        radial-gradient(ellipse at 48% 38%, #64577333, transparent 48%),
+        radial-gradient(ellipse at 4% 88%, #2c625e99, transparent 58%),
+        radial-gradient(ellipse at 96% 12%, #355674a6, transparent 56%),
+        radial-gradient(ellipse at 28% 0%, #59446f99, transparent 58%),
+        linear-gradient(135deg, #252b35, #302735);
+}
+
 .showcase {
     display: flex;
     gap: 20px;
-    padding: 24px;
     width: max-content;
+    padding: 24px;
 }
 
 .showcase-frame {
@@ -11,7 +34,10 @@
     width: 640px;
     height: 620px;
     overflow: hidden;
-    --qsl-thread-padding-inline: 16px;
+    border: 1px solid var(--qsl-border-soft);
+    border-radius: 17px;
+    background: var(--qsl-background);
+    box-shadow: var(--qsl-bar-shadow);
 }
 
 .showcase-frame--small {
@@ -28,18 +54,17 @@
     padding-bottom: 8px;
 }
 
-.showcase-frame .qsl-chat-panel {
+.showcase-panel {
     flex: 1;
+    --qsl-input-card-radius: var(--qsl-radius);
 }
 
 .showcase-caption {
     padding: 12px 16px 4px;
-    font-family: var(--qsl-font);
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--qsl-muted);
+    font: 500 12px/1.4 var(--qsl-font);
+    color: var(--qsl-muted-foreground);
 }
 
-.showcase-frame .qsl-chat-panel__composer {
-    padding: 0 12px 12px;
+.showcase-composer {
+    padding: 12px 16px 8px;
 }

@@ -47,13 +47,11 @@ export interface MessageActionsOptions {
 
 export type SendShortcut = "enter" | "mod-enter";
 
-const length = (value: string | number | undefined) => typeof value === "number" ? `${value}px` : value;
+const cssLength = (value: string | number | undefined) => typeof value === "number" ? `${value}px` : value;
 
-export function appearanceStyle(appearance?: ChatAppearance): CSSProperties {
-  return {
-    "--qsl-chat-font-size": length(appearance?.fontSize),
-    "--qsl-chat-line-height": appearance?.lineHeight,
-    "--qsl-message-gap": length(appearance?.messageGap),
-    "--qsl-dense-message-gap": length(appearance?.denseMessageGap),
-  } as CSSProperties;
-}
+export const appearanceStyle = (appearance?: ChatAppearance): CSSProperties => ({
+  "--qsl-chat-font-size": cssLength(appearance?.fontSize),
+  "--qsl-chat-line-height": appearance?.lineHeight,
+  "--qsl-chat-message-gap": cssLength(appearance?.messageGap),
+  "--qsl-chat-dense-message-gap": cssLength(appearance?.denseMessageGap),
+} as CSSProperties);

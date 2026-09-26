@@ -1,4 +1,22 @@
-export type Role = "user" | "assistant" | "thinking" | "tool" | "system" | "question";
+export type Role = "user" | "assistant" | "thinking" | "tool" | "system" | "action";
+
+export interface ChatAttachmentInput {
+  name: string;
+  mediaType: string;
+  data: string;
+}
+
+export interface ChatAttachment {
+  name: string;
+  mediaType: string;
+  size: number;
+  url: string;
+}
+
+export interface ChatAttachmentCapabilities {
+  input: readonly string[];
+  model: string;
+}
 
 export interface ToolInfo {
   id: string;
@@ -8,73 +26,129 @@ export interface ToolInfo {
   isError?: boolean;
 }
 
-/** Eine Rückfrage des Assistenten. `answer` gesetzt heißt: beantwortet, die Karte ist nur noch Beleg. */
-export interface Question {
-  callId: string;
-  options: string[];
-  multi?: boolean;
-  answer?: string;
+export interface ChatTextCursor {
+  conversationId: string;
+  sequence: number;
+  /** Accumulated non-whitespace UTF-16 units in the turn anchored by sequence. */
+  offset: number;
+}
+
+export interface ChatJournalCursor {
+  conversationId: string;
+  eventId: string;
+  sequence: number;
+}
+
+/**
+ * Eine Aktion, die auf eine Eingabe des Benutzers wartet. Form und Inhalt von `payload` und
+ * `result` gehören dem Plugin in `owner`; `status` gesetzt heißt: erledigt, die Karte ist Beleg.
+ */
+export interface PendingAction {
+  actionId: string;
+  owner: string | null;
+  payload: unknown;
+  status?: "approved" | "dismissed";
+  result?: unknown;
 }
 
 export interface Message {
   key: string;
   role: Role;
+  /** Absenderkennung für die Darstellung; unabhängig von Rolle und Sprechblasenlabel. */
+  sender?: string;
   text: string;
+  textCursor?: ChatTextCursor;
   closed?: boolean;
+  attachments?: ChatAttachment[];
   tool?: ToolInfo;
-  question?: Question;
+  action?: PendingAction;
   /** ISO-Zeitpunkt der Nachricht; Anzeige optional (ChatMessages showTimestamps). */
   at?: string;
+  /** Der ActorInput hinter einer eingehenden Nachricht; an ihm hängt die Steering-Markierung. */
+  inputId?: string;
+  /** Die Nachricht ist in einen schon laufenden Turn eingespeist worden, statt einen eigenen zu beginnen. */
+  steered?: boolean;
   /** Farbige Sprechblase statt Fliesstext, z.B. fuer Mehrparteien-Gespraeche. */
   bubble?: { color: string; side: "start" | "end"; label?: string };
 }
 
+export interface ChatStartupStatus {
+  status: "preparing" | "failed";
+  message: string;
+}
+
 export type ChatEvent =
-  | { kind: "reset" }
-  | { kind: "user"; text: string; at?: string }
-  | { kind: "text"; delta: string; at?: string }
+  | { kind: "reset"; reason?: "conversation-reset"; conversationId: string | null }
+  | { kind: "replay-end"; conversationId: string | null }
+  | { kind: "user"; text: string; inputId?: string; at?: string; attachments?: ChatAttachment[] }
+  | { kind: "steered"; inputId: string }
+  | { kind: "text"; delta: string; at?: string; cursor: ChatTextCursor }
   | { kind: "thinking"; delta: string; at?: string }
   | { kind: "tool"; id: string; name: string; arguments: string; label?: string; at?: string }
   | { kind: "tool-result"; id: string; result: string; isError?: boolean }
-  | { kind: "question"; callId: string; text: string; options: string[]; multi?: boolean; at?: string }
-  | { kind: "question-answered"; callId: string; answer: string }
+  | { kind: "action"; actionId: string; owner: string | null; text: string; payload: unknown; at?: string }
+  | { kind: "action-resolved"; actionId: string; status: "approved" | "dismissed"; result: unknown }
   | { kind: "system"; text: string; at?: string }
-  | { kind: "status"; running: boolean }
+  | { kind: "status"; running: boolean; startup?: ChatStartupStatus }
   | { kind: "turn-done" }
-  | { kind: "extension"; pluginId: string; type: string; payload?: unknown; at?: string };
+  | { kind: "plugin"; pluginId: string; type: string; payload?: unknown; at?: string; journal?: ChatJournalCursor };
 
-function closeLast(messages: Message[]): Message[] {
-  const last = messages[messages.length - 1];
-  if (!last || last.closed) {
+let keyCounter = 0;
+
+// crypto.randomUUID fehlt ausserhalb sicherer Kontexte, etwa bei einem Host unter http.
+const newKey = (): string => typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+  ? crypto.randomUUID()
+  : `qsl-${Date.now().toString(36)}-${(keyCounter += 1).toString(36)}`;
+
+function openMessageIndex(messages: Message[]): number {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index];
+    if (!message.closed && (message.role === "assistant" || message.role === "thinking")) return index;
+  }
+  return -1;
+}
+
+function closeOpen(messages: Message[]): Message[] {
+  const index = openMessageIndex(messages);
+  if (index === -1) {
     return messages;
   }
-  return [...messages.slice(0, -1), { ...last, closed: true }];
+  return messages.map((message, position) => position === index ? { ...message, closed: true } : message);
 }
 
-function appendDelta(messages: Message[], role: Role, delta: string, at?: string): Message[] {
-  const last = messages[messages.length - 1];
-  if (last && last.role === role && !last.closed) {
-    return [...messages.slice(0, -1), { ...last, text: last.text + delta }];
+function appendDelta(messages: Message[], role: Role, delta: string, at?: string, textCursor?: ChatTextCursor): Message[] {
+  const index = openMessageIndex(messages);
+  const current = messages[index];
+  if (current && current.role === role
+    && current.textCursor?.conversationId === textCursor?.conversationId
+    && current.textCursor?.sequence === textCursor?.sequence) {
+    return messages.map((message, position) => position === index
+      ? { ...message, text: message.text + delta, ...(textCursor ? { textCursor } : {}) }
+      : message);
   }
-  return [...closeLast(messages), { key: crypto.randomUUID(), role, text: delta, at }];
+  return [...closeOpen(messages), { key: newKey(), role, text: delta, at, ...(textCursor ? { textCursor } : {}) }];
 }
 
-/** Der Streaming-Kern: Deltas verschmelzen mit dem letzten offenen Block, alles andere schließt ihn. */
+/** Eingehende Nachrichten lassen den laufenden Ausgabeblock offen. */
 export function applyEvent(messages: Message[], event: ChatEvent): Message[] {
   switch (event.kind) {
     case "reset":
       return [];
     case "user":
-      return [...closeLast(messages), { key: crypto.randomUUID(), role: "user", text: event.text, at: event.at }];
+      return [...messages, { key: newKey(), role: "user", text: event.text, closed: true, at: event.at,
+        ...(event.inputId ? { inputId: event.inputId } : {}),
+        ...(event.attachments?.length ? { attachments: event.attachments } : {}) }];
+    case "steered":
+      return messages.map((message) => message.inputId === event.inputId ? { ...message, steered: true } : message);
     case "text":
-      return appendDelta(messages, "assistant", event.delta, event.at);
+      return appendDelta(messages, "assistant", event.delta, event.at, event.cursor);
     case "thinking":
       return appendDelta(messages, "thinking", event.delta, event.at);
     case "tool":
       return [
-        ...closeLast(messages),
+        ...closeOpen(messages),
         {
-          key: crypto.randomUUID(),
+          key: newKey(),
           role: "tool",
           text: event.label ?? event.name,
           closed: true,
@@ -82,34 +156,36 @@ export function applyEvent(messages: Message[], event: ChatEvent): Message[] {
           at: event.at,
         },
       ];
-    case "tool-result":
-      return messages.map((message) =>
-        message.tool?.id === event.id
+    case "tool-result": {
+      const index = messages.map((message) => message.tool?.id).lastIndexOf(event.id);
+      return messages.map((message, position) =>
+        position === index && message.tool
           ? { ...message, tool: { ...message.tool, result: event.result, isError: event.isError } }
           : message,
       );
-    case "question":
+    }
+    case "action":
       return [
-        ...closeLast(messages),
+        ...closeOpen(messages),
         {
-          key: crypto.randomUUID(),
-          role: "question",
+          key: newKey(),
+          role: "action",
           text: event.text,
           closed: true,
-          question: { callId: event.callId, options: event.options, multi: event.multi },
+          action: { actionId: event.actionId, owner: event.owner, payload: event.payload },
           at: event.at,
         },
       ];
-    case "question-answered":
+    case "action-resolved":
       return messages.map((message) =>
-        message.question?.callId === event.callId
-          ? { ...message, question: { ...message.question, answer: event.answer } }
+        message.action?.actionId === event.actionId
+          ? { ...message, action: { ...message.action, status: event.status, result: event.result } }
           : message,
       );
     case "system":
-      return [...closeLast(messages), { key: crypto.randomUUID(), role: "system", text: event.text, closed: true, at: event.at }];
+      return [...closeOpen(messages), { key: newKey(), role: "system", text: event.text, closed: true, at: event.at }];
     case "turn-done":
-      return closeLast(messages);
+      return closeOpen(messages);
     default:
       return messages;
   }
@@ -128,3 +204,5 @@ export function compactToolLine(tool: ToolInfo): string {
   const line = args && args !== "{}" ? `${tool.name} ${args}` : tool.name;
   return line.length > 160 ? `${line.slice(0, 160)} ...` : line;
 }
+
+export { MAX_CHAT_ATTACHMENTS, MAX_CHAT_ATTACHMENT_BYTES, MAX_CHAT_REQUEST_BYTES, chatAttachmentMediaType, parseChatAttachments } from "./chat-attachments";

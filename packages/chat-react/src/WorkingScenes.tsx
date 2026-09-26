@@ -194,7 +194,7 @@ export function WorkingScenes({ label = "Arbeitet ..." }: WorkingScenesProps) {
 
   const bild = szene.zeichne(Math.floor(frameTick / szene.takt) + (szene.laufend ? versatz : 0));
   return (
-    <div aria-label={label} className="qsl-working" role="status">
+    <div aria-label={label} className="qsl-working" role="img">
       <span aria-hidden="true" className="qsl-working__stage" key={szene.id}>
         <span className="qsl-working__character">
           {typeof bild === "string"

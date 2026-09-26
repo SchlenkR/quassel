@@ -24,3 +24,8 @@ export function stepState(message: Message): StepState {
   }
   return message.tool !== undefined && message.tool.result === undefined ? "running" : "done";
 }
+
+/** A moment worth one screen reader announcement: a finished reply or a new open question. */
+export type ChatAnnouncement =
+  | { kind: "reply"; message: Message }
+  | { kind: "question"; message: Message };

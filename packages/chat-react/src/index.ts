@@ -1,4 +1,4 @@
-export type { Role, ToolInfo, Question, Message, DetailMode, StepState, ChatEvent } from "./types";
+export type { Role, ToolInfo, Question, Message, DetailMode, StepState, ChatEvent, ChatAnnouncement } from "./types";
 export { applyEvent, prettyJson, compactToolLine, stepState } from "./types";
 export type { ChatTexts } from "./texts";
 export { defaultTexts } from "./texts";
@@ -9,7 +9,8 @@ export { TimestampSwitch } from "./TimestampSwitch";
 export { ChatInputPlain } from "./ChatInputPlain";
 export { ChatInputToolbar } from "./ChatInputToolbar";
 export type { ToolbarAction } from "./ChatInputToolbar";
-export { Markdown, MarkdownLinks, MarkdownCodeBlocks } from "./Markdown";
+export { Markdown, MarkdownLinks, MarkdownCodeBlocks, markdownPlainText } from "./Markdown";
+export { announce } from "./announce";
 export type { ChatAppearance, TimestampOptions, CodeBlockOptions, BubbleOptions, MessageAction, MessageActionsOptions, SendShortcut } from "./options";
 export type { LinkClickHandler } from "./Markdown";
 export { QuestionCard } from "./QuestionCard";

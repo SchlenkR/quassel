@@ -3,15 +3,17 @@ import { appearanceStyle, type ChatAppearance, type TimestampOptions, type CodeB
 import { timestampDate, formatTimestamp, timestampDay, formatDay } from "./timestamps";
 import { MessageActions } from "./MessageActions";
 import { ChatSendContext } from "./ChatSendContext";
-import { compactToolLine, DetailMode, Message, prettyJson, stepState, ToolInfo } from "./types";
+import { ChatAnnouncement, compactToolLine, DetailMode, Message, prettyJson, stepState, ToolInfo } from "./types";
 import { ChatTexts, defaultTexts } from "./texts";
-import { Markdown, MarkdownLinks, MarkdownCodeBlocks, type LinkClickHandler } from "./Markdown";
+import { Markdown, MarkdownLinks, MarkdownCodeBlocks, markdownPlainText, type LinkClickHandler } from "./Markdown";
+import { announce as ansagen } from "./announce";
 import { StepPopover } from "./StepPopover";
 import { QuestionCard } from "./QuestionCard";
 import { WorkingScenes } from "./WorkingScenes";
 import { IconCheck, IconChevronDown, IconChevronRight, IconLayers, IconSpark, IconTool } from "./icons";
 
 const collapseAtBottomFrom = 11;
+const hoechstensAnsagenAufEinmal = 2;
 
 function istSchritt(message?: Message): boolean {
   return !!message && (message.role === "thinking" || message.role === "tool");
@@ -37,6 +39,7 @@ export function ChatMessages({
   renderTool,
   onAnswerQuestion,
   onLinkClick,
+  announce,
   emptyState,
   className,
   showTimestamps = false,
@@ -68,6 +71,8 @@ export function ChatMessages({
   onAnswerQuestion?: (callId: string, text: string) => void;
   /** Faengt Klicks auf Markdown-Links ab; true = behandelt, der Browser folgt nicht. */
   onLinkClick?: LinkClickHandler;
+  /** Screenreader-Ansage je fertiger Antwort und neuer Rückfrage: Default ist ihr Text, eine Funktion liefert eigenen Text (undefined = still), false schaltet ab. */
+  announce?: false | ((announcement: ChatAnnouncement) => string | undefined);
   emptyState?: ReactNode;
   className?: string;
   /** true = dezente HH:MM-Spalte links an jedem Block (Message.at). */
@@ -103,6 +108,28 @@ export function ChatMessages({
     const timer = window.setTimeout(() => setStromAktiv(false), workingTimeoutMs);
     return () => window.clearTimeout(timer);
   }, [messages, workingTimeoutMs]);
+
+  // Der Verlauf beim Einhängen und ganze Schübe (Reset mit Replay) gelten als bekannt, nicht als neu.
+  const angesagt = useRef<ReadonlySet<string>>(new Set(messages.map((message) => message.key)));
+  useEffect(() => {
+    const faellig = messages.filter((message, index) => !angesagt.current.has(message.key) && (
+      message.role === "question"
+        ? message.question !== undefined && message.question.answer === undefined
+        : message.role === "assistant" && message.text.trim() !== "" && (message.closed === true || (!running && index === messages.length - 1))
+    ));
+    if (faellig.length === 0) {
+      return;
+    }
+    angesagt.current = new Set([...angesagt.current, ...faellig.map((message) => message.key)]);
+    if (announce === false || faellig.length > hoechstensAnsagenAufEinmal) {
+      return;
+    }
+    faellig
+      .map((message) => announce
+        ? announce({ kind: message.role === "question" ? "question" : "reply", message })
+        : markdownPlainText(message.text))
+      .forEach((text) => text && ansagen(text));
+  }, [messages, running, announce]);
 
   // Include content that fits without scrolling in the bottom tolerance.
   const pruefeEnde = useCallback(() => {
@@ -258,7 +285,7 @@ export function ChatMessages({
         {visible.length === 0 && !running ? (
           emptyState ?? null
         ) : (
-          <div aria-live="polite" className="qsl-thread">
+          <div aria-busy={running || undefined} className="qsl-thread">
             {bloecke}
             {running && stromAktiv && (working ?? <WorkingScenes label={alleTexte.working} />)}
             <div ref={ende} />

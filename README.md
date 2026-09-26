@@ -104,6 +104,7 @@ Immer importieren: `import "@quassel/chat-react/chat.css"` (setzt foundation-Tok
   texts?: Partial<ChatTexts>;           // Beschriftungen ersetzen
   toolArgumentsText?: (tool: ToolInfo) => string;  // eigene Argument-Darstellung
   onAnswerQuestion?: (callId, text) => void;       // fuer Rueckfrage-Karten
+  announce?: false | ((announcement: ChatAnnouncement) => string | undefined);  // Screenreader-Ansage, siehe unten
   emptyState?: ReactNode;               // Anzeige bei leerem Verlauf
   className?: string;
   showTimestamps?: boolean;             // default false; displays Message.at as HH:MM
@@ -119,6 +120,22 @@ einzeilig auf- und zuklappt, ab 11 Schritten zusätzlich mit "Einklappen" am End
 `compact` = einzeilig; `full` = alles ausgeklappt. In `icons`/`chips`/`grouped`/`compact`
 öffnet Klick auf einen Schritt ein Detail-Popover (Escape schließt). Ohne Eingabe read-only nutzbar.
 Markdown in Antworten (Tabellen, Code, Listen) wird gerendert, streaming-fest.
+
+#### Screenreader
+
+Der Verlauf ist keine Live-Region: Streaming-Tokens, Schritte, Working-Indikator und Zeitstempel
+werden nicht angesagt, während `running` trägt der Verlauf `aria-busy`. Angesagt wird nur, wenn eine
+Assistenz-Antwort fertig ist (`closed` oder Lauf beendet) und wenn eine offene Rückfrage erscheint,
+und zwar ihr Inhalt als Klartext (`markdownPlainText`). quassel bringt dafür keinen eigenen Satz mit.
+Der Verlauf beim Einhängen und Schübe von mehr als zwei Nachrichten (Reset mit Replay) werden nicht angesagt.
+
+- `announce` weggelassen: der Text der Antwort bzw. Rückfrage.
+- `announce={(a) => ...}`: eigener Text je `ChatAnnouncement` (`{ kind: "reply" | "question", message }`), z.B. mit Präfix oder übersetzt; `undefined` bleibt still.
+- `announce={false}`: quassel sagt nichts an, der Host übernimmt.
+
+Die Senke `announce(text)` ist exportiert, damit der Host eigene Zustände wie Fehler oder Abbruch über
+dieselbe Region ansagen kann: eine gemeinsame, versteckte `role="status"`-Region, 400 ms Abstand,
+höchstens fünf wartende Ansagen, Pause bei verstecktem Tab, gleicher Text wird erneut angesagt.
 
 #### Width and timestamps
 

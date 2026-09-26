@@ -208,6 +208,21 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
   return out;
 }
 
+/** Dieselbe Syntax wie der Renderer, als Klartext ohne Markup, etwa für Screenreader-Ansagen. */
+export function markdownPlainText(text: string): string {
+  return text
+    .split("\n")
+    .filter((line) => !/^\s*```\w*\s*$/.test(line) && !isTableDivider(line))
+    .map((line) => (line.trim().startsWith("|") ? splitTableRow(line).join(", ") : line)
+      .replace(/^(#{1,4})\s+/, "")
+      .replace(/^\s*>\s?/, "")
+      .replace(/^\s*[-*]\s+/, "")
+      .replace(/\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g, (_, link, _href, fett, kursiv, code) => link ?? fett ?? kursiv ?? code)
+      .trim())
+    .filter((line) => line !== "")
+    .join("\n");
+}
+
 function splitTableRow(line: string): string[] {
   let row = line.trim();
   if (row.startsWith("|")) {

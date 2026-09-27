@@ -216,7 +216,7 @@ export function ChatInputToolbar({
   const inputMaxRows = inline || toolbar ? 1 : maxRows;
   // Die Toolbar-Fassung pulsiert waehrend der Arbeit; der Host gibt nur den Radius vor.
   const rootClasses = cn(
-    "qsl:flex qsl:shrink-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-[var(--qsl-input-card-radius,var(--qsl-radius-xl))] qsl:border qsl:border-border-strong qsl:bg-background qsl:shadow-bar qsl:transition-colors qsl:focus-within:border-primary",
+    "qsl:flex qsl:shrink-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-[var(--qsl-input-card-radius,--theme(--radius-xl))] qsl:border qsl:border-border-strong qsl:bg-background qsl:shadow-bar qsl:transition-colors qsl:focus-within:border-primary",
     "qsl:in-data-[tone=material]:rounded-xl qsl:in-data-[tone=material]:border-glass-edge/50 qsl:in-data-[tone=material]:bg-background",
     toolbar && "qsl:h-full qsl:min-w-0 qsl:flex-row qsl:items-center qsl:rounded-lg qsl:data-[working=true]:animate-working-pulse qsl:data-[working=true]:border-primary qsl:motion-reduce:data-[working=true]:animate-none",
     fileInput.dragging && "qsl:outline-2 qsl:outline-offset-[3px] qsl:outline-dashed qsl:outline-primary",

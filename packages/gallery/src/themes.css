@@ -50,3 +50,32 @@
     --qsl-border-soft: #2f463b;
     --qsl-border-strong: #6f9985;
 }
+
+/* A host with its own scale: nothing below 12px, square controls, its own bubble shape. */
+.theme-host {
+    --qsl-text-xs: 12px;
+    --qsl-text-meta: 12px;
+    --qsl-text-trace: 12px;
+    --qsl-text-label: 12px;
+    --qsl-text-small: 12px;
+    --qsl-radius: 2px;
+    --qsl-radius-md: 0px;
+    --qsl-radius-lg: 4px;
+    --qsl-radius-xl: 6px;
+    --qsl-radius-panel: 6px;
+    --qsl-bubble-radius: 14px 14px 14px 0;
+    --qsl-primary: #1f6fb2;
+    --qsl-secondary: #e2ecf6;
+    --qsl-border: #b9cbe0;
+    --qsl-border-soft: #d3e0ee;
+    --qsl-border-strong: #7f9cbf;
+}
+
+:is([data-theme="dark"] .theme-host, .theme-host[data-theme="dark"]) {
+    --qsl-primary: #7cb7ec;
+    --qsl-primary-foreground: #0d2236;
+    --qsl-secondary: #22344a;
+    --qsl-border: #3f5670;
+    --qsl-border-soft: #2e4157;
+    --qsl-border-strong: #6d8bae;
+}

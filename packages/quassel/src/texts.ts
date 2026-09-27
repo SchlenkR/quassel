@@ -20,7 +20,6 @@ export interface ChatTexts {
   placeholder: string;
   steeringPlaceholder: string;
   steered: string;
-  inputHint: string;
   detailModeTitle: string;
   detailModeOff: string;
   detailModeCurrent: string;
@@ -89,7 +88,6 @@ export const defaultTexts: ChatTexts = {
   placeholder: "Nachricht schreiben ...",
   steeringPlaceholder: "Dazwischenfunken ...",
   steered: "In den laufenden Turn eingespeist",
-  inputHint: "Enter zum Senden - Shift + Enter für eine neue Zeile",
   detailModeTitle: "Detailgrad der Schritte",
   detailModeOff: "nur Antworten",
   detailModeCurrent: "aktuell",

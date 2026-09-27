@@ -4,7 +4,7 @@ Chat building blocks for React: a streaming transcript with thinking and tool st
 actions, an input card with attachments and steering, and a small event contract that works
 on the server as well. quassel is the chat of [RAgents](https://github.com/SchlenkR/RAgents),
 published as a library. It ships a compiled stylesheet, so hosts need no Tailwind, and every
-color, radius and font is a `--qsl-*` variable.
+color, radius, font and font size is a `--qsl-*` variable.
 
 ![An agent chat with grouped steps, timestamps, Markdown and the input card](docs/images/agent.png)
 
@@ -27,7 +27,9 @@ rendering per action owner. Resolved actions stay in the transcript as a record.
 </p>
 
 **Your look, not a fork.** Override `--qsl-*` variables on any wrapper, switch light and dark
-with `data-theme`, or hand quassel your own Button, Toggle, Card and Popover components.
+with `data-theme`, or hand quassel your own Button, Toggle, Card and Popover components. With
+`portalContainer` on `QuasselProvider`, popovers render inside your wrapper and pick up its
+variables too.
 
 ![Default, sunset and emerald themes](docs/images/themes.png)
 

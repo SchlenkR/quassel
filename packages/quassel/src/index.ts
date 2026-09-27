@@ -29,7 +29,8 @@ export type {
 } from "./options";
 export { appearanceStyle } from "./options";
 export {
-  QuasselProvider, defaultComponents, useQuasselComponents,
+  QuasselProvider, defaultComponents, useQuasselComponents, useQuasselPortalContainer,
   type QuasselComponents, type QuasselButtonProps, type QuasselButtonVariant, type QuasselButtonSize, type QuasselToggleProps,
   type QuasselCardProps, type QuasselStopButtonProps, type QuasselPopoverProps, type QuasselPopoverContentProps, type QuasselPopoverAnchor,
+  type QuasselPortalContainer, type QuasselPortalTarget,
 } from "./QuasselProvider";

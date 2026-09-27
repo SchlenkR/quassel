@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ComponentType, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ComponentType, type ReactNode, type RefObject } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Popover, PopoverContent } from "./ui/popover";
@@ -58,6 +58,10 @@ export interface QuasselPopoverAnchor {
   contextElement?: Element;
 }
 
+/** Where popovers mount: an element, a ref or a getter; resolved when the popover opens. */
+export type QuasselPortalTarget = HTMLElement | ShadowRoot;
+export type QuasselPortalContainer = QuasselPortalTarget | RefObject<QuasselPortalTarget | null> | (() => QuasselPortalTarget | null | undefined);
+
 export interface QuasselPopoverContentProps {
   anchor?: QuasselPopoverAnchor;
   align?: "start" | "center" | "end";
@@ -66,6 +70,8 @@ export interface QuasselPopoverContentProps {
   collisionPadding?: number;
   className?: string;
   "aria-label"?: string;
+  /** The resolved portalContainer of QuasselProvider; undefined = document.body. */
+  portalContainer?: QuasselPortalTarget;
   children?: ReactNode;
 }
 
@@ -84,25 +90,35 @@ export const defaultComponents: QuasselComponents = { Button, Toggle, Card, Stop
 interface QuasselSettings {
   components: QuasselComponents;
   allowUrl?: (url: string) => boolean;
+  portalContainer?: QuasselPortalContainer;
 }
 
 const QuasselContext = createContext<QuasselSettings>({ components: defaultComponents });
 
-export function QuasselProvider({ components, allowUrl, children }: {
+export function QuasselProvider({ components, allowUrl, portalContainer, children }: {
   /** Replaces single primitives; the rest stay the built-in ones or those of an outer provider. */
   components?: Partial<QuasselComponents>;
   /** Keeps Markdown link and image URLs that the default policy (http, https, mailto, tel, ftp, irc, xmpp, relative) would drop. */
   allowUrl?: (url: string) => boolean;
+  /** Mounts quassel's popovers inside this element instead of document.body, e.g. within the host's theme wrapper. */
+  portalContainer?: QuasselPortalContainer;
   children: ReactNode;
 }) {
   const outer = useContext(QuasselContext);
   const value = useMemo(() => ({
     components: { ...outer.components, ...components },
     allowUrl: allowUrl ?? outer.allowUrl,
-  }), [outer, components, allowUrl]);
+    portalContainer: portalContainer ?? outer.portalContainer,
+  }), [outer, components, allowUrl, portalContainer]);
   return <QuasselContext.Provider value={value}>{children}</QuasselContext.Provider>;
 }
 
 export const useQuasselComponents = (): QuasselComponents => useContext(QuasselContext).components;
 
 export const useAllowUrl = (): ((url: string) => boolean) | undefined => useContext(QuasselContext).allowUrl;
+
+export function useQuasselPortalContainer(): QuasselPortalTarget | undefined {
+  const container = useContext(QuasselContext).portalContainer;
+  const target = typeof container === "function" ? container() : container && "current" in container ? container.current : container;
+  return target ?? undefined;
+}

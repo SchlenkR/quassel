@@ -112,3 +112,24 @@ export const party: Message[] = [
     text: "Agreed. I add an idempotency key before the switch.",
   },
 ];
+
+export const tokens: Message[] = [
+  ...steps,
+  {
+    key: "k-u",
+    role: "user",
+    text: "Skip the flaky test for now.",
+    closed: true,
+    at: at(22),
+    steered: true,
+    attachments: [{ name: "flaky-runs.csv", mediaType: "text/csv", size: 2048, url: "data:text/csv,run" }],
+  },
+  {
+    key: "k-q",
+    role: "action",
+    text: "Rerun the pipeline without the flaky test?",
+    closed: true,
+    at: at(22),
+    action: { actionId: "k1", owner: null, payload: {}, status: "dismissed", result: null },
+  },
+];

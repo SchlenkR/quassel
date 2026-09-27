@@ -1,4 +1,4 @@
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, XIcon } from "lucide-react";
 import { useQuasselComponents } from "./QuasselProvider";
 import type { PendingAction } from "./types";
 
@@ -32,7 +32,7 @@ export function PendingActionCard({
       <Card className={cardClasses} size="sm">
         <div className="qsl:leading-normal">{text}</div>
         <div className="qsl:flex qsl:items-center qsl:gap-1.5 qsl:text-sm qsl:text-muted-foreground" data-action="resolved">
-          <CheckIcon className="qsl:text-success" size={12} />
+          {action.status === "approved" ? <CheckIcon className="qsl:text-success" size={12} /> : <XIcon size={12} />}
           {action.status === "approved" ? resultText(action.result) : dismissedLabel}
         </div>
       </Card>

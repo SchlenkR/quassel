@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { SparklesIcon, WrenchIcon, XIcon } from "lucide-react";
 import { cn } from "./ui/cn";
-import { useQuasselComponents } from "./QuasselProvider";
+import { useQuasselComponents, useQuasselPortalContainer } from "./QuasselProvider";
 import { Message, prettyJson } from "./types";
 import { ChatTexts } from "./texts";
 
-const preClasses = "qsl:rounded-lg qsl:bg-secondary qsl:p-3 qsl:font-mono qsl:text-[11px] qsl:leading-[1.625] qsl:break-all qsl:whitespace-pre-wrap";
+const preClasses = "qsl:rounded-lg qsl:bg-secondary qsl:p-3 qsl:font-mono qsl:text-trace qsl:leading-[1.625] qsl:break-all qsl:whitespace-pre-wrap";
 
 export function StepPopover({
   message,
@@ -25,6 +25,7 @@ export function StepPopover({
     contextElement: document.documentElement,
   }), [position]);
   const { Button, Popover, PopoverContent } = useQuasselComponents();
+  const portalContainer = useQuasselPortalContainer();
   const tool = message.tool;
   const thinking = message.role === "thinking";
   const title = thinking ? texts.thinkingTitle : texts.toolTitle;
@@ -40,6 +41,7 @@ export function StepPopover({
           thinking ? "qsl:max-h-none" : "qsl:max-h-[min(70vh,620px)]",
         )}
         collisionPadding={16}
+        portalContainer={portalContainer}
         side="bottom"
         sideOffset={10}
       >
@@ -77,7 +79,7 @@ export function StepPopover({
 function PopoverSection({ label, value, error = false }: { label: string; value: string; error?: boolean }) {
   return (
     <section>
-      <h3 className="qsl:mb-1.5 qsl:text-[11px] qsl:font-semibold qsl:tracking-[0.04em] qsl:text-muted-foreground qsl:uppercase">{label}</h3>
+      <h3 className="qsl:mb-1.5 qsl:text-trace qsl:font-semibold qsl:tracking-[0.04em] qsl:text-muted-foreground qsl:uppercase">{label}</h3>
       <pre className={cn(preClasses, error && "qsl:text-destructive")}>{value}</pre>
     </section>
   );

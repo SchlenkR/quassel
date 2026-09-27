@@ -1,4 +1,4 @@
-import { useReducer, useState, type ReactNode } from "react";
+import { useReducer, useRef, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import {
   applyEvent,
@@ -6,6 +6,7 @@ import {
   ChatMessages,
   ChatPanel,
   DetailModeSwitch,
+  QuasselProvider,
   TimestampSwitch,
   type DetailMode,
 } from "quassel";
@@ -13,7 +14,7 @@ import "quassel/chat.css";
 import "./themes.css";
 import "./showcase.css";
 import { ChoiceCard } from "./ChoiceCard";
-import { actions, party, research, steps } from "./samples";
+import { actions, party, research, steps, tokens } from "./samples";
 import { englishTexts as texts } from "./texts";
 
 function Frame({ caption, small, className, children }: { caption?: string; small?: boolean; className?: string; children: ReactNode }) {
@@ -124,6 +125,36 @@ function ThemeScene() {
   );
 }
 
+function TokenChat() {
+  return (
+    <>
+      <ChatMessages detailMode="chips" horizontalPadding={16} messages={tokens} showTimestamps texts={texts} timestampOptions={{ timeZone: "UTC", locale: "en" }} />
+      <div className="showcase-composer">
+        <ChatInputToolbar onSend={() => undefined} rows={1} texts={texts} />
+      </div>
+    </>
+  );
+}
+
+function HostScene() {
+  const popovers = useRef<HTMLDivElement>(null);
+  return (
+    <>
+      <Frame caption="default" className="showcase-frame--short" small>
+        <TokenChat />
+      </Frame>
+      <div className="theme-host" data-host-wrapper>
+        <QuasselProvider portalContainer={popovers}>
+          <Frame caption="host tokens, popovers inside the wrapper" className="showcase-frame--short" small>
+            <TokenChat />
+          </Frame>
+        </QuasselProvider>
+        <div ref={popovers} />
+      </div>
+    </>
+  );
+}
+
 const scenes: Record<string, () => ReactNode> = {
   agent: AgentScene,
   details: DetailScene,
@@ -131,6 +162,7 @@ const scenes: Record<string, () => ReactNode> = {
   questions: ActionScene,
   party: PartyScene,
   themes: ThemeScene,
+  host: HostScene,
 };
 
 const params = new URLSearchParams(location.search);

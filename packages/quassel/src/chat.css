@@ -56,6 +56,9 @@
     --text-lg--line-height: 1.45;
     --text-xl: 1.15rem;
     --text-xl--line-height: 1.35;
+    --text-meta: 10.5px;
+    --text-trace: 11px;
+    --text-label: 0.72rem;
     --radius-panel: 17px;
     --animate-fade-pulse: qsl-fade-pulse 1.9s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
     --animate-working-pulse: qsl-working-pulse 1.6s ease-in-out infinite;
@@ -104,14 +107,18 @@
     --color-input: var(--qsl-border);
     --color-ring: var(--qsl-primary);
     --color-glass-edge: var(--qsl-glass-edge);
-    --radius-sm: calc(var(--qsl-radius) * 0.6);
-    --radius-md: calc(var(--qsl-radius) * 0.8);
-    --radius-lg: var(--qsl-radius);
-    --radius-xl: calc(var(--qsl-radius) * 1.4);
-    --radius-2xl: calc(var(--qsl-radius) * 1.8);
     --shadow-bar: var(--qsl-bar-shadow);
     --shadow-pop: var(--qsl-pop-shadow);
     --shadow-card: var(--qsl-card-shadow);
+}
+
+/* Radii stay unset by default so that an override on any ancestor wins; unset they derive from --qsl-radius. */
+@theme inline reference {
+    --radius-sm: var(--qsl-radius-sm, calc(var(--qsl-radius) * 0.6));
+    --radius-md: var(--qsl-radius-md, calc(var(--qsl-radius) * 0.8));
+    --radius-lg: var(--qsl-radius-lg, var(--qsl-radius));
+    --radius-xl: var(--qsl-radius-xl, calc(var(--qsl-radius) * 1.4));
+    --radius-2xl: var(--qsl-radius-2xl, calc(var(--qsl-radius) * 1.8));
 }
 
 /* The theming API: override these on :root or on any wrapper; data-theme="dark" | "light" | "system" on an ancestor switches the scheme. */
@@ -137,11 +144,6 @@
         --qsl-bar-shadow: 0 2px 5px #49384e14, 0 8px 20px #49384e12;
         --qsl-pop-shadow: 0 12px 36px #49384e26;
         --qsl-card-shadow: 0 12px 22px #49384e2c;
-    }
-
-    :where([data-quassel]) {
-        --qsl-radius-md: calc(var(--qsl-radius) * 0.8);
-        --qsl-radius-xl: calc(var(--qsl-radius) * 1.4);
     }
 
     * {
@@ -230,7 +232,7 @@
     }
 
     :where([data-quassel], [data-quassel] *):where(small) {
-        font-size: 80%;
+        font-size: var(--qsl-text-small, 80%);
     }
 
     :where([data-quassel], [data-quassel] *):where(sub, sup) {

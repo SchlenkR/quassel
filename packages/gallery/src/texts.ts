@@ -22,7 +22,6 @@ export const englishTexts: ChatTexts = {
   placeholder: "Write a message ...",
   steeringPlaceholder: "Steer the running turn ...",
   steered: "Sent into the running turn",
-  inputHint: "Enter to send - Shift + Enter for a new line",
   detailModeTitle: "Step detail",
   detailModeOff: "answers only",
   detailModeCurrent: "current",

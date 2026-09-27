@@ -21,14 +21,14 @@ const buttonVariants = cva(
       size: {
         default:
           "qsl:h-8 qsl:gap-1.5 qsl:px-2.5 qsl:has-data-[icon=inline-end]:pr-2 qsl:has-data-[icon=inline-start]:pl-2",
-        xs: "qsl:h-6 qsl:gap-1 qsl:rounded-[min(var(--qsl-radius-md),10px)] qsl:px-2 qsl:text-xs qsl:in-data-[slot=button-group]:rounded-lg qsl:has-data-[icon=inline-end]:pr-1.5 qsl:has-data-[icon=inline-start]:pl-1.5 qsl:[&_svg:not([class*='size-'])]:size-3",
-        sm: "qsl:h-7 qsl:gap-1 qsl:rounded-[min(var(--qsl-radius-md),12px)] qsl:px-2.5 qsl:text-[0.8rem] qsl:in-data-[slot=button-group]:rounded-lg qsl:has-data-[icon=inline-end]:pr-1.5 qsl:has-data-[icon=inline-start]:pl-1.5 qsl:[&_svg:not([class*='size-'])]:size-3.5",
+        xs: "qsl:h-6 qsl:gap-1 qsl:rounded-[min(--theme(--radius-md),10px)] qsl:px-2 qsl:text-xs qsl:in-data-[slot=button-group]:rounded-lg qsl:has-data-[icon=inline-end]:pr-1.5 qsl:has-data-[icon=inline-start]:pl-1.5 qsl:[&_svg:not([class*='size-'])]:size-3",
+        sm: "qsl:h-7 qsl:gap-1 qsl:rounded-[min(--theme(--radius-md),12px)] qsl:px-2.5 qsl:text-[0.8rem] qsl:in-data-[slot=button-group]:rounded-lg qsl:has-data-[icon=inline-end]:pr-1.5 qsl:has-data-[icon=inline-start]:pl-1.5 qsl:[&_svg:not([class*='size-'])]:size-3.5",
         lg: "qsl:h-9 qsl:gap-1.5 qsl:px-2.5 qsl:has-data-[icon=inline-end]:pr-2 qsl:has-data-[icon=inline-start]:pl-2",
         icon: "qsl:size-8",
         "icon-xs":
-          "qsl:size-6 qsl:rounded-[min(var(--qsl-radius-md),10px)] qsl:in-data-[slot=button-group]:rounded-lg qsl:[&_svg:not([class*='size-'])]:size-3",
+          "qsl:size-6 qsl:rounded-[min(--theme(--radius-md),10px)] qsl:in-data-[slot=button-group]:rounded-lg qsl:[&_svg:not([class*='size-'])]:size-3",
         "icon-sm":
-          "qsl:size-7 qsl:rounded-[min(var(--qsl-radius-md),12px)] qsl:in-data-[slot=button-group]:rounded-lg",
+          "qsl:size-7 qsl:rounded-[min(--theme(--radius-md),12px)] qsl:in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "qsl:size-9",
       },
     },

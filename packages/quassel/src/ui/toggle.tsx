@@ -13,7 +13,7 @@ const toggleVariants = cva(
       size: {
         default:
           "qsl:h-8 qsl:min-w-8 qsl:px-2.5 qsl:has-data-[icon=inline-end]:pr-2 qsl:has-data-[icon=inline-start]:pl-2",
-        sm: "qsl:h-7 qsl:min-w-7 qsl:rounded-[min(var(--qsl-radius-md),12px)] qsl:px-2.5 qsl:text-[0.8rem] qsl:has-data-[icon=inline-end]:pr-1.5 qsl:has-data-[icon=inline-start]:pl-1.5 qsl:[&_svg:not([class*='size-'])]:size-3.5",
+        sm: "qsl:h-7 qsl:min-w-7 qsl:rounded-[min(--theme(--radius-md),12px)] qsl:px-2.5 qsl:text-[0.8rem] qsl:has-data-[icon=inline-end]:pr-1.5 qsl:has-data-[icon=inline-start]:pl-1.5 qsl:[&_svg:not([class*='size-'])]:size-3.5",
         lg: "qsl:h-9 qsl:min-w-9 qsl:px-2.5 qsl:has-data-[icon=inline-end]:pr-2 qsl:has-data-[icon=inline-start]:pl-2",
       },
     },

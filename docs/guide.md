@@ -134,7 +134,8 @@ Rahmen um Verlauf und Eingabe: die Eingabe liegt über dem Verlauf, der Rahmen m
   onDismissAction?: (actionId: string) => void;                    // Verwerfen auf der Standardkarte
   onLinkClick?: (href: string, label: string) => boolean;          // true = behandelt
   emptyState?: ReactNode;
-  className?: string;
+  className?: string;                   // am äußeren Rahmen
+  scrollerClassName?: string;           // am Scroll-Container (data-quassel-transcript)
   showTimestamps?: boolean;
   announce?: false | ((announcement: ChatAnnouncement) => string | undefined);
   scrollerRef?: (element: HTMLDivElement | null) => void;
@@ -148,7 +149,9 @@ Rahmen um Verlauf und Eingabe: die Eingabe liegt über dem Verlauf, der Rahmen m
 ```
 
 Eigener Scroll-Container: folgt dem Ende, solange man unten ist, pausiert beim Hochscrollen
-(Rad, Tasten, Touch, Scrollbalken) und zeigt dann einen Zum-Ende-Knopf.
+(Rad, Tasten, Touch, Scrollbalken) und zeigt dann einen Zum-Ende-Knopf. Er trägt das stabile
+Attribut `data-quassel-transcript`; eigene Klassen bekommt er über `scrollerClassName`, das
+Element selbst liefert `scrollerRef`.
 
 Detailgrade: `current` = nur der gerade laufende Schritt; `off` = nur Antworten; `icons` =
 Schritte als Symbole; `chips` = Symbol plus Kurztext mit Umbruch; `grouped` = aufeinanderfolgende
@@ -158,7 +161,8 @@ Schritte hinter einer Kopfzeile ("12 Schritte"), ab 11 Schritten auch unten eink
 
 Aktionen (`role: "action"`): ohne `renderAction` oder wenn es `undefined` liefert, zeigt quassel
 die `PendingActionCard` mit Text, "wartet auf Eingabe" und - mit `onDismissAction` - Verwerfen;
-erledigte Aktionen zeigen ihr Ergebnis. `renderAction` bekommt die Aktion samt `owner` und
+erledigte Aktionen zeigen ihr Ergebnis (bestätigt mit Häkchen, verworfen mit neutralem Kreuz
+und `actionDismissed`). `renderAction` bekommt die Aktion samt `owner` und
 `payload` und rendert eine eigene Karte (Vorbild: `packages/gallery/src/ChoiceCard.tsx`).
 
 #### Screenreader
@@ -251,15 +255,33 @@ quassel liest seine Optik aus Variablen. Sie gelten ab dem Element, auf dem sie 
 | `--qsl-glass-edge` | Kante im Ton `material` | |
 | `--qsl-bar-shadow`, `--qsl-pop-shadow`, `--qsl-card-shadow` | Schatten | |
 | `--qsl-radius` | Grundradius, alle Radien leiten sich davon ab | `0.5rem` |
+| `--qsl-radius-sm`, `-md`, `-lg`, `-xl`, `-2xl` | einzelne Stufen, sonst aus `--qsl-radius` | nicht gesetzt: `* 0.6`, `* 0.8`, `* 1`, `* 1.4`, `* 1.8` |
+| `--qsl-radius-panel` | Karten, etwa die Aktionskarte | `17px` |
+| `--qsl-input-card-radius` | Eingabe-Karte | nicht gesetzt: `--qsl-radius-xl` |
+| `--qsl-bubble-radius` | Sprechblase eigener Nachrichten | nicht gesetzt: `10px 10px 4px 10px` (Ton `material`: `9px`) |
+| `--qsl-text-meta` | Chips, Zeitstempel, Argumente und Ergebnis im Detailgrad `full` | `10.5px` |
+| `--qsl-text-trace` | Schrittzeilen, Gruppenkopf, Abschnittstitel und Inhalt im Schritt-Popover | `11px` |
+| `--qsl-text-label` | Absenderkennung an Sprechblasen, Hinweis "eingespeist" | `0.72rem` |
+| `--qsl-text-small` | `<small>` (Größe von Anhängen) | nicht gesetzt: `80%` |
 | `--qsl-font`, `--qsl-mono` | Schriften | Systemschrift, `ui-monospace` |
 | `--qsl-color-scheme` | `color-scheme` der quassel-Elemente | `light` / `dark` |
 
 Dazu die Maßstäbe aus dem Tailwind-Theme: `--qsl-spacing` (0.235rem, kompakte Einheit),
-`--qsl-text-xs` bis `--qsl-text-lg` samt `--line-height`, `--qsl-radius-panel` (17px) und die
+`--qsl-text-xs` bis `--qsl-text-lg` samt `--line-height` (`--qsl-text-xs` ist 0.68rem) und die
 Chat-Maße `--qsl-chat-font-size` (13px), `--qsl-chat-line-height`, `--qsl-chat-message-gap`
 (16px), `--qsl-chat-dense-message-gap` (8px), `--qsl-chat-content-max-width`,
 `--qsl-chat-horizontal-padding` (24px; diese sechs setzen auch `appearance`, `maxWidth` und
-`horizontalPadding`) sowie `--qsl-input-card-radius` für die Eingabe-Karte.
+`horizontalPadding`).
+
+Jede Variable wirkt ab dem Element, auf dem sie steht, auch die Radien: "nicht gesetzt" heißt,
+quassel definiert sie nirgends selbst und rechnet an der Verwendungsstelle mit dem Default. Ein
+Wrapper, der `--qsl-radius-md` oder `--qsl-bubble-radius` setzt, wirkt daher bis in jedes
+quassel-Element hinein. Kleine Knöpfe begrenzen `--qsl-radius-md` auf 10 bzw. 12px.
+
+Ein Host mit Mindestschriftgröße setzt alle Größen unter seiner Grenze, bei 12px also
+`--qsl-text-xs`, `--qsl-text-meta`, `--qsl-text-trace`, `--qsl-text-label` und `--qsl-text-small`.
+Popover liegen standardmäßig in `document.body` und erben die Variablen des Wrappers nur mit
+`portalContainer` (siehe Slots).
 
 ```css
 .mein-chat {
@@ -305,6 +327,27 @@ function HostButton({ variant, size, className, children, ...rest }: QuasselButt
 </QuasselProvider>
 ```
 
+`portalContainer` legt fest, wohin quassel seine Popover rendert (Standard: `document.body`).
+Erlaubt sind ein Element, ein Ref oder eine Funktion, die das Element liefert
+(`QuasselPortalContainer`); aufgelöst wird beim Öffnen. Liegt der Container im Theme-Wrapper des
+Hosts, gelten dessen `--qsl-*`-Variablen und `data-theme` auch im Popover:
+
+```tsx
+const popovers = useRef<HTMLDivElement>(null);
+
+<div className="mein-chat">
+  <QuasselProvider portalContainer={popovers}>
+    <ChatPanel ...>...</ChatPanel>
+  </QuasselProvider>
+  <div ref={popovers} />
+</div>
+```
+
+Der Container sollte außerhalb des Scroll-Containers liegen und nicht per `overflow` abschneiden;
+positioniert wird absolut. `useQuasselPortalContainer()` liefert das aufgelöste Element für
+eigene Popover des Hosts. Das eingebaute Popover trägt `data-quassel-popover` (dazu wie bisher
+`data-slot="popover-content"`); daran erkennt ein Host, dass ein quassel-Popover offen ist.
+
 | Slot | Props (`Quassel...Props`) |
 |---|---|
 | `Button` | `variant` (default, outline, secondary, ghost, destructive, link), `size` (default, xs, sm, lg, icon, icon-xs, icon-sm, icon-lg), `className`, `disabled`, `title`, `aria-label`, `aria-pressed`, `onClick`, `children` |
@@ -312,10 +355,12 @@ function HostButton({ variant, size, className, children, ...rest }: QuasselButt
 | `Card` | `size` (default, sm), `className`, `children` |
 | `StopButton` | `label`, `busy`, `size`, `className`, `disabled`, `title`, `onClick` |
 | `Popover` | `open`, `onOpenChange`, `children` |
-| `PopoverContent` | `anchor` (virtuelles Element mit `getBoundingClientRect`), `align`, `side`, `sideOffset`, `collisionPadding`, `className`, `aria-label`, `children` |
+| `PopoverContent` | `anchor` (virtuelles Element mit `getBoundingClientRect`), `align`, `side`, `sideOffset`, `collisionPadding`, `className`, `aria-label`, `portalContainer` (aufgelöstes Ziel oder `undefined` für `document.body`), `children` |
 
 `className` enthält quassels eigene Layout-Klassen (etwa Position eines Knopfs); ein Slot sollte
-sie übernehmen. `defaultComponents` liefert die eingebauten Bausteine zum Umhüllen,
+sie übernehmen. Ein eigenes `PopoverContent` sollte `portalContainer` an sein Portal geben und,
+wenn der Host offene Popover erkennen will, `data-quassel-popover` selbst setzen.
+`defaultComponents` liefert die eingebauten Bausteine zum Umhüllen,
 `useQuasselComponents()` die aktuell gültigen, etwa für eine eigene Aktionskarte.
 
 `allowUrl` erweitert die Link-Politik des Markdowns: Standard sind http, https, mailto, tel,
@@ -371,7 +416,9 @@ pnpm build      # Stylesheet und Galerie bauen
 Die Galerie zeigt Nur-Lesen, Eingabe-Karte mit Fake-Agent, Aktionen, Stile und Slots. Die
 README-Bilder stammen aus `packages/gallery/showcase.html`: Szenen per
 `?scene=agent|details|questions|party|themes` (`questions` zeigt die Aktionen, `actions` geht
-auch), dunkel mit `&theme=dark`.
+auch), dunkel mit `&theme=dark`. `?scene=host` zeigt einen Host mit eigener Skala neben dem
+Standard: Schriftgrößen ab 12px, eigene Radien und Sprechblase per Wrapper-Variablen, Popover
+per `portalContainer` im Wrapper.
 
 ## Veröffentlichen
 

@@ -344,8 +344,15 @@ nicht:
 
 Auch ein Tailwind-Host bindet einfach `quassel/chat.css` ein; dank Präfix kollidiert nichts mit
 seinen eigenen Utilities, und die Layer-Namen fügen sich in seine ein. Für Anpassungen über
-`className` nimmt er seine eigenen Klassen, etwa `className="min-h-16 flex-1"`, und setzt
-Variablen als Arbitrary Property: `className="[--qsl-input-card-radius:var(--radius-lg)]"`.
+`className` nimmt er seine eigenen Klassen und setzt Variablen als Arbitrary Property:
+`className="[--qsl-input-card-radius:var(--radius-lg)]"`.
+
+Reihenfolge, sobald der Host eigene Bausteine als Slots übergibt: `quassel/chat.css` NACH den
+Utilities des Hosts einbinden. Nur dann gewinnen quassels Layout-Klassen gegen die Grundklassen
+der Host-Bausteine (das `cn` des Hosts kennt keine `qsl:`-Klassen und löst den Konflikt nicht auf).
+Eine Host-Klasse, die dann gegen eine quassel-Klasse gewinnen soll, braucht `!`, etwa
+`className="min-h-16!"`. Hover- und Fokus-Zustände der Host-Bausteine bleiben erhalten, weil ihre
+Selektoren spezifischer sind.
 
 Entwicklung an quassel und am Host zugleich: den Host per `"quassel": "link:../quassel/packages/quassel"`
 einbinden (der Bundler des Hosts übersetzt die TypeScript-Quellen mit) und in quassel

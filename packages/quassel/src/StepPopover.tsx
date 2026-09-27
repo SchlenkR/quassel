@@ -36,7 +36,7 @@ export function StepPopover({
         anchor={anchor}
         aria-label={title}
         className={cn(
-          "qsl:w-[min(680px,calc(100vw-32px))] qsl:gap-0 qsl:overflow-hidden qsl:p-0 qsl:text-[13px] qsl:shadow-pop",
+          "qsl:w-[min(680px,calc(100vw-32px))] qsl:gap-0 qsl:overflow-hidden qsl:p-0 qsl:text-[13px] qsl:leading-normal qsl:shadow-pop",
           thinking ? "qsl:max-h-none" : "qsl:max-h-[min(70vh,620px)]",
         )}
         collisionPadding={16}

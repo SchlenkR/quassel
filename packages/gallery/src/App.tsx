@@ -18,7 +18,7 @@ import { actions, research, steps } from "./samples";
 const DEMOS = [
   { id: "lesen", title: "Nur lesen", note: "Verlauf ohne Eingabe" },
   { id: "eingabe", title: "Eingabe-Karte", note: "Stop, Dazwischenfunken, Anhänge" },
-  { id: "aktionen", title: "Aktionen", note: "Wartende Aktionen, eigene Karte" },
+  { id: "aktionen", title: "Aktionen", note: "Wartende Aktionen über der Eingabe" },
   { id: "stile", title: "Stile", note: "Nur --qsl-* überschrieben" },
   { id: "slots", title: "Slots", note: "Eigene Knöpfe per QuasselProvider" },
 ] as const;
@@ -127,15 +127,22 @@ function ActionDemo() {
   const [messages, dispatch] = useReducer(applyEvent, actions);
   const resolve = (actionId: string, status: "approved" | "dismissed", result: unknown) =>
     dispatch({ kind: "action-resolved", actionId, status, result });
+  const ask = (text: string) => {
+    const at = new Date().toISOString();
+    dispatch({ kind: "user", text, at });
+    dispatch({ kind: "action", actionId: crypto.randomUUID(), owner: null, text: `"${text}" so übernehmen?`, payload: {}, at });
+  };
   return (
-    <Stage note="Aktionen ohne Eigentümer zeigen die Standardkarte, renderAction ersetzt sie." title="Aktionen">
-      <ChatMessages
-        messages={messages}
-        onDismissAction={(actionId) => resolve(actionId, "dismissed", null)}
-        renderAction={(action, text) => action.owner === "choice"
-          ? <ChoiceCard action={action} onChoose={(option) => resolve(action.actionId, "approved", option)} text={text} />
-          : undefined}
-      />
+    <Stage note="Offene Aktionen stehen über der Eingabe, erledigte im Verlauf; renderAction ersetzt die Standardkarte. Senden stellt eine neue Rückfrage." title="Aktionen">
+      <ChatPanel className="panel" composer={<ChatInputToolbar onSend={ask} rows={1} />} maxWidth={760}>
+        <ChatMessages
+          messages={messages}
+          onDismissAction={(actionId) => resolve(actionId, "dismissed", null)}
+          renderAction={(action, text) => action.owner === "choice"
+            ? <ChoiceCard action={action} onChoose={(option) => resolve(action.actionId, "approved", option)} text={text} />
+            : undefined}
+        />
+      </ChatPanel>
     </Stage>
   );
 }

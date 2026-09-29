@@ -9,6 +9,7 @@ import {
   QuasselProvider,
   TimestampSwitch,
   type DetailMode,
+  type Message,
 } from "quassel";
 import "quassel/chat.css";
 import "./themes.css";
@@ -26,7 +27,14 @@ function Frame({ caption, small, className, children }: { caption?: string; smal
   );
 }
 
+const runningFor = (messages: Message[], ms: number): Message[] => {
+  const start = Date.parse([...messages].reverse().find((message) => message.tool && message.tool.result === undefined)?.at ?? "");
+  const shift = Number.isNaN(start) ? 0 : Date.now() - ms - start;
+  return messages.map((message) => message.at ? { ...message, at: new Date(Date.parse(message.at) + shift).toISOString() } : message);
+};
+
 function AgentScene() {
+  const [messages] = useState(() => runningFor(research, 100_000));
   const [detailMode, setDetailMode] = useState<DetailMode>("grouped");
   const [showTimestamps, setShowTimestamps] = useState(true);
   return (
@@ -52,7 +60,7 @@ function AgentScene() {
         <ChatMessages
           codeBlockOptions={{ showCopyButton: true }}
           detailMode={detailMode}
-          messages={research}
+          messages={messages}
           running
           showTimestamps={showTimestamps}
           texts={texts}
@@ -84,15 +92,16 @@ function ActionScene() {
   const [messages, dispatch] = useReducer(applyEvent, actions);
   return (
     <Frame className="showcase-frame--tall" small>
-      <ChatMessages
-        horizontalPadding={16}
-        messages={messages}
-        onDismissAction={(actionId) => dispatch({ kind: "action-resolved", actionId, status: "dismissed", result: null })}
-        renderAction={(action, text) => action.owner === "choice"
-          ? <ChoiceCard action={action} onChoose={(option) => dispatch({ kind: "action-resolved", actionId: action.actionId, status: "approved", result: option })} text={text} />
-          : undefined}
-        texts={texts}
-      />
+      <ChatPanel className="showcase-panel" composer={<ChatInputToolbar onSend={() => undefined} rows={1} texts={texts} />} horizontalPadding={16}>
+        <ChatMessages
+          messages={messages}
+          onDismissAction={(actionId) => dispatch({ kind: "action-resolved", actionId, status: "dismissed", result: null })}
+          renderAction={(action, text) => action.owner === "choice"
+            ? <ChoiceCard action={action} onChoose={(option) => dispatch({ kind: "action-resolved", actionId: action.actionId, status: "approved", result: option })} text={text} />
+            : undefined}
+          texts={texts}
+        />
+      </ChatPanel>
     </Frame>
   );
 }

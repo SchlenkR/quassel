@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import { cn } from "./ui/cn";
 import { ChatSendContext, createChatSendScope } from "./ChatSendContext";
+import { ChatActionDock } from "./ChatActionDock";
 import { appearanceStyle, type ChatAppearance } from "./options";
 
 /**
@@ -29,6 +30,7 @@ export function ChatPanel({
 }) {
   const wurzel = useRef<HTMLDivElement>(null);
   const eingabe = useRef<HTMLDivElement>(null);
+  const [dock, setDock] = useState<HTMLDivElement | null>(null);
   const hasComposer = composer !== undefined;
   const scrollOnSendRef = useRef(scrollOnSend);
   const [sendScope] = useState(() => createChatSendScope(scrollOnSendRef));
@@ -40,18 +42,24 @@ export function ChatPanel({
     if (!element || !rahmen) {
       return;
     }
-    const messen = () => rahmen.style.setProperty("--qsl-composer-height", `${element.offsetHeight}px`);
+    const messen = () => {
+      rahmen.style.setProperty("--qsl-composer-height", `${element.offsetHeight}px`);
+      rahmen.style.setProperty("--qsl-panel-height", `${rahmen.offsetHeight}px`);
+    };
     const beobachter = new ResizeObserver(messen);
     beobachter.observe(element);
+    beobachter.observe(rahmen);
     messen();
     return () => {
       beobachter.disconnect();
       rahmen.style.removeProperty("--qsl-composer-height");
+      rahmen.style.removeProperty("--qsl-panel-height");
     };
   }, [hasComposer]);
 
   return (
     <ChatSendContext.Provider value={sendScope}>
+    <ChatActionDock.Provider value={hasComposer ? dock : undefined}>
     <div
       className={cn("qsl:relative qsl:flex qsl:min-h-0 qsl:min-w-0 qsl:flex-col qsl:overflow-hidden", className)}
       data-chat="panel"
@@ -73,10 +81,18 @@ export function ChatPanel({
       {children}
       {hasComposer && (
         <div className="qsl:absolute qsl:inset-x-0 qsl:bottom-0 qsl:z-[5] qsl:px-[var(--qsl-chat-horizontal-padding,24px)] qsl:pb-3.5 qsl:*:mx-auto qsl:*:max-w-[var(--qsl-chat-content-max-width,none)]" data-chat="composer" ref={eingabe}>
+          <div>
+            <div
+              className="qsl:-mx-[16px] qsl:max-h-[calc(var(--qsl-panel-height,100dvh)_/_2)] qsl:overflow-y-auto qsl:px-[16px] qsl:pb-[var(--qsl-chat-message-gap,16px)] qsl:[-webkit-mask-image:linear-gradient(to_bottom,#000_calc(100%_-_var(--qsl-chat-message-gap,16px)),transparent)] qsl:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_var(--qsl-chat-message-gap,16px)),transparent)] qsl:empty:hidden"
+              data-chat="actions"
+              ref={setDock}
+            />
+          </div>
           {composer}
         </div>
       )}
     </div>
+    </ChatActionDock.Provider>
     </ChatSendContext.Provider>
   );
 }

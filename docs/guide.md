@@ -83,6 +83,8 @@ interface ChatTextCursor { conversationId: string; sequence: number; offset: num
 - Aufeinanderfolgende `text`-Deltas mit gleichem `cursor.conversationId` und `cursor.sequence`
   verschmelzen mit dem offenen Antwortblock, `thinking`-Deltas mit dem offenen Denkblock; jedes
   andere Event (außer `user`) schließt ihn. `offset` zählt die Nicht-Leerzeichen im Turn.
+- `at` am `tool`-Event ist der Startzeitpunkt des Aufrufs; aus ihm berechnet `ChatMessages` die
+  Laufzeit laufender Werkzeuge. Ohne `at` zeigt quassel keine Laufzeit.
 - `status`, `replay-end` und `plugin` ändern den Verlauf nicht; der Host liest `status.running`
   selbst aus und reicht es als `running` weiter.
 - `Message.bubble` (`{ color, side, label? }`) macht eine Antwort zur farbigen Sprechblase,
@@ -103,6 +105,14 @@ Immer einmal importieren: `import "quassel/chat.css"`.
 
 Rahmen um Verlauf und Eingabe: die Eingabe liegt über dem Verlauf, der Rahmen misst sie selbst
 (`--qsl-composer-height`) und gibt dem Verlauf den nötigen Fußraum.
+
+Mit `composer` trägt der Rahmen direkt über der Eingabe ein Dock für offene Aktionen
+(`data-chat="actions"`): gleiche Breite und Zentrierung wie die Eingabe, Abstand zur Eingabe wie
+zwischen zwei Blöcken im Verlauf, leer ohne Platzbedarf. Mehrere offene Aktionen stapeln sich mit
+kleinem Abstand; höher als die halbe Rahmenhöhe (`--qsl-panel-height`) wird das Dock nicht, darüber
+scrollt es in sich. Es zählt zur gemessenen Eingabe, der Verlauf hält also auch darüber seinen
+Fußraum und bleibt am Ende, wenn das Dock erscheint, wächst oder verschwindet. Gefüllt wird es von
+`ChatMessages` (siehe Aktionen); ohne `composer` gibt es kein Dock.
 
 ```ts
 {
@@ -145,6 +155,7 @@ Rahmen um Verlauf und Eingabe: die Eingabe liegt über dem Verlauf, der Rahmen m
   codeBlockOptions?: CodeBlockOptions;  // wrap, maxHeight, showCopyButton
   bubbleOptions?: BubbleOptions;        // variant "default" | "plain" | "bubbles", maxWidth, userSide, assistantSide, showSender, senderLabel
   messageActions?: MessageActionsOptions; // copy, edit, retry, custom
+  toolElapsedThreshold?: number | false;  // Default 3000 ms bis zur Laufzeitanzeige laufender Werkzeuge, false = nie
 }
 ```
 
@@ -159,19 +170,39 @@ Schritte hinter einer Kopfzeile ("12 Schritte"), ab 11 Schritten auch unten eink
 `compact` = einzeilig; `full` = mit Argumenten und Ergebnis. `stepState(message)` liefert
 `running | thinking | done | error`, Chips tragen ihn als `data-state`.
 
+Laufzeit: Solange `running` gilt und ein Werkzeug-Schritt noch kein Ergebnis hat, zeigt er nach
+`toolElapsedThreshold` (Default 3 s) hinter "läuft ..." seine Laufzeit seit `Message.at`: unter
+einer Minute über `texts.toolElapsedSeconds` ("12 s"), danach "1:40" und ab einer Stunde
+"1:02:03". Das gilt für einzeilige und volle Schritte, für Chips (nicht `icons`) und für die
+Kopfzeile von `grouped`, die den laufenden Schritt der Gruppe samt Laufzeit nennt. Das Element
+trägt `data-step="elapsed"`. Alle laufenden Anzeigen teilen sich einen Takt, der nur läuft,
+solange eine davon eingehängt ist; neu rendert nur die Anzeige selbst, und zwar wenn sich ihre
+Sekunde ändert. Beim Server-Rendering erscheint keine Laufzeit.
+
 Aktionen (`role: "action"`): ohne `renderAction` oder wenn es `undefined` liefert, zeigt quassel
 die `PendingActionCard` mit Text, "wartet auf Eingabe" und - mit `onDismissAction` - Verwerfen;
 erledigte Aktionen zeigen ihr Ergebnis (bestätigt mit Häkchen, verworfen mit neutralem Kreuz
 und `actionDismissed`). `renderAction` bekommt die Aktion samt `owner` und
 `payload` und rendert eine eigene Karte (Vorbild: `packages/gallery/src/ChoiceCard.tsx`).
 
+Wo eine Aktion steht, entscheidet ihr Zustand: Solange sie offen ist (`action.status` fehlt),
+rendert `ChatMessages` in einem `ChatPanel` mit `composer` sie im Dock über der Eingabe, in
+zeitlicher Reihenfolge und an ihrer Stelle im Verlauf gar nicht - wie eine Rückfrage in einem
+Terminal-Agenten. Sobald sie bestätigt oder verworfen ist, steht sie als Beleg an ihrer Stelle im
+Verlauf, und das Dock ist wieder leer. Ohne Dock (`ChatMessages` allein oder `ChatPanel` ohne
+`composer`) stehen auch offene Aktionen im Verlauf. Die Darstellung ist in beiden Fällen dieselbe
+(`renderAction`, sonst die Standardkarte); im Dock erben die Karten Schriftgröße und `appearance`
+des Verlaufs, aber keine Zeitstempel-Spalte. Wechselt eine Aktion vom Dock in den Verlauf, wird
+ihre Karte neu eingehängt: eigener Zustand der Karte geht dabei verloren, ebenso der Fokus.
+
 #### Screenreader
 
 Der Verlauf ist keine Live-Region: Streaming, Schritte, Working-Indikator und Zeitstempel werden
-nicht angesagt, während `running` trägt der Verlauf `aria-busy`. Angesagt wird nur, wenn eine
-Antwort fertig ist (`closed` oder Lauf beendet) und wenn eine neue offene Aktion erscheint, und
-zwar ihr Inhalt als Klartext (`markdownPlainText`). Der Verlauf beim Einhängen und Schübe von
-mehr als zwei Nachrichten (Reset mit Replay) werden nicht angesagt.
+nicht angesagt, während `running` trägt der Verlauf `aria-busy`. Die tickende Laufzeit laufender
+Werkzeuge ist `aria-hidden`; vorgelesen wird nur das gleichbleibende "läuft ...". Angesagt wird
+nur, wenn eine Antwort fertig ist (`closed` oder Lauf beendet) und wenn eine neue offene Aktion
+erscheint, und zwar ihr Inhalt als Klartext (`markdownPlainText`). Der Verlauf beim Einhängen und
+Schübe von mehr als zwei Nachrichten (Reset mit Replay) werden nicht angesagt.
 
 - `announce` weggelassen: der Text der Antwort bzw. Aktion.
 - `announce={(a) => ...}`: eigener Text je `ChatAnnouncement` (`{ kind: "reply" | "action", message }`),
@@ -224,13 +255,14 @@ fehlgeschlagenes `onSend` stellt den Entwurf wieder her oder bietet ihn zum Einf
 - `PendingActionCard`, `StepPopover`, `MessageActions`, `WorkingScenes` (`label?`, `compact?`).
 - Helfer: `stepState`, `applyEvent`, `fillText`, `formatAttachmentSize`, `encodeAttachment`,
   `validateAttachmentSelection`, `attachmentCapabilityError`, `timestampLabel`, `useChatAction`,
-  `copyChatText`, `createChatScroll`, `ChatSendContext`.
+  `copyChatText`, `createChatScroll`, `ChatSendContext`, `formatElapsed(ms, texts)` und
+  `useElapsed(startMs)` (Laufzeit im gemeinsamen Takt, etwa für eigene `renderTool`-Darstellungen).
 
 ### Texte
 
 Alle Beschriftungen stehen in `ChatTexts` (Default `defaultTexts`, deutsch) und lassen sich über
 `texts` je Komponente teilweise ersetzen. Platzhalter wie `{count}`, `{name}`, `{size}`, `{kind}`,
-`{model}` füllt quassel selbst. Eine vollständige englische Fassung steht in
+`{model}`, `{seconds}` füllt quassel selbst. Eine vollständige englische Fassung steht in
 `packages/gallery/src/texts.ts`.
 
 ## Theming
@@ -410,13 +442,16 @@ Tailwind-Watch aktuell; der Dev-Server des Hosts lädt die Datei bei jeder Ände
 pnpm install
 pnpm dev        # Stylesheet im Watch-Modus plus Galerie auf http://localhost:3210
 pnpm check      # Typprüfung von Paket und Galerie
+pnpm test       # Tests des Pakets (node:test, happy-dom, Fake-Timer)
 pnpm build      # Stylesheet und Galerie bauen
 ```
 
-Die Galerie zeigt Nur-Lesen, Eingabe-Karte mit Fake-Agent, Aktionen, Stile und Slots. Die
+Die Galerie zeigt Nur-Lesen, Eingabe-Karte mit Fake-Agent (sein Werkzeug läuft fünf Sekunden,
+damit die Laufzeit erscheint), Aktionen, Stile und Slots. Die
 README-Bilder stammen aus `packages/gallery/showcase.html`: Szenen per
-`?scene=agent|details|questions|party|themes` (`questions` zeigt die Aktionen, `actions` geht
-auch), dunkel mit `&theme=dark`. `?scene=host` zeigt einen Host mit eigener Skala neben dem
+`?scene=agent|details|questions|party|themes` (`questions` zeigt die Aktionen: die erledigte
+im Verlauf, zwei offene im Dock über der Eingabe; `actions` geht auch; in `agent` läuft
+`run_tests` seit 1:40), dunkel mit `&theme=dark`. `?scene=host` zeigt einen Host mit eigener Skala neben dem
 Standard: Schriftgrößen ab 12px, eigene Radien und Sprechblase per Wrapper-Variablen, Popover
 per `portalContainer` im Wrapper.
 

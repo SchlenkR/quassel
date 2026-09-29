@@ -4,6 +4,7 @@ export const englishTexts: ChatTexts = {
   working: "Working ...",
   toolRunning: "running ...",
   toolStillRunning: "Tool running ...",
+  toolElapsedSeconds: "{seconds}s",
   currentTool: "Tool running",
   thinkingChip: "Thinking",
   toolChip: "Tool",

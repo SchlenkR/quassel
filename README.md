@@ -12,12 +12,15 @@ color, radius, font and font size is a `--qsl-*` variable.
 
 **Agent chats that show their work.** Thinking and tool calls appear as steps. Pick how much
 of them the user sees - only the current step, icons, chips, a collapsible group, single lines
-or everything - and let them switch at runtime.
+or everything - and let them switch at runtime. A tool call that runs longer than a few seconds
+shows how long it has been running, on its row and on the collapsed group header, so a slow step
+does not look like a hung one.
 
 ![The same steps as icons, chips and single lines](docs/images/details.png)
 
 **Pending actions.** The agent waits for input: a generic card with dismiss, or the host's own
-rendering per action owner. Resolved actions stay in the transcript as a record.
+rendering per action owner. Open actions sit right above the input, like a question in a terminal
+agent; resolved actions stay in the transcript as a record.
 
 **Multi-party conversations.** Colored bubbles with labels for agents that talk to each other.
 
@@ -89,6 +92,7 @@ Any backend that emits the `quassel/events` stream works with the same component
 pnpm install
 pnpm dev              # stylesheet in watch mode plus the gallery on http://localhost:3210
 pnpm check            # type check package and gallery
+pnpm test             # package tests (node:test with happy-dom)
 pnpm build            # stylesheet and gallery build
 pnpm release --dry-run
 ```

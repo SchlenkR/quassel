@@ -20,6 +20,7 @@ export { useChatAction, copyChatText } from "./useChatAction";
 export { createChatScroll } from "./chat-scroll";
 export { ChatSendContext, createChatSendScope, type ChatSendScope } from "./ChatSendContext";
 export { messageDate, timestampDay, timestampLabel } from "./timestamps";
+export { formatElapsed, useElapsed } from "./elapsed";
 export {
   attachmentCapabilityError, attachmentDownloadUrl, attachmentMediaType, encodeAttachment, formatAttachmentSize, validateAttachmentSelection,
   MAX_CHAT_ATTACHMENTS, MAX_CHAT_ATTACHMENT_BYTES,

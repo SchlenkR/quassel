@@ -2,6 +2,7 @@ export interface ChatTexts {
   working: string;
   toolRunning: string;
   toolStillRunning: string;
+  toolElapsedSeconds: string;
   currentTool: string;
   thinkingChip: string;
   toolChip: string;
@@ -70,6 +71,7 @@ export const defaultTexts: ChatTexts = {
   working: "Arbeitet ...",
   toolRunning: "läuft ...",
   toolStillRunning: "Werkzeug läuft ...",
+  toolElapsedSeconds: "{seconds} s",
   currentTool: "Werkzeug läuft",
   thinkingChip: "Denken",
   toolChip: "Werkzeug",

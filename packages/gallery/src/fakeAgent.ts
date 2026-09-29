@@ -2,7 +2,8 @@ import { applyEvent, type ChatEvent, type ChatTextCursor, type Message } from "q
 import { useMemo, useReducer, useRef, useState } from "react";
 
 /**
- * Ein geskripteter Agent für die Galerie: streamt Denken, einen Tool-Call und eine
+ * Ein geskripteter Agent für die Galerie: streamt Denken, einen Tool-Call, der lange genug
+ * läuft, um seine Laufzeit zu zeigen, und eine
  * Markdown-Antwort, kann abgebrochen werden und nimmt Zwischenrufe an, die er am
  * Ende der laufenden Runde beantwortet.
  */
@@ -58,7 +59,7 @@ export class FakeAgent {
         label: `suche_daten { frage: "${kurz(text)}" }`,
         at: new Date().toISOString(),
       });
-      await this.sleep(1100);
+      await this.sleep(5000);
       if (this.cancelled) return;
       this.emit({
         kind: "tool-result",

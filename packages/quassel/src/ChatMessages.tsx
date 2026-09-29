@@ -1,5 +1,6 @@
 import { cn } from "./ui/cn";
 import { type CSSProperties, ReactNode, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { createChatScroll } from "./chat-scroll";
 import { ChatAnnouncement, DetailMode, Message, PendingAction, prettyJson, stepState, ToolInfo } from "./types";
 import { ChatTexts, defaultTexts } from "./texts";
@@ -11,8 +12,10 @@ import { attachmentDownloadUrl, formatAttachmentSize } from "./attachments";
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, LayersIcon, SparklesIcon, WrenchIcon } from "lucide-react";
 import { appearanceStyle, type ChatAppearance, type TimestampOptions, type CodeBlockOptions, type BubbleOptions, type MessageActionsOptions } from "./options";
 import { messageDate, timestampDay, timestampLabel } from "./timestamps";
+import { formatElapsed, useElapsed } from "./elapsed";
 import { MessageActions } from "./MessageActions";
 import { ChatSendContext } from "./ChatSendContext";
+import { ChatActionDock } from "./ChatActionDock";
 import { announce as ansagen } from "./announce";
 import { useQuasselComponents } from "./QuasselProvider";
 
@@ -44,6 +47,10 @@ const bubbleBodyClasses = "qsl:relative qsl:max-w-[86%] qsl:px-3 qsl:py-2 qsl:le
 
 function istSchritt(message?: Message): boolean {
   return !!message && (message.role === "thinking" || message.role === "tool");
+}
+
+function istOffeneAktion(message: Message): message is Message & { action: PendingAction } {
+  return message.role === "action" && message.action !== undefined && message.action.status === undefined;
 }
 
 function defaultArgumentsText(tool: ToolInfo): string {
@@ -81,6 +88,7 @@ export function ChatMessages({
   codeBlockOptions,
   bubbleOptions,
   messageActions,
+  toolElapsedThreshold = 3000,
 }: {
   messages: Message[];
   /** Beiträge mit diesem Message.sender erscheinen ohne Sprechblase; null behält die Nachrichtenvorgaben. */
@@ -117,6 +125,8 @@ export function ChatMessages({
   codeBlockOptions?: CodeBlockOptions;
   bubbleOptions?: BubbleOptions;
   messageActions?: MessageActionsOptions;
+  /** Milliseconds before a running tool call shows its elapsed time (from Message.at) while running; false = never. */
+  toolElapsedThreshold?: number | false;
 }) {
   const alleTexte = { ...defaultTexts, ...texts };
   const { Button } = useQuasselComponents();
@@ -127,6 +137,7 @@ export function ChatMessages({
   const [showJumpToEnd, setShowJumpToEnd] = useState(false);
   const [scroll] = useState(() => createChatScroll());
   const sendScope = useContext(ChatSendContext);
+  const dock = useContext(ChatActionDock);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!showTimestamps || timestampOptions?.format !== "relative") return;
@@ -140,7 +151,7 @@ export function ChatMessages({
   useEffect(() => {
     const faellig = messages.filter((message, index) => !angesagt.current.has(message.key) && (
       message.role === "action"
-        ? message.action !== undefined && message.action.status === undefined
+        ? istOffeneAktion(message)
         : message.role === "assistant" && message.text.trim() !== "" && (message.closed === true || (!running && index === messages.length - 1))
     ));
     if (faellig.length === 0) {
@@ -216,6 +227,9 @@ export function ChatMessages({
       // Eigene Eingaben hinter dem laufenden Schritt beenden ihn nicht; jede andere Nachricht schon.
       const letzterFremder = messages.reduce((last, message, index) => message.role === "user" ? last : index, -1);
       return messages.filter((message, index) => {
+        if (dock !== undefined && istOffeneAktion(message)) {
+          return false;
+        }
         if (detailMode === "current" && istSchritt(message)) {
           return running && index === letzterFremder
             && (message.role === "thinking" ? !message.closed : stepState(message) === "running");
@@ -229,8 +243,9 @@ export function ChatMessages({
         return true;
       });
     },
-    [messages, detailMode, running],
+    [messages, detailMode, running, dock],
   );
+  const offeneAktionen = dock ? messages.filter(istOffeneAktion) : [];
 
   const mitZeit = (inhalt: ReactNode, key: string, at: string | undefined, dicht = false): ReactNode =>
     showTimestamps
@@ -247,18 +262,20 @@ export function ChatMessages({
 
   // In den Chip-Modi ruecken aufeinanderfolgende Schritte in eine umbrechende Zeile zusammen, gruppiert in eine aufklappbare Zeile.
   const chipModus = detailMode === "current" || detailMode === "chips" || detailMode === "icons";
+  const elapsedAfter = running && toolElapsedThreshold !== false ? toolElapsedThreshold : undefined;
   const gruppenModus = detailMode === "grouped";
   const bloecke: ReactNode[] = [];
   let lastDay: string | undefined;
   let gruppe: Message[] = [];
   const schliesseGruppe = () => {
     if (gruppe.length > 0) {
-      const letzterZustand = stepState(gruppe[gruppe.length - 1]);
+      const laufenderSchritt = running ? [...gruppe].reverse().find((message) => ["running", "thinking"].includes(stepState(message))) : undefined;
       bloecke.push(mitZeit(
         gruppenModus ? (
           <StepGroup
-            aktiv={running && (letzterZustand === "running" || letzterZustand === "thinking")}
+            elapsedAfter={elapsedAfter}
             expandierbar={stepsExpandable}
+            laufenderSchritt={laufenderSchritt}
             key={gruppe[0].key}
             messages={gruppe}
             texts={alleTexte}
@@ -266,6 +283,7 @@ export function ChatMessages({
           />
         ) : (
           <StepRow
+            elapsedAfter={elapsedAfter}
             expandierbar={stepsExpandable}
             key={gruppe[0].key}
             messages={gruppe}
@@ -313,6 +331,7 @@ export function ChatMessages({
       <Bubble
         detailMode={detailMode}
         dicht={dicht}
+        elapsedAfter={elapsedAfter}
         expandierbar={stepsExpandable}
         key={message.key}
         message={message}
@@ -400,6 +419,16 @@ export function ChatMessages({
           </Button>
         </div>
       )}
+      {dock && offeneAktionen.length > 0 && createPortal(
+        <div className="qsl:flex qsl:flex-col qsl:gap-[var(--qsl-chat-dense-message-gap,8px)] qsl:text-[length:var(--qsl-chat-font-size,13px)] qsl:text-foreground" style={appearanceStyle(appearance)}>
+          {offeneAktionen.map((message) => (
+            <div key={message.key}>
+              <ActionContent action={message.action} onDismissAction={onDismissAction} renderAction={renderAction} text={message.text} texts={alleTexte} />
+            </div>
+          ))}
+        </div>,
+        dock,
+      )}
     </div>
   );
 
@@ -411,6 +440,7 @@ function StepRow({
   messages,
   mitText,
   expandierbar,
+  elapsedAfter,
   texts,
   toolArgumentsText,
   toolLabel,
@@ -418,6 +448,7 @@ function StepRow({
   messages: Message[];
   mitText: boolean;
   expandierbar: boolean;
+  elapsedAfter: number | undefined;
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
   toolLabel?: string;
@@ -441,6 +472,7 @@ function StepRow({
               <WrenchIcon className={tool?.isError ? "qsl:text-destructive" : undefined} size={11} />
             )}
             {mitText && <span className="qsl:min-w-0 qsl:self-baseline qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap">{label}</span>}
+            {mitText && <ToolElapsed after={elapsedAfter} className="qsl:flex-none qsl:self-baseline" message={message} texts={texts} />}
             {mitText && <span className="qsl:inline-flex qsl:w-2.5 qsl:flex-none qsl:items-center qsl:justify-center qsl:text-success">{state === "done" && <CheckIcon size={10} />}</span>}
           </>
         );
@@ -484,13 +516,16 @@ function StepRow({
 /** Aufeinanderfolgende Schritte hinter einer Kopfzeile; aufgeklappt stehen sie als einzeilige Zeilen darunter. */
 function StepGroup({
   messages,
-  aktiv,
+  laufenderSchritt,
+  elapsedAfter,
   expandierbar,
   texts,
   toolArgumentsText,
 }: {
   messages: Message[];
-  aktiv: boolean;
+  /** The step the collapsed header names while the chat runs; undefined = nothing running. */
+  laufenderSchritt: Message | undefined;
+  elapsedAfter: number | undefined;
   expandierbar: boolean;
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
@@ -504,10 +539,10 @@ function StepGroup({
       kopf.current?.scrollIntoView({ block: "nearest" });
     }
   }, [offen]);
-  const letzte = messages[messages.length - 1];
+  const aktiv = laufenderSchritt !== undefined;
   const fehler = messages.some((message) => message.tool?.isError);
   const anzahl = messages.length === 1 ? texts.stepGroupOne : texts.stepGroupMany.replace("{count}", String(messages.length));
-  const laufend = aktiv ? (letzte.role === "thinking" ? texts.thinkingChip : letzte.tool?.name || letzte.text || texts.toolChip) : undefined;
+  const laufend = laufenderSchritt && (laufenderSchritt.role === "thinking" ? texts.thinkingChip : laufenderSchritt.tool?.name || laufenderSchritt.text || texts.toolChip);
 
   return (
     <div className={stepClasses} data-step="group">
@@ -523,12 +558,13 @@ function StepGroup({
         <span className={cn(traceLineClasses, "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap")}>
           {anzahl}
           {laufend && <span className={traceRunningClasses}>{laufend} {texts.toolRunning}</span>}
+          {laufenderSchritt && <ToolElapsed after={elapsedAfter} message={laufenderSchritt} texts={texts} />}
         </span>
       </button>
       {offen && (
         <div className="qsl:mt-0.5 qsl:flex qsl:flex-col qsl:gap-0.5 qsl:pl-3">
           {messages.map((message) => (
-            <TraceLine className="qsl:pl-3" expandierbar={expandierbar} key={message.key} message={message} texts={texts} toolArgumentsText={toolArgumentsText} />
+            <TraceLine className="qsl:pl-3" elapsedAfter={elapsedAfter} expandierbar={expandierbar} key={message.key} message={message} texts={texts} toolArgumentsText={toolArgumentsText} />
           ))}
         </div>
       )}
@@ -554,12 +590,14 @@ function StepGroup({
 function TraceLine({
   message,
   className,
+  elapsedAfter,
   expandierbar,
   texts,
   toolArgumentsText,
 }: {
   message: Message;
   className: string;
+  elapsedAfter: number | undefined;
   expandierbar: boolean;
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
@@ -579,6 +617,7 @@ function TraceLine({
       <span className={zeile}>
         {message.text}
         {tool && tool.result === undefined && <span className={traceRunningClasses}>{texts.toolRunning}</span>}
+        <ToolElapsed after={elapsedAfter} message={message} texts={texts} />
       </span>
     </>
   );
@@ -611,11 +650,24 @@ function TraceLine({
   );
 }
 
+/** Elapsed time of a running tool call since Message.at; aria-hidden, so the ticking number never reaches screen readers. */
+function ToolElapsed({ message, after, texts, className = traceRunningClasses }: { message: Message; after: number | undefined; texts: ChatTexts; className?: string }) {
+  const start = stepState(message) === "running" ? messageDate(message.at)?.getTime() : undefined;
+  return after === undefined || start === undefined ? null : <Elapsed after={after} className={className} start={start} texts={texts} />;
+}
+
+function Elapsed({ start, after, className, texts }: { start: number; after: number; className: string; texts: ChatTexts }) {
+  const elapsed = useElapsed(start);
+  if (elapsed === undefined || elapsed < after) return null;
+  return <span aria-hidden="true" className={cn(className, "qsl:tabular-nums")} data-step="elapsed">{formatElapsed(elapsed, texts)}</span>;
+}
+
 function Bubble({
   message,
   plain,
   detailMode,
   dicht,
+  elapsedAfter,
   expandierbar,
   texts,
   toolArgumentsText,
@@ -628,6 +680,7 @@ function Bubble({
   plain: boolean;
   detailMode: DetailMode;
   dicht: boolean;
+  elapsedAfter: number | undefined;
   expandierbar: boolean;
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
@@ -640,7 +693,7 @@ function Bubble({
 
   if (message.role === "thinking" || (message.role === "tool" && message.tool)) {
     if (detailMode === "compact") {
-      return <TraceLine className={schritt} expandierbar={expandierbar} message={message} texts={texts} toolArgumentsText={toolArgumentsText} />;
+      return <TraceLine className={schritt} elapsedAfter={elapsedAfter} expandierbar={expandierbar} message={message} texts={texts} toolArgumentsText={toolArgumentsText} />;
     }
     const thinking = message.role === "thinking";
     const tool = message.tool;
@@ -653,6 +706,7 @@ function Bubble({
       <>
         {message.text}
         {tool && tool.result === undefined && <span className={traceRunningClasses}>{texts.toolRunning}</span>}
+        <ToolElapsed after={elapsedAfter} message={message} texts={texts} />
       </>
     );
     return (
@@ -675,19 +729,9 @@ function Bubble({
   }
 
   if (message.role === "action" && message.action) {
-    const action = message.action;
     return (
       <div className={schritt}>
-        {renderAction?.(action, message.text) ?? (
-          <PendingActionCard
-            action={action}
-            dismissedLabel={texts.actionDismissed}
-            dismissLabel={texts.dismissAction}
-            onDismiss={onDismissAction ? () => onDismissAction(action.actionId) : undefined}
-            text={message.text}
-            waitingLabel={texts.pendingAction}
-          />
-        )}
+        <ActionContent action={message.action} onDismissAction={onDismissAction} renderAction={renderAction} text={message.text} texts={texts} />
       </div>
     );
   }
@@ -734,6 +778,31 @@ function Bubble({
         {content}
       </div>
     </div>
+  );
+}
+
+function ActionContent({
+  action,
+  text,
+  texts,
+  renderAction,
+  onDismissAction,
+}: {
+  action: PendingAction;
+  text: string;
+  texts: ChatTexts;
+  renderAction?: (action: PendingAction, text: string) => ReactNode | undefined;
+  onDismissAction?: (actionId: string) => void;
+}) {
+  return renderAction?.(action, text) ?? (
+    <PendingActionCard
+      action={action}
+      dismissedLabel={texts.actionDismissed}
+      dismissLabel={texts.dismissAction}
+      onDismiss={onDismissAction ? () => onDismissAction(action.actionId) : undefined}
+      text={text}
+      waitingLabel={texts.pendingAction}
+    />
   );
 }
 

@@ -5,6 +5,7 @@
     "dev": "pnpm --filter quassel css && pnpm --parallel --filter quassel --filter gallery dev",
     "build": "pnpm --filter quassel css && pnpm --filter gallery build",
     "check": "pnpm --filter quassel check && pnpm --filter gallery exec tsc --noEmit",
+    "test": "pnpm --filter quassel test",
     "release": "node scripts/publish.mjs"
   }
 }

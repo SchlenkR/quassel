@@ -68,6 +68,7 @@ export function ChatMessages({
   running = false,
   working,
   stepsExpandable = true,
+  groupsExpandable = true,
   texts,
   toolArgumentsText = defaultArgumentsText,
   renderTool,
@@ -98,6 +99,8 @@ export function ChatMessages({
   working?: ReactNode;
   /** false = thinking and tool steps cannot be expanded (no popover). */
   stepsExpandable?: boolean;
+  /** false = step groups in grouped mode stay collapsed (header without toggle). */
+  groupsExpandable?: boolean;
   texts?: Partial<ChatTexts>;
   toolArgumentsText?: (tool: ToolInfo) => string;
   /** Custom rendering for single tools; undefined = default rendering. */
@@ -275,6 +278,7 @@ export function ChatMessages({
           <StepGroup
             elapsedAfter={elapsedAfter}
             expandable={stepsExpandable}
+            groupExpandable={groupsExpandable}
             runningStep={runningStep}
             key={group[0].key}
             messages={group}
@@ -519,6 +523,7 @@ function StepGroup({
   runningStep,
   elapsedAfter,
   expandable,
+  groupExpandable,
   texts,
   toolArgumentsText,
 }: {
@@ -527,6 +532,7 @@ function StepGroup({
   runningStep: Message | undefined;
   elapsedAfter: number | undefined;
   expandable: boolean;
+  groupExpandable: boolean;
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
 }) {
@@ -543,6 +549,24 @@ function StepGroup({
   const failed = messages.some((message) => message.tool?.isError);
   const count = messages.length === 1 ? texts.stepGroupOne : texts.stepGroupMany.replace("{count}", String(messages.length));
   const runningLabel = runningStep && (runningStep.role === "thinking" ? texts.thinkingChip : runningStep.tool?.name || runningStep.text || texts.toolChip);
+  const summary = (
+    <>
+      <LayersIcon className={failed ? traceErrorIconClasses : traceIconClasses} size={12} />
+      <span className={cn(traceLineClasses, "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap")}>
+        {count}
+        {runningLabel && <span className={traceRunningClasses}>{runningLabel} {texts.toolRunning}</span>}
+        {runningStep && <ToolElapsed after={elapsedAfter} message={runningStep} texts={texts} />}
+      </span>
+    </>
+  );
+
+  if (!groupExpandable) {
+    return (
+      <div className={stepClasses} data-step="group">
+        <div className={cn(traceClasses, "qsl:items-center qsl:py-1 qsl:pr-2 qsl:pl-1", active && "qsl:animate-fade-pulse qsl:motion-reduce:animate-none")}>{summary}</div>
+      </div>
+    );
+  }
 
   return (
     <div className={stepClasses} data-step="group">
@@ -554,12 +578,7 @@ function StepGroup({
         type="button"
       >
         <ChevronRightIcon className={cn("qsl:flex-none qsl:opacity-60 qsl:transition-transform", open && "qsl:rotate-90")} size={12} />
-        <LayersIcon className={failed ? traceErrorIconClasses : traceIconClasses} size={12} />
-        <span className={cn(traceLineClasses, "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap")}>
-          {count}
-          {runningLabel && <span className={traceRunningClasses}>{runningLabel} {texts.toolRunning}</span>}
-          {runningStep && <ToolElapsed after={elapsedAfter} message={runningStep} texts={texts} />}
-        </span>
+        {summary}
       </button>
       {open && (
         <div className="qsl:mt-0.5 qsl:flex qsl:flex-col qsl:gap-0.5 qsl:pl-3">

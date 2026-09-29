@@ -137,6 +137,7 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
   running?: boolean;                    // working indicator, aria-busy
   working?: ReactNode;                  // custom working indicator instead of WorkingScenes
   stepsExpandable?: boolean;            // default true: clicking a step opens the detail popover
+  groupsExpandable?: boolean;           // default true: in grouped mode the header expands to the steps
   texts?: Partial<ChatTexts>;
   toolArgumentsText?: (tool: ToolInfo) => string;
   renderTool?: (tool: ToolInfo) => ReactNode | undefined;          // custom rendering per tool

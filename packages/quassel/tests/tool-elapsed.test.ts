@@ -29,7 +29,7 @@ afterEach(() => {
   mock.timers.reset();
 });
 
-const render = (messages: Message[], options: { detailMode?: DetailMode; running?: boolean; toolElapsedThreshold?: number | false } = {}) =>
+const render = (messages: Message[], options: { detailMode?: DetailMode; running?: boolean; toolElapsedThreshold?: number | false; groupsExpandable?: boolean } = {}) =>
   act(() => root.render(createElement(ChatMessages, { messages, running: true, working: createElement("span"), detailMode: "compact", ...options })));
 
 const tick = (ms: number) => act(() => mock.timers.tick(ms));
@@ -114,4 +114,10 @@ test("chips carry the elapsed time, icons do not", () => {
   assert.deepEqual(shown(), ["4 s"]);
   render([done("read", "read"), open()], { detailMode: "icons" });
   assert.deepEqual(shown(), []);
+});
+
+test("with groupsExpandable false the group header has no toggle and still names the running step", () => {
+  render([done("read", "read"), open()], { detailMode: "grouped", groupsExpandable: false });
+  assert.equal(container.querySelector("[data-step=group] button"), null);
+  assert.match(container.querySelector("[data-step=group]")?.textContent ?? "", /^2 stepsbash running \.\.\./);
 });

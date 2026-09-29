@@ -1,4 +1,5 @@
 // Usage: pnpm release [--dry-run]; the token comes from NPM_TOKEN or the user's .npmrc.
+// The version is the patch after the latest one on npm, unless packages/quassel/package.json is already ahead.
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -7,23 +8,37 @@ import { createRequire } from "node:module";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pkgDir = join(root, "packages/quassel");
+const pkgFile = join(pkgDir, "package.json");
 const out = join(pkgDir, "dist");
 const dryRun = process.argv.includes("--dry-run");
 const repoUrl = "https://github.com/SchlenkR/quassel";
 const rawUrl = "https://raw.githubusercontent.com/SchlenkR/quassel/main";
 
 const run = (command, args, cwd = root) => execFileSync(command, args, { cwd, stdio: "inherit" });
-const source = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"));
+const declared = JSON.parse(readFileSync(pkgFile, "utf8"));
 
-const published = (() => {
+const parse = (version) => {
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+  if (!match) throw new Error(`${version} is not a plain major.minor.patch version`);
+  return match.slice(1).map(Number);
+};
+const compare = (left, right) => parse(left).reduce((order, part, index) => order || part - parse(right)[index], 0);
+const latest = (() => {
   try {
-    return execFileSync("npm", ["view", `${source.name}@${source.version}`, "version"], { encoding: "utf8" }).trim() !== "";
+    return execFileSync("npm", ["view", declared.name, "version"], { encoding: "utf8" }).trim() || undefined;
   } catch {
-    return false;
+    return undefined;
   }
 })();
-if (published && !dryRun) {
-  throw new Error(`${source.name}@${source.version} is already on npm - bump the version in packages/quassel/package.json first`);
+const bumped = (version) => {
+  const [major, minor, patch] = parse(version);
+  return `${major}.${minor}.${patch + 1}`;
+};
+const version = latest === undefined || compare(declared.version, latest) > 0 ? declared.version : bumped(latest);
+const source = { ...declared, version };
+console.log(`${source.name}: npm has ${latest ?? "nothing"}, publishing ${version}${dryRun ? " (dry run)" : ""}`);
+if (!dryRun && version !== declared.version) {
+  writeFileSync(pkgFile, readFileSync(pkgFile, "utf8").replace(/"version": "[^"]*"/, `"version": "${version}"`));
 }
 
 run("pnpm", ["--filter", "quassel", "check"]);

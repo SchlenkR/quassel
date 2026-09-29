@@ -5,8 +5,8 @@ import { ChatActionDock } from "./ChatActionDock";
 import { appearanceStyle, type ChatAppearance } from "./options";
 
 /**
- * Verlauf mit ueberlagerter Eingabe. Der Rahmen misst die Eingabe selbst und
- * gibt dem Verlauf den noetigen Fussraum, damit kein Host Innenmasse setzen muss.
+ * Transcript with an overlaid composer. The frame measures the composer itself and gives the
+ * transcript the footer space it needs, so no host has to set inner dimensions.
  */
 export function ChatPanel({
   children,
@@ -19,7 +19,7 @@ export function ChatPanel({
   scrollOnSend = false,
 }: {
   children: ReactNode;
-  /** Die Eingabe; sie liegt ueber dem Verlauf, nicht darunter. */
+  /** The composer; it lies over the transcript, not below it. */
   composer?: ReactNode;
   className?: string;
   nodeRef?: Ref<HTMLDivElement>;
@@ -28,8 +28,8 @@ export function ChatPanel({
   appearance?: ChatAppearance;
   scrollOnSend?: boolean;
 }) {
-  const wurzel = useRef<HTMLDivElement>(null);
-  const eingabe = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
   const [dock, setDock] = useState<HTMLDivElement | null>(null);
   const hasComposer = composer !== undefined;
   const scrollOnSendRef = useRef(scrollOnSend);
@@ -37,23 +37,23 @@ export function ChatPanel({
   useLayoutEffect(() => { scrollOnSendRef.current = scrollOnSend; }, [scrollOnSend]);
 
   useEffect(() => {
-    const element = eingabe.current;
-    const rahmen = wurzel.current;
-    if (!element || !rahmen) {
+    const element = composerRef.current;
+    const frame = root.current;
+    if (!element || !frame) {
       return;
     }
-    const messen = () => {
-      rahmen.style.setProperty("--qsl-composer-height", `${element.offsetHeight}px`);
-      rahmen.style.setProperty("--qsl-panel-height", `${rahmen.offsetHeight}px`);
+    const measure = () => {
+      frame.style.setProperty("--qsl-composer-height", `${element.offsetHeight}px`);
+      frame.style.setProperty("--qsl-panel-height", `${frame.offsetHeight}px`);
     };
-    const beobachter = new ResizeObserver(messen);
-    beobachter.observe(element);
-    beobachter.observe(rahmen);
-    messen();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    observer.observe(frame);
+    measure();
     return () => {
-      beobachter.disconnect();
-      rahmen.style.removeProperty("--qsl-composer-height");
-      rahmen.style.removeProperty("--qsl-panel-height");
+      observer.disconnect();
+      frame.style.removeProperty("--qsl-composer-height");
+      frame.style.removeProperty("--qsl-panel-height");
     };
   }, [hasComposer]);
 
@@ -70,7 +70,7 @@ export function ChatPanel({
         "--qsl-chat-horizontal-padding": typeof horizontalPadding === "number" ? `${horizontalPadding}px` : horizontalPadding,
       } as CSSProperties}
       ref={(element) => {
-        wurzel.current = element;
+        root.current = element;
         if (typeof nodeRef === "function") {
           nodeRef(element);
         } else if (nodeRef) {
@@ -80,7 +80,7 @@ export function ChatPanel({
     >
       {children}
       {hasComposer && (
-        <div className="qsl:absolute qsl:inset-x-0 qsl:bottom-0 qsl:z-[5] qsl:px-[var(--qsl-chat-horizontal-padding,24px)] qsl:pb-3.5 qsl:*:mx-auto qsl:*:max-w-[var(--qsl-chat-content-max-width,none)]" data-chat="composer" ref={eingabe}>
+        <div className="qsl:absolute qsl:inset-x-0 qsl:bottom-0 qsl:z-[5] qsl:px-[var(--qsl-chat-horizontal-padding,24px)] qsl:pb-3.5 qsl:*:mx-auto qsl:*:max-w-[var(--qsl-chat-content-max-width,none)]" data-chat="composer" ref={composerRef}>
           <div>
             <div
               className="qsl:-mx-[16px] qsl:max-h-[calc(var(--qsl-panel-height,100dvh)_/_2)] qsl:overflow-y-auto qsl:px-[16px] qsl:pb-[var(--qsl-chat-message-gap,16px)] qsl:[-webkit-mask-image:linear-gradient(to_bottom,#000_calc(100%_-_var(--qsl-chat-message-gap,16px)),transparent)] qsl:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_var(--qsl-chat-message-gap,16px)),transparent)] qsl:empty:hidden"

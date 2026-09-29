@@ -16,16 +16,16 @@ import { useFakeAgent } from "./fakeAgent";
 import { actions, research, steps } from "./samples";
 
 const DEMOS = [
-  { id: "lesen", title: "Nur lesen", note: "Verlauf ohne Eingabe" },
-  { id: "eingabe", title: "Eingabe-Karte", note: "Stop, Dazwischenfunken, Anhänge" },
-  { id: "aktionen", title: "Aktionen", note: "Wartende Aktionen über der Eingabe" },
-  { id: "stile", title: "Stile", note: "Nur --qsl-* überschrieben" },
-  { id: "slots", title: "Slots", note: "Eigene Knöpfe per QuasselProvider" },
+  { id: "read", title: "Read only", note: "Transcript without a composer" },
+  { id: "input", title: "Input card", note: "Stop, interjecting, attachments" },
+  { id: "actions", title: "Actions", note: "Pending actions above the composer" },
+  { id: "themes", title: "Themes", note: "Only --qsl-* overridden" },
+  { id: "slots", title: "Slots", note: "Custom buttons through QuasselProvider" },
 ] as const;
 
 type DemoId = (typeof DEMOS)[number]["id"];
 
-const MODI: DetailMode[] = ["off", "current", "icons", "chips", "grouped", "compact", "full"];
+const MODES: DetailMode[] = ["off", "current", "icons", "chips", "grouped", "compact", "full"];
 
 function Toggles<T extends string>({ values, value, onChange }: { values: readonly T[]; value: T; onChange: (value: T) => void }) {
   return (
@@ -53,7 +53,7 @@ function Stage({ title, note, head, children }: { title: string; note: string; h
 }
 
 export function App() {
-  const [demo, setDemo] = useState<DemoId>("eingabe");
+  const [demo, setDemo] = useState<DemoId>("input");
   return (
     <div className="shell">
       <aside className="menu">
@@ -66,10 +66,10 @@ export function App() {
         ))}
       </aside>
       <main className="stage">
-        {demo === "lesen" && <ReadDemo />}
-        {demo === "eingabe" && <InputDemo />}
-        {demo === "aktionen" && <ActionDemo />}
-        {demo === "stile" && <ThemeDemo />}
+        {demo === "read" && <ReadDemo />}
+        {demo === "input" && <InputDemo />}
+        {demo === "actions" && <ActionDemo />}
+        {demo === "themes" && <ThemeDemo />}
         {demo === "slots" && <SlotDemo />}
       </main>
     </div>
@@ -79,7 +79,7 @@ export function App() {
 function ReadDemo() {
   const [detailMode, setDetailMode] = useState<DetailMode>("grouped");
   return (
-    <Stage head={<Toggles onChange={setDetailMode} value={detailMode} values={MODI} />} note="ChatMessages ohne Eingabe, Detailgrad der Schritte umschaltbar." title="Nur lesen">
+    <Stage head={<Toggles onChange={setDetailMode} value={detailMode} values={MODES} />} note="ChatMessages without a composer, step detail level switchable." title="Read only">
       <ChatMessages detailMode={detailMode} messages={[...research, ...steps]} showTimestamps timestampOptions={{ timeZone: "UTC" }} />
     </Stage>
   );
@@ -90,7 +90,7 @@ function InputDemo() {
   const [detailMode, setDetailMode] = useState<DetailMode>("chips");
   const [showTimestamps, setShowTimestamps] = useState(false);
   return (
-    <Stage note="ChatPanel mit ChatInputToolbar: während des Laufs Stop, Tippen funkt dazwischen." title="Eingabe-Karte">
+    <Stage note="ChatPanel with ChatInputToolbar: stop while running, typing interjects." title="Input card">
       <ChatPanel
         className="panel"
         composer={
@@ -101,8 +101,8 @@ function InputDemo() {
             rows={1}
             running={running}
             toolbarLeft={<>
-              <DetailModeSwitch collapsible={false} mode={detailMode} onChange={setDetailMode} />
-              <TimestampSwitch collapsible={false} onChange={setShowTimestamps} showTimestamps={showTimestamps} />
+              <DetailModeSwitch mode={detailMode} onChange={setDetailMode} />
+              <TimestampSwitch onChange={setShowTimestamps} showTimestamps={showTimestamps} />
             </>}
           />
         }
@@ -112,7 +112,7 @@ function InputDemo() {
         <ChatMessages
           codeBlockOptions={{ showCopyButton: true }}
           detailMode={detailMode}
-          emptyState={<div className="empty">Stell eine Frage und funk ruhig dazwischen, während der Agent läuft.</div>}
+          emptyState={<div className="empty">Ask a question and feel free to interject while the agent is running.</div>}
           messageActions={{ copy: true }}
           messages={messages}
           running={running}
@@ -130,10 +130,10 @@ function ActionDemo() {
   const ask = (text: string) => {
     const at = new Date().toISOString();
     dispatch({ kind: "user", text, at });
-    dispatch({ kind: "action", actionId: crypto.randomUUID(), owner: null, text: `"${text}" so übernehmen?`, payload: {}, at });
+    dispatch({ kind: "action", actionId: crypto.randomUUID(), owner: null, text: `Apply "${text}" as is?`, payload: {}, at });
   };
   return (
-    <Stage note="Offene Aktionen stehen über der Eingabe, erledigte im Verlauf; renderAction ersetzt die Standardkarte. Senden stellt eine neue Rückfrage." title="Aktionen">
+    <Stage note="Open actions sit above the composer, resolved ones in the transcript; renderAction replaces the default card. Sending asks a new question." title="Actions">
       <ChatPanel className="panel" composer={<ChatInputToolbar onSend={ask} rows={1} />} maxWidth={760}>
         <ChatMessages
           messages={messages}
@@ -156,8 +156,8 @@ function ThemeDemo() {
   return (
     <Stage
       head={<div className="toggles"><Toggles onChange={setTheme} value={theme} values={THEMES} /><Toggles onChange={setScheme} value={scheme} values={SCHEMES} /></div>}
-      note="Kein Komponenten-Code: ein Wrapper setzt --qsl-* (themes.css) und data-theme."
-      title="Stile"
+      note="No component code: a wrapper sets --qsl-* (themes.css) and data-theme."
+      title="Themes"
     >
       <div className={`theme-canvas ${theme}`} data-theme={scheme}>
         <ChatPanel className="panel" composer={<ChatInputToolbar onSend={() => undefined} rows={1} />}>
@@ -179,7 +179,7 @@ function PlainButton({ children, onClick, disabled, title, className, variant, s
 function SlotDemo() {
   const { messages, running, agent } = useFakeAgent();
   return (
-    <Stage note="QuasselProvider ersetzt den Button durch einen des Hosts; Layout-Klassen von quassel bleiben wirksam." title="Slots">
+    <Stage note="QuasselProvider replaces the button with one of the host; quassel's layout classes stay in effect." title="Slots">
       <QuasselProvider components={{ Button: PlainButton }}>
         <ChatPanel className="panel" composer={<ChatInputToolbar onSend={(text) => agent.send(text)} onStop={() => agent.stop()} rows={1} running={running} />}>
           <ChatMessages messageActions={{ copy: true }} messages={messages.length ? messages : research} running={running} />

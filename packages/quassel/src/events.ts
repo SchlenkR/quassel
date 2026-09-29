@@ -40,8 +40,8 @@ export interface ChatJournalCursor {
 }
 
 /**
- * Eine Aktion, die auf eine Eingabe des Benutzers wartet. Form und Inhalt von `payload` und
- * `result` gehören dem Plugin in `owner`; `status` gesetzt heißt: erledigt, die Karte ist Beleg.
+ * An action waiting for input from the user. Shape and content of `payload` and `result`
+ * belong to the plugin in `owner`; a set `status` means: done, the card is a record.
  */
 export interface PendingAction {
   actionId: string;
@@ -54,7 +54,7 @@ export interface PendingAction {
 export interface Message {
   key: string;
   role: Role;
-  /** Absenderkennung für die Darstellung; unabhängig von Rolle und Sprechblasenlabel. */
+  /** Sender identifier for display; independent of role and bubble label. */
   sender?: string;
   text: string;
   textCursor?: ChatTextCursor;
@@ -62,13 +62,13 @@ export interface Message {
   attachments?: ChatAttachment[];
   tool?: ToolInfo;
   action?: PendingAction;
-  /** ISO-Zeitpunkt der Nachricht; Anzeige optional (ChatMessages showTimestamps). */
+  /** ISO timestamp of the message; display optional (ChatMessages showTimestamps). */
   at?: string;
-  /** Der ActorInput hinter einer eingehenden Nachricht; an ihm hängt die Steering-Markierung. */
+  /** The ActorInput behind an incoming message; the steering mark hangs on it. */
   inputId?: string;
-  /** Die Nachricht ist in einen schon laufenden Turn eingespeist worden, statt einen eigenen zu beginnen. */
+  /** The message was fed into an already running turn instead of starting its own. */
   steered?: boolean;
-  /** Farbige Sprechblase statt Fliesstext, z.B. fuer Mehrparteien-Gespraeche. */
+  /** Colored speech bubble instead of running text, e.g. for multi-party conversations. */
   bubble?: { color: string; side: "start" | "end"; label?: string };
 }
 
@@ -95,7 +95,7 @@ export type ChatEvent =
 
 let keyCounter = 0;
 
-// crypto.randomUUID fehlt ausserhalb sicherer Kontexte, etwa bei einem Host unter http.
+// crypto.randomUUID is missing outside secure contexts, e.g. for a host served over http.
 const newKey = (): string => typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
   ? crypto.randomUUID()
   : `qsl-${Date.now().toString(36)}-${(keyCounter += 1).toString(36)}`;
@@ -129,7 +129,7 @@ function appendDelta(messages: Message[], role: Role, delta: string, at?: string
   return [...closeOpen(messages), { key: newKey(), role, text: delta, at, ...(textCursor ? { textCursor } : {}) }];
 }
 
-/** Eingehende Nachrichten lassen den laufenden Ausgabeblock offen. */
+/** Incoming messages leave the running output block open. */
 export function applyEvent(messages: Message[], event: ChatEvent): Message[] {
   switch (event.kind) {
     case "reset":

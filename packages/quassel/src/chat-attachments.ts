@@ -23,30 +23,30 @@ export const chatAttachmentMediaType = (name: string, mediaType: string): string
 export const parseChatAttachments = (value: unknown): ChatAttachmentInput[] => {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > MAX_CHAT_ATTACHMENTS) {
-    throw new Error(`Anhänge müssen eine Liste mit höchstens ${MAX_CHAT_ATTACHMENTS} Dateien sein.`);
+    throw new Error(`Attachments must be a list of at most ${MAX_CHAT_ATTACHMENTS} files.`);
   }
   let total = 0;
   return value.map((entry, index) => {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new Error(`Anhang ${index + 1} ist ungültig.`);
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new Error(`Attachment ${index + 1} is invalid.`);
     const { name, mediaType, data } = entry as Record<string, unknown>;
     if (typeof name !== "string" || !name.trim() || name.length > 255 || /[/\\\u0000-\u001f\u007f]/.test(name)
-      || name === "." || name === "..") throw new Error(`Anhang ${index + 1} benötigt einen gültigen Dateinamen ohne Pfad.`);
+      || name === "." || name === "..") throw new Error(`Attachment ${index + 1} needs a valid file name without a path.`);
     const normalizedType = typeof mediaType === "string" ? chatAttachmentMediaType(name, mediaType) : "";
     if (!/^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i.test(normalizedType)) {
-      throw new Error(`Anhang ${name} benötigt einen gültigen MIME-Typ.`);
+      throw new Error(`Attachment ${name} needs a valid MIME type.`);
     }
     if (typeof data === "string" && data.length > Math.ceil(MAX_CHAT_ATTACHMENT_BYTES / 3) * 4)
-      throw new Error("Anhänge dürfen zusammen höchstens 20 MiB groß sein.");
+      throw new Error("Attachments may be at most 20 MiB in total.");
     if (typeof data !== "string" || data.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(data)) {
-      throw new Error(`Anhang ${name} enthält ungültiges Base64.`);
+      throw new Error(`Attachment ${name} contains invalid Base64.`);
     }
     const padding = data.endsWith("==") ? 2 : data.endsWith("=") ? 1 : 0;
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     if (padding && (alphabet.indexOf(data[data.length - padding - 1]) & (padding === 2 ? 15 : 3)) !== 0) {
-      throw new Error(`Anhang ${name} enthält nichtkanonisches Base64.`);
+      throw new Error(`Attachment ${name} contains non-canonical Base64.`);
     }
     total += data.length / 4 * 3 - padding;
-    if (total > MAX_CHAT_ATTACHMENT_BYTES) throw new Error("Anhänge dürfen zusammen höchstens 20 MiB groß sein.");
+    if (total > MAX_CHAT_ATTACHMENT_BYTES) throw new Error("Attachments may be at most 20 MiB in total.");
     return { name, mediaType: normalizedType, data };
   });
 };

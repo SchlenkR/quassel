@@ -8,8 +8,8 @@ const resultText = (result: unknown): string =>
   typeof result === "string" ? result : result === null || result === undefined ? "" : JSON.stringify(result);
 
 /**
- * Die Darstellung einer wartenden Aktion ohne Beitrag ihres Eigentümers: Titel, der Hinweis,
- * dass eine Eingabe erwartet wird, und das Verwerfen. Die Form kennt nur das Plugin.
+ * The rendering of a pending action without a contribution from its owner: title, the hint
+ * that input is expected, and dismissing. Only the plugin knows the form.
  */
 export function PendingActionCard({
   text,

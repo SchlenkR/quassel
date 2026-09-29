@@ -16,7 +16,7 @@ import { formatElapsed, useElapsed } from "./elapsed";
 import { MessageActions } from "./MessageActions";
 import { ChatSendContext } from "./ChatSendContext";
 import { ChatActionDock } from "./ChatActionDock";
-import { announce as ansagen } from "./announce";
+import { announce as announceText } from "./announce";
 import { useQuasselComponents } from "./QuasselProvider";
 
 const stepClasses = "qsl:mt-[var(--qsl-chat-message-gap,16px)]";
@@ -41,15 +41,15 @@ const chipInteractiveClasses = "qsl:cursor-pointer qsl:hover:border-border qsl:h
 
 const collapseAtBottomFrom = 11;
 
-const hoechstensAnsagenAufEinmal = 2;
+const maxAnnouncementsAtOnce = 2;
 
 const bubbleBodyClasses = "qsl:relative qsl:max-w-[86%] qsl:px-3 qsl:py-2 qsl:leading-[var(--qsl-chat-line-height,1.625)] qsl:[overflow-wrap:anywhere] qsl:@max-[620px]/chat:max-w-full";
 
-function istSchritt(message?: Message): boolean {
+function isStep(message?: Message): boolean {
   return !!message && (message.role === "thinking" || message.role === "tool");
 }
 
-function istOffeneAktion(message: Message): message is Message & { action: PendingAction } {
+function isOpenAction(message: Message): message is Message & { action: PendingAction } {
   return message.role === "action" && message.action !== undefined && message.action.status === undefined;
 }
 
@@ -58,8 +58,8 @@ function defaultArgumentsText(tool: ToolInfo): string {
 }
 
 /**
- * Der Verlauf: eigener Scroll-Container mit Autoscroll, solange man unten ist,
- * und einem Zum-Ende-Knopf, sobald man liest. Ohne Eingabe read-only nutzbar.
+ * The transcript: its own scroll container with autoscroll while you are at the bottom, and a
+ * jump-to-end button as soon as you are reading. Usable read-only without a composer.
  */
 export function ChatMessages({
   messages,
@@ -91,29 +91,29 @@ export function ChatMessages({
   toolElapsedThreshold = 3000,
 }: {
   messages: Message[];
-  /** Beiträge mit diesem Message.sender erscheinen ohne Sprechblase; null behält die Nachrichtenvorgaben. */
+  /** Contributions with this Message.sender appear without a speech bubble; null keeps the message defaults. */
   owner?: string | null;
   detailMode?: DetailMode;
   running?: boolean;
   working?: ReactNode;
-  /** false = Denk- und Werkzeug-Schritte lassen sich nicht aufklappen (kein Popover). */
+  /** false = thinking and tool steps cannot be expanded (no popover). */
   stepsExpandable?: boolean;
   texts?: Partial<ChatTexts>;
   toolArgumentsText?: (tool: ToolInfo) => string;
-  /** Eigene Darstellung fuer einzelne Werkzeuge; undefined = Standarddarstellung. */
+  /** Custom rendering for single tools; undefined = default rendering. */
   renderTool?: (tool: ToolInfo) => ReactNode | undefined;
-  /** Darstellung einer wartenden Aktion durch ihren Eigentümer; undefined = generische Karte. */
+  /** Rendering of a pending action by its owner; undefined = generic card. */
   renderAction?: (action: PendingAction, text: string) => ReactNode | undefined;
   onDismissAction?: (actionId: string) => void;
-  /** Faengt Klicks auf Markdown-Links ab; true = behandelt, der Browser folgt nicht. */
+  /** Intercepts clicks on Markdown links; true = handled, the browser does not follow. */
   onLinkClick?: LinkClickHandler;
   emptyState?: ReactNode;
   className?: string;
-  /** Klassen des Hosts für den Scroll-Container (data-quassel-transcript). */
+  /** Host classes for the scroll container (data-quassel-transcript). */
   scrollerClassName?: string;
-  /** true = dezente HH:MM-Spalte links an jedem Block (Message.at). */
+  /** true = subtle HH:MM column to the left of each block (Message.at). */
   showTimestamps?: boolean;
-  /** Screenreader-Ansage fertiger Antworten und neuer Aktionen; false = der Host sagt selbst an. */
+  /** Screen reader announcement of finished answers and new actions; false = the host announces itself. */
   announce?: false | ((announcement: ChatAnnouncement) => string | undefined);
   /** Exposes the scroll container so hosts can scroll without querying the DOM. */
   scrollerRef?: (element: HTMLDivElement | null) => void;
@@ -128,9 +128,9 @@ export function ChatMessages({
   /** Milliseconds before a running tool call shows its elapsed time (from Message.at) while running; false = never. */
   toolElapsedThreshold?: number | false;
 }) {
-  const alleTexte = { ...defaultTexts, ...texts };
+  const allTexts = { ...defaultTexts, ...texts };
   const { Button } = useQuasselComponents();
-  const scrollBereich = useRef<HTMLDivElement>(null);
+  const scrollArea = useRef<HTMLDivElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const scrollbarDragging = useRef(false);
   const touchY = useRef<number | undefined>(undefined);
@@ -146,32 +146,32 @@ export function ChatMessages({
     return () => window.clearInterval(timer);
   }, [showTimestamps, timestampOptions?.format]);
 
-  // Der Verlauf beim Einhängen und ganze Schübe (Reset mit Replay) gelten als bekannt, nicht als neu.
-  const angesagt = useRef<ReadonlySet<string>>(new Set(messages.map((message) => message.key)));
+  // The transcript at mount time and whole batches (reset with replay) count as known, not as new.
+  const announced = useRef<ReadonlySet<string>>(new Set(messages.map((message) => message.key)));
   useEffect(() => {
-    const faellig = messages.filter((message, index) => !angesagt.current.has(message.key) && (
+    const due = messages.filter((message, index) => !announced.current.has(message.key) && (
       message.role === "action"
-        ? istOffeneAktion(message)
+        ? isOpenAction(message)
         : message.role === "assistant" && message.text.trim() !== "" && (message.closed === true || (!running && index === messages.length - 1))
     ));
-    if (faellig.length === 0) {
+    if (due.length === 0) {
       return;
     }
-    angesagt.current = new Set([...angesagt.current, ...faellig.map((message) => message.key)]);
-    if (announce === false || faellig.length > hoechstensAnsagenAufEinmal) {
+    announced.current = new Set([...announced.current, ...due.map((message) => message.key)]);
+    if (announce === false || due.length > maxAnnouncementsAtOnce) {
       return;
     }
-    faellig
+    due
       .map((message) => announce
         ? announce({ kind: message.role === "action" ? "action" : "reply", message })
         : markdownPlainText(message.text))
-      .forEach((text) => text && ansagen(text));
+      .forEach((text) => text && announceText(text));
   }, [messages, running, announce]);
   const updateJumpVisibility = useCallback((viewport: HTMLDivElement) => {
     if (viewport.clientHeight > 0) setShowJumpToEnd(viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop > jumpToEndThreshold);
   }, [jumpToEndThreshold]);
   useLayoutEffect(() => sendScope?.subscribe(() => {
-    const viewport = scrollBereich.current;
+    const viewport = scrollArea.current;
     if (!viewport) return;
     scroll.jump(viewport);
     updateJumpVisibility(viewport);
@@ -186,17 +186,17 @@ export function ChatMessages({
     scroll.pause(viewport);
   };
 
-  const pruefeEnde = useCallback(() => {
-    const bereich = scrollBereich.current;
-    if (bereich) {
-      scroll.scroll(bereich, scrollbarDragging.current);
-      updateJumpVisibility(bereich);
+  const checkEnd = useCallback(() => {
+    const area = scrollArea.current;
+    if (area) {
+      scroll.scroll(area, scrollbarDragging.current);
+      updateJumpVisibility(area);
     }
   }, [scroll, updateJumpVisibility]);
 
   useEffect(() => {
     const finishDrag = () => {
-      if (scrollbarDragging.current && scrollBereich.current) scroll.scroll(scrollBereich.current, true);
+      if (scrollbarDragging.current && scrollArea.current) scroll.scroll(scrollArea.current, true);
       scrollbarDragging.current = false;
     };
     window.addEventListener("pointerup", finishDrag);
@@ -207,31 +207,31 @@ export function ChatMessages({
     };
   }, [scroll]);
 
-  // Inhaltswachstum ändert den Folgemodus nicht; auch nachgeladene Medien und die Eingabe zählen.
+  // Content growth does not change the follow mode; lazily loaded media and the composer count too.
   useLayoutEffect(() => {
-    const bereich = scrollBereich.current;
-    if (!bereich) return;
+    const area = scrollArea.current;
+    if (!area) return;
     const align = () => {
-      scroll.layout(bereich, scrollbarDragging.current);
-      updateJumpVisibility(bereich);
+      scroll.layout(area, scrollbarDragging.current);
+      updateJumpVisibility(area);
     };
     align();
-    const beobachter = new ResizeObserver(align);
-    beobachter.observe(bereich);
-    if (threadRef.current) beobachter.observe(threadRef.current, { box: "border-box" });
-    return () => beobachter.disconnect();
+    const observer = new ResizeObserver(align);
+    observer.observe(area);
+    if (threadRef.current) observer.observe(threadRef.current, { box: "border-box" });
+    return () => observer.disconnect();
   });
 
   const visible = useMemo(
     () => {
-      // Eigene Eingaben hinter dem laufenden Schritt beenden ihn nicht; jede andere Nachricht schon.
-      const letzterFremder = messages.reduce((last, message, index) => message.role === "user" ? last : index, -1);
+      // Your own inputs after the running step do not end it; any other message does.
+      const lastNonUser = messages.reduce((last, message, index) => message.role === "user" ? last : index, -1);
       return messages.filter((message, index) => {
-        if (dock !== undefined && istOffeneAktion(message)) {
+        if (dock !== undefined && isOpenAction(message)) {
           return false;
         }
-        if (detailMode === "current" && istSchritt(message)) {
-          return running && index === letzterFremder
+        if (detailMode === "current" && isStep(message)) {
+          return running && index === lastNonUser
             && (message.role === "thinking" ? !message.closed : stepState(message) === "running");
         }
         if ((message.role === "thinking" || message.role === "assistant") && message.text.trim() === "" && !message.attachments?.length) {
@@ -245,58 +245,58 @@ export function ChatMessages({
     },
     [messages, detailMode, running, dock],
   );
-  const offeneAktionen = dock ? messages.filter(istOffeneAktion) : [];
+  const openActions = dock ? messages.filter(isOpenAction) : [];
 
-  const mitZeit = (inhalt: ReactNode, key: string, at: string | undefined, dicht = false): ReactNode =>
+  const withTime = (content: ReactNode, key: string, at: string | undefined, dense = false): ReactNode =>
     showTimestamps
       ? (
-        <div className={cn("qsl:flex qsl:items-baseline qsl:gap-2", dicht ? denseStepClasses : stepClasses)} key={`zeit-${key}`}>
+        <div className={cn("qsl:flex qsl:items-baseline qsl:gap-2", dense ? denseStepClasses : stepClasses)} key={`time-${key}`}>
           <time dateTime={messageDate(at)?.toISOString()} className={cn("qsl:flex-none qsl:text-meta qsl:tabular-nums qsl:text-muted-foreground qsl:opacity-85",
             timestampOptions?.format && timestampOptions.format !== "time" ? "qsl:w-[clamp(60px,20%,120px)]" : "qsl:w-[34px]")}>
             {messageDate(at) ? timestampLabel(messageDate(at)!, timestampOptions, now) : ""}
           </time>
-          <div className="qsl:min-w-0 qsl:flex-1 qsl:[&>*:first-child]:mt-0">{inhalt}</div>
+          <div className="qsl:min-w-0 qsl:flex-1 qsl:[&>*:first-child]:mt-0">{content}</div>
         </div>
       )
-      : inhalt;
+      : content;
 
-  // In den Chip-Modi ruecken aufeinanderfolgende Schritte in eine umbrechende Zeile zusammen, gruppiert in eine aufklappbare Zeile.
-  const chipModus = detailMode === "current" || detailMode === "chips" || detailMode === "icons";
+  // In the chip modes consecutive steps move together into one wrapping line, in grouped mode into one expandable line.
+  const chipMode = detailMode === "current" || detailMode === "chips" || detailMode === "icons";
   const elapsedAfter = running && toolElapsedThreshold !== false ? toolElapsedThreshold : undefined;
-  const gruppenModus = detailMode === "grouped";
-  const bloecke: ReactNode[] = [];
+  const groupMode = detailMode === "grouped";
+  const blocks: ReactNode[] = [];
   let lastDay: string | undefined;
-  let gruppe: Message[] = [];
-  const schliesseGruppe = () => {
-    if (gruppe.length > 0) {
-      const laufenderSchritt = running ? [...gruppe].reverse().find((message) => ["running", "thinking"].includes(stepState(message))) : undefined;
-      bloecke.push(mitZeit(
-        gruppenModus ? (
+  let group: Message[] = [];
+  const closeGroup = () => {
+    if (group.length > 0) {
+      const runningStep = running ? [...group].reverse().find((message) => ["running", "thinking"].includes(stepState(message))) : undefined;
+      blocks.push(withTime(
+        groupMode ? (
           <StepGroup
             elapsedAfter={elapsedAfter}
-            expandierbar={stepsExpandable}
-            laufenderSchritt={laufenderSchritt}
-            key={gruppe[0].key}
-            messages={gruppe}
-            texts={alleTexte}
+            expandable={stepsExpandable}
+            runningStep={runningStep}
+            key={group[0].key}
+            messages={group}
+            texts={allTexts}
             toolArgumentsText={toolArgumentsText}
           />
         ) : (
           <StepRow
             elapsedAfter={elapsedAfter}
-            expandierbar={stepsExpandable}
-            key={gruppe[0].key}
-            messages={gruppe}
-            mitText={detailMode !== "icons"}
-            texts={alleTexte}
+            expandable={stepsExpandable}
+            key={group[0].key}
+            messages={group}
+            withText={detailMode !== "icons"}
+            texts={allTexts}
             toolArgumentsText={toolArgumentsText}
-            toolLabel={detailMode === "current" && !stepsExpandable ? alleTexte.currentTool : undefined}
+            toolLabel={detailMode === "current" && !stepsExpandable ? allTexts.currentTool : undefined}
           />
         ),
-        gruppe[0].key,
-        gruppe[0].at,
+        group[0].key,
+        group[0].at,
       ));
-      gruppe = [];
+      group = [];
     }
   };
   visible.forEach((message, index) => {
@@ -304,39 +304,39 @@ export function ChatMessages({
     if (date) {
       const day = timestampDay(date, timestampOptions);
       if (day.key !== lastDay) {
-        schliesseGruppe();
-        bloecke.push(<div className={cn(stepClasses, "qsl:text-center qsl:text-xs qsl:text-muted-foreground")} data-chat="day-separator" data-day={day.key} key={`day-${message.key}`}>{day.label}</div>);
+        closeGroup();
+        blocks.push(<div className={cn(stepClasses, "qsl:text-center qsl:text-xs qsl:text-muted-foreground")} data-chat="day-separator" data-day={day.key} key={`day-${message.key}`}>{day.label}</div>);
         lastDay = day.key;
       }
     }
-    const eigeneDarstellung = message.role === "tool" && message.tool && detailMode !== "current" ? renderTool?.(message.tool) : undefined;
-    if (eigeneDarstellung !== undefined) {
-      schliesseGruppe();
-      bloecke.push(mitZeit(
+    const customRendering = message.role === "tool" && message.tool && detailMode !== "current" ? renderTool?.(message.tool) : undefined;
+    if (customRendering !== undefined) {
+      closeGroup();
+      blocks.push(withTime(
         <div className={stepClasses} key={message.key}>
-          {eigeneDarstellung}
+          {customRendering}
         </div>,
         message.key,
         message.at,
       ));
       return;
     }
-    if ((chipModus || gruppenModus) && istSchritt(message)) {
-      gruppe = [...gruppe, message];
+    if ((chipMode || groupMode) && isStep(message)) {
+      group = [...group, message];
       return;
     }
-    schliesseGruppe();
-    const dicht = istSchritt(message) && istSchritt(visible[index - 1]);
-    bloecke.push(mitZeit(
+    closeGroup();
+    const dense = isStep(message) && isStep(visible[index - 1]);
+    blocks.push(withTime(
       <Bubble
         detailMode={detailMode}
-        dicht={dicht}
+        dense={dense}
         elapsedAfter={elapsedAfter}
-        expandierbar={stepsExpandable}
+        expandable={stepsExpandable}
         key={message.key}
         message={message}
         plain={owner != null && message.sender === owner}
-        texts={alleTexte}
+        texts={allTexts}
         toolArgumentsText={toolArgumentsText}
         renderAction={renderAction}
         onDismissAction={onDismissAction}
@@ -345,19 +345,19 @@ export function ChatMessages({
       />,
       message.key,
       message.at,
-      dicht,
+      dense,
     ));
   });
-  schliesseGruppe();
+  closeGroup();
 
-  const verlauf = (
+  const transcript = (
     <div className={cn("qsl:@container/chat qsl:relative qsl:flex qsl:min-h-0 qsl:flex-1 qsl:flex-col", className)} data-quassel="" style={{
       ...appearanceStyle(appearance),
       "--qsl-chat-content-max-width": typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth,
       "--qsl-chat-horizontal-padding": typeof horizontalPadding === "number" ? `${horizontalPadding}px` : horizontalPadding,
     } as CSSProperties}>
       <div
-        aria-label={alleTexte.transcript}
+        aria-label={allTexts.transcript}
         className={cn(
           "qsl:min-h-0 qsl:flex-1 qsl:cursor-default qsl:overflow-y-auto qsl:text-[length:var(--qsl-chat-font-size,13px)] qsl:text-foreground",
           "qsl:[--qsl-fade-edge:calc(100%_-_var(--qsl-composer-height,0px))]",
@@ -367,7 +367,7 @@ export function ChatMessages({
           scrollerClassName,
         )}
         data-quassel-transcript=""
-        onScroll={pruefeEnde}
+        onScroll={checkEnd}
         onWheel={(event) => { if (!event.ctrlKey && event.deltaY < 0) pauseUp(event.currentTarget, event.target); }}
         onKeyDown={(event) => {
           const editable = event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable=true]");
@@ -386,7 +386,7 @@ export function ChatMessages({
         role="region"
         tabIndex={0}
         ref={(element) => {
-          scrollBereich.current = element;
+          scrollArea.current = element;
           scrollerRef?.(element);
         }}
       >
@@ -402,28 +402,28 @@ export function ChatMessages({
             )}
             ref={threadRef}
           >
-            {bloecke}
-            {running && (working ?? <WorkingScenes label={alleTexte.working} />)}
+            {blocks}
+            {running && (working ?? <WorkingScenes label={allTexts.working} />)}
           </div>
         )}
       </div>
       {showJumpToEnd && (
         <div className="qsl:pointer-events-none qsl:absolute qsl:inset-x-0 qsl:bottom-[calc(var(--qsl-composer-height,0px)_+_12px)] qsl:z-10 qsl:flex qsl:justify-center">
-          <Button aria-label={alleTexte.jumpToEnd} className="qsl:pointer-events-auto qsl:rounded-full qsl:border qsl:border-primary-foreground/20 qsl:shadow-md" size="icon" title={alleTexte.jumpToEnd} variant="default" onClick={() => {
-            if (scrollBereich.current) {
-              scroll.jump(scrollBereich.current);
-              updateJumpVisibility(scrollBereich.current);
+          <Button aria-label={allTexts.jumpToEnd} className="qsl:pointer-events-auto qsl:rounded-full qsl:border qsl:border-primary-foreground/20 qsl:shadow-md" size="icon" title={allTexts.jumpToEnd} variant="default" onClick={() => {
+            if (scrollArea.current) {
+              scroll.jump(scrollArea.current);
+              updateJumpVisibility(scrollArea.current);
             }
           }}>
             <ChevronDownIcon />
           </Button>
         </div>
       )}
-      {dock && offeneAktionen.length > 0 && createPortal(
+      {dock && openActions.length > 0 && createPortal(
         <div className="qsl:flex qsl:flex-col qsl:gap-[var(--qsl-chat-dense-message-gap,8px)] qsl:text-[length:var(--qsl-chat-font-size,13px)] qsl:text-foreground" style={appearanceStyle(appearance)}>
-          {offeneAktionen.map((message) => (
+          {openActions.map((message) => (
             <div key={message.key}>
-              <ActionContent action={message.action} onDismissAction={onDismissAction} renderAction={renderAction} text={message.text} texts={alleTexte} />
+              <ActionContent action={message.action} onDismissAction={onDismissAction} renderAction={renderAction} text={message.text} texts={allTexts} />
             </div>
           ))}
         </div>,
@@ -432,29 +432,29 @@ export function ChatMessages({
     </div>
   );
 
-  return <MarkdownLinks onLinkClick={onLinkClick}><MarkdownCodeBlocks options={codeBlockOptions} texts={alleTexte}>{verlauf}</MarkdownCodeBlocks></MarkdownLinks>;
+  return <MarkdownLinks onLinkClick={onLinkClick}><MarkdownCodeBlocks options={codeBlockOptions} texts={allTexts}>{transcript}</MarkdownCodeBlocks></MarkdownLinks>;
 }
 
-/** Aufeinanderfolgende Schritte als Chips nebeneinander; bei Platzmangel bricht die Zeile um. */
+/** Consecutive steps as chips side by side; the line wraps when space runs out. */
 function StepRow({
   messages,
-  mitText,
-  expandierbar,
+  withText,
+  expandable,
   elapsedAfter,
   texts,
   toolArgumentsText,
   toolLabel,
 }: {
   messages: Message[];
-  mitText: boolean;
-  expandierbar: boolean;
+  withText: boolean;
+  expandable: boolean;
   elapsedAfter: number | undefined;
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
   toolLabel?: string;
 }) {
   const [detail, setDetail] = useState<{ key: string; position: { x: number; y: number } }>();
-  const offen = expandierbar && detail && messages.find((message) => message.key === detail.key);
+  const open = expandable && detail && messages.find((message) => message.key === detail.key);
 
   return (
     <div className={cn(stepClasses, "qsl:flex qsl:flex-wrap qsl:items-center qsl:gap-x-1.5 qsl:gap-y-1 qsl:pl-6")} data-step="row">
@@ -471,13 +471,13 @@ function StepRow({
             ) : (
               <WrenchIcon className={tool?.isError ? "qsl:text-destructive" : undefined} size={11} />
             )}
-            {mitText && <span className="qsl:min-w-0 qsl:self-baseline qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap">{label}</span>}
-            {mitText && <ToolElapsed after={elapsedAfter} className="qsl:flex-none qsl:self-baseline" message={message} texts={texts} />}
-            {mitText && <span className="qsl:inline-flex qsl:w-2.5 qsl:flex-none qsl:items-center qsl:justify-center qsl:text-success">{state === "done" && <CheckIcon size={10} />}</span>}
+            {withText && <span className="qsl:min-w-0 qsl:self-baseline qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap">{label}</span>}
+            {withText && <ToolElapsed after={elapsedAfter} className="qsl:flex-none qsl:self-baseline" message={message} texts={texts} />}
+            {withText && <span className="qsl:inline-flex qsl:w-2.5 qsl:flex-none qsl:items-center qsl:justify-center qsl:text-success">{state === "done" && <CheckIcon size={10} />}</span>}
           </>
         );
-        const classes = cn(chipClasses, !mitText && "qsl:p-1", running && "qsl:animate-fade-pulse qsl:motion-reduce:animate-none");
-        if (!expandierbar) {
+        const classes = cn(chipClasses, !withText && "qsl:p-1", running && "qsl:animate-fade-pulse qsl:motion-reduce:animate-none");
+        if (!expandable) {
           return (
             <span className={classes} data-kind={thinking ? "thinking" : "tool"} data-state={state} data-step="chip" key={message.key} title={label}>
               {content}
@@ -500,9 +500,9 @@ function StepRow({
           </button>
         );
       })}
-      {offen && detail && (
+      {open && detail && (
         <StepPopover
-          message={offen}
+          message={open}
           position={detail.position}
           texts={texts}
           toolArgumentsText={toolArgumentsText}
@@ -513,68 +513,68 @@ function StepRow({
   );
 }
 
-/** Aufeinanderfolgende Schritte hinter einer Kopfzeile; aufgeklappt stehen sie als einzeilige Zeilen darunter. */
+/** Consecutive steps behind a header line; expanded, they stand below it as single-line rows. */
 function StepGroup({
   messages,
-  laufenderSchritt,
+  runningStep,
   elapsedAfter,
-  expandierbar,
+  expandable,
   texts,
   toolArgumentsText,
 }: {
   messages: Message[];
   /** The step the collapsed header names while the chat runs; undefined = nothing running. */
-  laufenderSchritt: Message | undefined;
+  runningStep: Message | undefined;
   elapsedAfter: number | undefined;
-  expandierbar: boolean;
+  expandable: boolean;
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
 }) {
-  const [offen, setOffen] = useState(false);
-  const kopf = useRef<HTMLButtonElement>(null);
-  const vonUntenEingeklappt = useRef(false);
+  const [open, setOpen] = useState(false);
+  const header = useRef<HTMLButtonElement>(null);
+  const collapsedFromBottom = useRef(false);
   useLayoutEffect(() => {
-    if (!offen && vonUntenEingeklappt.current) {
-      vonUntenEingeklappt.current = false;
-      kopf.current?.scrollIntoView({ block: "nearest" });
+    if (!open && collapsedFromBottom.current) {
+      collapsedFromBottom.current = false;
+      header.current?.scrollIntoView({ block: "nearest" });
     }
-  }, [offen]);
-  const aktiv = laufenderSchritt !== undefined;
-  const fehler = messages.some((message) => message.tool?.isError);
-  const anzahl = messages.length === 1 ? texts.stepGroupOne : texts.stepGroupMany.replace("{count}", String(messages.length));
-  const laufend = laufenderSchritt && (laufenderSchritt.role === "thinking" ? texts.thinkingChip : laufenderSchritt.tool?.name || laufenderSchritt.text || texts.toolChip);
+  }, [open]);
+  const active = runningStep !== undefined;
+  const failed = messages.some((message) => message.tool?.isError);
+  const count = messages.length === 1 ? texts.stepGroupOne : texts.stepGroupMany.replace("{count}", String(messages.length));
+  const runningLabel = runningStep && (runningStep.role === "thinking" ? texts.thinkingChip : runningStep.tool?.name || runningStep.text || texts.toolChip);
 
   return (
     <div className={stepClasses} data-step="group">
       <button
-        aria-expanded={offen}
-        className={cn(traceClasses, traceButtonClasses, "qsl:items-center qsl:pl-1", aktiv && "qsl:animate-fade-pulse qsl:motion-reduce:animate-none")}
-        onClick={() => setOffen((wert) => !wert)}
-        ref={kopf}
+        aria-expanded={open}
+        className={cn(traceClasses, traceButtonClasses, "qsl:items-center qsl:pl-1", active && "qsl:animate-fade-pulse qsl:motion-reduce:animate-none")}
+        onClick={() => setOpen((value) => !value)}
+        ref={header}
         type="button"
       >
-        <ChevronRightIcon className={cn("qsl:flex-none qsl:opacity-60 qsl:transition-transform", offen && "qsl:rotate-90")} size={12} />
-        <LayersIcon className={fehler ? traceErrorIconClasses : traceIconClasses} size={12} />
+        <ChevronRightIcon className={cn("qsl:flex-none qsl:opacity-60 qsl:transition-transform", open && "qsl:rotate-90")} size={12} />
+        <LayersIcon className={failed ? traceErrorIconClasses : traceIconClasses} size={12} />
         <span className={cn(traceLineClasses, "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap")}>
-          {anzahl}
-          {laufend && <span className={traceRunningClasses}>{laufend} {texts.toolRunning}</span>}
-          {laufenderSchritt && <ToolElapsed after={elapsedAfter} message={laufenderSchritt} texts={texts} />}
+          {count}
+          {runningLabel && <span className={traceRunningClasses}>{runningLabel} {texts.toolRunning}</span>}
+          {runningStep && <ToolElapsed after={elapsedAfter} message={runningStep} texts={texts} />}
         </span>
       </button>
-      {offen && (
+      {open && (
         <div className="qsl:mt-0.5 qsl:flex qsl:flex-col qsl:gap-0.5 qsl:pl-3">
           {messages.map((message) => (
-            <TraceLine className="qsl:pl-3" elapsedAfter={elapsedAfter} expandierbar={expandierbar} key={message.key} message={message} texts={texts} toolArgumentsText={toolArgumentsText} />
+            <TraceLine className="qsl:pl-3" elapsedAfter={elapsedAfter} expandable={expandable} key={message.key} message={message} texts={texts} toolArgumentsText={toolArgumentsText} />
           ))}
         </div>
       )}
-      {offen && messages.length >= collapseAtBottomFrom && (
+      {open && messages.length >= collapseAtBottomFrom && (
         <button
           className={cn(traceClasses, traceButtonClasses, "qsl:mt-0.5 qsl:items-center qsl:pl-1")}
           data-step="group-collapse"
           onClick={() => {
-            vonUntenEingeklappt.current = true;
-            setOffen(false);
+            collapsedFromBottom.current = true;
+            setOpen(false);
           }}
           type="button"
         >
@@ -586,19 +586,19 @@ function StepGroup({
   );
 }
 
-/** Ein Schritt als eine Zeile; mit Freigabe oeffnet ein Klick die Details im Popover. */
+/** One step as one line; when enabled, a click opens the details in the popover. */
 function TraceLine({
   message,
   className,
   elapsedAfter,
-  expandierbar,
+  expandable,
   texts,
   toolArgumentsText,
 }: {
   message: Message;
   className: string;
   elapsedAfter: number | undefined;
-  expandierbar: boolean;
+  expandable: boolean;
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
 }) {
@@ -606,15 +606,15 @@ function TraceLine({
   const thinking = message.role === "thinking";
   const tool = message.tool;
   const classes = cn(traceClasses, className);
-  const zeile = cn(traceLineClasses, thinking && "qsl:font-sans qsl:italic qsl:whitespace-pre-wrap", "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap");
-  const inhalt = (
+  const line = cn(traceLineClasses, thinking && "qsl:font-sans qsl:italic qsl:whitespace-pre-wrap", "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap");
+  const content = (
     <>
       {thinking ? (
         <SparklesIcon className={traceIconClasses} size={12} />
       ) : (
         <WrenchIcon className={tool?.isError ? traceErrorIconClasses : traceIconClasses} size={12} />
       )}
-      <span className={zeile}>
+      <span className={line}>
         {message.text}
         {tool && tool.result === undefined && <span className={traceRunningClasses}>{texts.toolRunning}</span>}
         <ToolElapsed after={elapsedAfter} message={message} texts={texts} />
@@ -622,8 +622,8 @@ function TraceLine({
     </>
   );
   const marks = { "data-compact": "true", "data-kind": thinking ? "thinking" : "tool", "data-step": "line" } as const;
-  if (!expandierbar) {
-    return <div className={classes} {...marks}>{inhalt}</div>;
+  if (!expandable) {
+    return <div className={classes} {...marks}>{content}</div>;
   }
   return (
     <>
@@ -635,7 +635,7 @@ function TraceLine({
         onClick={(event) => setDetailPosition({ x: event.clientX, y: event.clientY })}
         type="button"
       >
-        {inhalt}
+        {content}
       </button>
       {detailPosition && (
         <StepPopover
@@ -666,9 +666,9 @@ function Bubble({
   message,
   plain,
   detailMode,
-  dicht,
+  dense,
   elapsedAfter,
-  expandierbar,
+  expandable,
   texts,
   toolArgumentsText,
   renderAction,
@@ -679,9 +679,9 @@ function Bubble({
   message: Message;
   plain: boolean;
   detailMode: DetailMode;
-  dicht: boolean;
+  dense: boolean;
   elapsedAfter: number | undefined;
-  expandierbar: boolean;
+  expandable: boolean;
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
   renderAction?: (action: PendingAction, text: string) => ReactNode | undefined;
@@ -689,11 +689,11 @@ function Bubble({
   bubbleOptions?: BubbleOptions;
   messageActions?: MessageActionsOptions;
 }) {
-  const schritt = dicht ? denseStepClasses : stepClasses;
+  const stepSpacing = dense ? denseStepClasses : stepClasses;
 
   if (message.role === "thinking" || (message.role === "tool" && message.tool)) {
     if (detailMode === "compact") {
-      return <TraceLine className={schritt} elapsedAfter={elapsedAfter} expandierbar={expandierbar} message={message} texts={texts} toolArgumentsText={toolArgumentsText} />;
+      return <TraceLine className={stepSpacing} elapsedAfter={elapsedAfter} expandable={expandable} message={message} texts={texts} toolArgumentsText={toolArgumentsText} />;
     }
     const thinking = message.role === "thinking";
     const tool = message.tool;
@@ -702,7 +702,7 @@ function Bubble({
     ) : (
       <WrenchIcon className={tool?.isError ? traceErrorIconClasses : traceIconClasses} size={12} />
     );
-    const zeile = (
+    const line = (
       <>
         {message.text}
         {tool && tool.result === undefined && <span className={traceRunningClasses}>{texts.toolRunning}</span>}
@@ -710,10 +710,10 @@ function Bubble({
       </>
     );
     return (
-      <div className={cn(traceClasses, schritt)} data-kind={thinking ? "thinking" : "tool"} data-step="detail">
+      <div className={cn(traceClasses, stepSpacing)} data-kind={thinking ? "thinking" : "tool"} data-step="detail">
         {icon}
         <div className="qsl:min-w-0 qsl:flex-1">
-          <div className={cn(traceLineClasses, thinking && "qsl:font-sans qsl:italic qsl:whitespace-pre-wrap")}>{zeile}</div>
+          <div className={cn(traceLineClasses, thinking && "qsl:font-sans qsl:italic qsl:whitespace-pre-wrap")}>{line}</div>
           {tool && (
             <div className="qsl:mt-0.5 qsl:border-l-2 qsl:border-border-soft qsl:pl-2">
               <pre className="qsl:mb-0.5 qsl:max-h-[208px] qsl:overflow-auto qsl:font-mono qsl:text-meta qsl:leading-[1.375] qsl:break-all qsl:whitespace-pre-wrap qsl:opacity-80">{toolArgumentsText(tool)}</pre>
@@ -730,7 +730,7 @@ function Bubble({
 
   if (message.role === "action" && message.action) {
     return (
-      <div className={schritt}>
+      <div className={stepSpacing}>
         <ActionContent action={message.action} onDismissAction={onDismissAction} renderAction={renderAction} text={message.text} texts={texts} />
       </div>
     );
@@ -738,7 +738,7 @@ function Bubble({
 
   if (message.role === "system") {
     return (
-      <div className={cn(schritt, "qsl:border-l-2 qsl:border-destructive/50 qsl:pl-3 qsl:text-sm qsl:text-muted-foreground")} data-message="system">
+      <div className={cn(stepSpacing, "qsl:border-l-2 qsl:border-destructive/50 qsl:pl-3 qsl:text-sm qsl:text-muted-foreground")} data-message="system">
         <Markdown text={message.text} />
         <MessageAttachments label={texts.attachments} message={message} />
       </div>
@@ -763,12 +763,12 @@ function Bubble({
   </>;
   const cursor = message.role === "assistant" && message.textCursor ? JSON.stringify(message.textCursor) : undefined;
   if (!useBubble) return (
-    <div data-chat-text-cursor={cursor} className={cn(schritt, "qsl:group qsl:relative qsl:w-full qsl:leading-[var(--qsl-chat-line-height,1.625)] qsl:text-foreground")} data-message="answer">
+    <div data-chat-text-cursor={cursor} className={cn(stepSpacing, "qsl:group qsl:relative qsl:w-full qsl:leading-[var(--qsl-chat-line-height,1.625)] qsl:text-foreground")} data-message="answer">
       {content}
     </div>
   );
   return (
-    <div data-chat-text-cursor={cursor} className={cn(schritt, "qsl:flex", side === "end" ? "qsl:justify-end" : "qsl:justify-start")}
+    <div data-chat-text-cursor={cursor} className={cn(stepSpacing, "qsl:flex", side === "end" ? "qsl:justify-end" : "qsl:justify-start")}
       data-message={message.role === "user" && !message.bubble && variant === "default" ? "user" : "bubble"} data-side={side}>
       <div className={cn(bubbleBodyClasses, "qsl:group", message.bubble
         ? "qsl:rounded-lg qsl:text-white qsl:[--qsl-scroll-cover:var(--qsl-primary)]"

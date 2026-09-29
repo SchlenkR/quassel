@@ -50,8 +50,8 @@ function AgentScene() {
             running
             texts={texts}
             toolbarLeft={<>
-              <DetailModeSwitch collapsible={false} mode={detailMode} onChange={setDetailMode} texts={texts} />
-              <TimestampSwitch collapsible={false} onChange={setShowTimestamps} showTimestamps={showTimestamps} texts={texts} />
+              <DetailModeSwitch mode={detailMode} onChange={setDetailMode} texts={texts} />
+              <TimestampSwitch onChange={setShowTimestamps} showTimestamps={showTimestamps} texts={texts} />
             </>}
           />
         }

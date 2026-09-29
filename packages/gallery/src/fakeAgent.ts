@@ -2,10 +2,10 @@ import { applyEvent, type ChatEvent, type ChatTextCursor, type Message } from "q
 import { useMemo, useReducer, useRef, useState } from "react";
 
 /**
- * Ein geskripteter Agent für die Galerie: streamt Denken, einen Tool-Call, der lange genug
- * läuft, um seine Laufzeit zu zeigen, und eine
- * Markdown-Antwort, kann abgebrochen werden und nimmt Zwischenrufe an, die er am
- * Ende der laufenden Runde beantwortet.
+ * A scripted agent for the gallery: streams thinking, a tool call that runs long enough
+ * to show its elapsed time, and a
+ * Markdown answer, can be cancelled and accepts interjections, which it answers at the
+ * end of the running turn.
  */
 export class FakeAgent {
   private steering: string[] = [];
@@ -33,7 +33,7 @@ export class FakeAgent {
     }
     this.cancelled = true;
     this.steering = [];
-    this.emit({ kind: "system", text: "Abgebrochen." });
+    this.emit({ kind: "system", text: "Cancelled." });
     this.emit({ kind: "turn-done" });
     this.setRunning(false);
   }
@@ -46,7 +46,7 @@ export class FakeAgent {
     try {
       await this.stream(
         "thinking",
-        "Die Frage betrifft die Demo-Daten. Ich hole mir kurz die Kennzahlen und fasse dann knapp zusammen.",
+        "The question is about the demo data. I will quickly fetch the key figures and then summarize briefly.",
       );
       if (this.cancelled) return;
 
@@ -54,9 +54,9 @@ export class FakeAgent {
       this.emit({
         kind: "tool",
         id,
-        name: "suche_daten",
-        arguments: JSON.stringify({ frage: text, limit: 3 }),
-        label: `suche_daten { frage: "${kurz(text)}" }`,
+        name: "search_data",
+        arguments: JSON.stringify({ question: text, limit: 3 }),
+        label: `search_data { question: "${short(text)}" }`,
         at: new Date().toISOString(),
       });
       await this.sleep(5000);
@@ -64,17 +64,17 @@ export class FakeAgent {
       this.emit({
         kind: "tool-result",
         id,
-        result: JSON.stringify({ treffer: 3, dauerMs: 412, quellen: ["messwerte", "berichte", "notizen"] }),
+        result: JSON.stringify({ hits: 3, durationMs: 412, sources: ["measurements", "reports", "notes"] }),
       });
 
-      await this.stream("text", antwort(text));
+      await this.stream("text", answer(text));
       while (this.steering.length > 0 && !this.cancelled) {
-        const zwischenruf = this.steering.shift()!;
-        await this.stream("thinking", `Zwischenruf einordnen: "${kurz(zwischenruf)}" - das nehme ich noch mit.`);
+        const interjection = this.steering.shift()!;
+        await this.stream("thinking", `Placing the interjection: "${short(interjection)}" - I will take that into account.`);
         if (this.cancelled) return;
         await this.stream(
           "text",
-          `\n\nZu deinem Zwischenruf **"${kurz(zwischenruf)}"**: gute Ergänzung, in einer echten Anbindung würde der Agent das jetzt in derselben Runde berücksichtigen.`,
+          `\n\nAbout your interjection **"${short(interjection)}"**: good addition, with a real integration the agent would now take it into account in the same turn.`,
         );
       }
     } finally {
@@ -87,15 +87,15 @@ export class FakeAgent {
   }
 
   private async stream(kind: "text" | "thinking", text: string) {
-    const teile = text.match(/\S+\s*/g) ?? [];
+    const parts = text.match(/\S+\s*/g) ?? [];
     const sequence = this.turn;
     let offset = 0;
-    for (const teil of teile) {
+    for (const part of parts) {
       if (this.cancelled) return;
-      offset += teil.replace(/\s/g, "").length;
-      const cursor: ChatTextCursor = { conversationId: "galerie", sequence, offset };
+      offset += part.replace(/\s/g, "").length;
+      const cursor: ChatTextCursor = { conversationId: "gallery", sequence, offset };
       const at = new Date().toISOString();
-      this.emit(kind === "text" ? { kind, delta: teil, cursor, at } : { kind, delta: teil, at });
+      this.emit(kind === "text" ? { kind, delta: part, cursor, at } : { kind, delta: part, at });
       await this.sleep(kind === "thinking" ? 30 : 45);
     }
   }
@@ -105,35 +105,35 @@ export class FakeAgent {
   }
 }
 
-function kurz(text: string): string {
+function short(text: string): string {
   return text.length > 60 ? `${text.slice(0, 60)} ...` : text;
 }
 
-function antwort(frage: string): string {
+function answer(question: string): string {
   return [
-    `Zu deiner Frage "${kurz(frage)}" habe ich drei Quellen durchsucht. Kurzfassung:`,
+    `For your question "${short(question)}" I searched three sources. Summary:`,
     "",
-    "- Die **Messwerte** sind vollständig und plausibel",
-    "- In den *Berichten* gibt es zwei Auffälligkeiten",
-    "- Die Notizen ändern am Bild nichts",
+    "- The **measurements** are complete and plausible",
+    "- The *reports* show two anomalies",
+    "- The notes do not change the picture",
     "",
-    "| Quelle | Treffer | Bewertung |",
+    "| Source | Hits | Assessment |",
     "|---|---|---|",
-    "| messwerte | 214 | unauffällig |",
-    "| berichte | 2 | prüfen |",
-    "| notizen | 0 | - |",
+    "| measurements | 214 | unremarkable |",
+    "| reports | 2 | check |",
+    "| notes | 0 | - |",
     "",
-    "Ein Beispiel für den Zugriff:",
+    "An example of the access:",
     "",
     "```csharp",
-    'var treffer = daten.Suche("berichte", limit: 3);',
+    'var hits = data.Search("reports", limit: 3);',
     "```",
     "",
-    "Sag Bescheid, wenn ich tiefer in die zwei Berichts-Auffälligkeiten gehen soll.",
+    "Let me know if I should dig deeper into the two report anomalies.",
   ].join("\n");
 }
 
-/** Verdrahtet den FakeAgent mit React-State: Nachrichten via applyEvent, running als Flag. */
+/** Wires the FakeAgent to React state: messages via applyEvent, running as a flag. */
 export function useFakeAgent() {
   const [messages, dispatch] = useReducer(applyEvent, [] as Message[]);
   const [running, setRunning] = useState(false);

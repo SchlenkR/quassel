@@ -1,4 +1,4 @@
-import { SparklesIcon } from "lucide-react";
+import { CircleDotIcon, EyeOffIcon, ListCollapseIcon, ListIcon, type LucideIcon, ShapesIcon, TagsIcon, TextAlignJustifyIcon } from "lucide-react";
 import { useQuasselComponents } from "./QuasselProvider";
 import { DetailMode } from "./types";
 import { ChatTexts, defaultTexts } from "./texts";
@@ -15,45 +15,46 @@ const TEXT_KEYS: Record<DetailMode, keyof ChatTexts> = {
   full: "detailModeFull",
 };
 
+const ICONS: Record<DetailMode, LucideIcon> = {
+  off: EyeOffIcon,
+  current: CircleDotIcon,
+  icons: ShapesIcon,
+  chips: TagsIcon,
+  grouped: ListCollapseIcon,
+  compact: ListIcon,
+  full: TextAlignJustifyIcon,
+};
+
 export const detailModeLabel = (mode: DetailMode, texts?: Partial<ChatTexts>): string =>
   ({ ...defaultTexts, ...texts })[TEXT_KEYS[mode]];
 
 /**
- * Ein Knopf, der den Detailgrad der Denk- und Werkzeug-Schritte weiterschaltet. Die
- * Reihenfolge kommt aus `modes`, der aktuelle Wert steht als Beschriftung daneben.
+ * An icon button that cycles the detail level of the thinking and tool steps. The order comes
+ * from `modes`, the current value shows in the icon and in the tooltip.
  */
 export function DetailModeSwitch({
   mode,
   onChange,
   modes = DETAIL_MODES,
-  collapsible = true,
   texts,
   className,
 }: {
   mode: DetailMode;
   onChange: (mode: DetailMode) => void;
-  /** Auswahl und Reihenfolge des Weiterschaltens; Default sind alle Modi. */
+  /** Selection and order of cycling; the default is all modes. */
   modes?: readonly DetailMode[];
-  /** false = die Beschriftung bleibt auch in einer schmalen Eingabe-Karte stehen. */
-  collapsible?: boolean;
   texts?: Partial<ChatTexts>;
   className?: string;
 }) {
-  const alleTexte = { ...defaultTexts, ...texts };
+  const allTexts = { ...defaultTexts, ...texts };
   const { Button } = useQuasselComponents();
-  const aktuell = modes.indexOf(mode);
-  const naechster = modes[(aktuell < 0 ? 0 : aktuell + 1) % modes.length];
+  const current = modes.indexOf(mode);
+  const next = modes[(current < 0 ? 0 : current + 1) % modes.length];
+  const Icon = ICONS[mode];
+  const title = `${allTexts.detailModeTitle}: ${detailModeLabel(mode, texts)}`;
   return (
-    <Button
-      aria-label={`${alleTexte.detailModeTitle}: ${detailModeLabel(mode, texts)}`}
-      className={className}
-      onClick={() => onChange(naechster)}
-      size="sm"
-      title={`${alleTexte.detailModeTitle}: ${detailModeLabel(mode, texts)}`}
-      variant="ghost"
-    >
-      <SparklesIcon />
-      <span className={collapsible ? "qsl:in-data-[compact=true]:hidden" : undefined}>{detailModeLabel(mode, texts)}</span>
+    <Button aria-label={title} className={className} onClick={() => onChange(next)} size="icon-sm" title={title} variant="ghost">
+      <Icon />
     </Button>
   );
 }

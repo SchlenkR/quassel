@@ -37,7 +37,7 @@ const docked = () => [...dock()?.children[0]?.children ?? []].map((element) => e
 
 test("an open action sits in the dock right above the composer, not in the transcript", () => {
   inPanel([user, question("q1", "Publish the draft?")]);
-  assert.deepEqual(docked(), ["Publish the draft?wartet auf Eingabe"]);
+  assert.deepEqual(docked(), ["Publish the draft?waiting for input"]);
   assert.doesNotMatch(transcript()?.textContent ?? "", /Publish the draft/);
   const composer = container.querySelector("[data-chat=composer]");
   assert.ok(composer?.contains(dock()));
@@ -55,11 +55,11 @@ test("a resolved action is a receipt in the transcript and leaves the dock empty
 test("without a composer, or outside a panel, open actions stay inline", () => {
   render(createElement(ChatPanel, { children: chat([user, question("q1", "Publish the draft?")]) }));
   assert.equal(dock(), null);
-  assert.match(transcript()?.textContent ?? "", /Publish the draft\?wartet auf Eingabe/);
+  assert.match(transcript()?.textContent ?? "", /Publish the draft\?waiting for input/);
 
   render(chat([user, question("q1", "Publish the draft?")]));
   assert.equal(dock(), null);
-  assert.match(transcript()?.textContent ?? "", /Publish the draft\?wartet auf Eingabe/);
+  assert.match(transcript()?.textContent ?? "", /Publish the draft\?waiting for input/);
 });
 
 test("several open actions stack in chronological order, answered ones stay in the transcript", () => {
@@ -86,17 +86,17 @@ test("renderAction draws open actions in the dock and falls back to the generic 
 
 test("the generic card in the dock dismisses through onDismissAction and keeps the host texts", () => {
   const dismissed: string[] = [];
-  const options = { onDismissAction: (actionId: string) => dismissed.push(actionId), texts: { pendingAction: "waiting", dismissAction: "Dismiss", actionDismissed: "dismissed" } };
+  const options = { onDismissAction: (actionId: string) => dismissed.push(actionId), texts: { pendingAction: "awaiting reply", dismissAction: "Discard", actionDismissed: "discarded" } };
   inPanel([user, question("q1", "Publish the draft?")], options);
-  const button = [...dock()?.querySelectorAll("button") ?? []].find((element) => element.textContent === "Dismiss");
+  const button = [...dock()?.querySelectorAll("button") ?? []].find((element) => element.textContent === "Discard");
   assert.ok(button);
-  assert.match(dock()?.textContent ?? "", /waiting/);
+  assert.match(dock()?.textContent ?? "", /awaiting reply/);
   act(() => (button as unknown as { click: () => void }).click());
   assert.deepEqual(dismissed, ["q1"]);
 
   inPanel([user, question("q1", "Publish the draft?", { status: "dismissed", result: null })], options);
   assert.equal(dock()?.children.length, 0);
-  assert.match(transcript()?.textContent ?? "", /Publish the draft\?dismissed/);
+  assert.match(transcript()?.textContent ?? "", /Publish the draft\?discarded/);
 });
 
 test("a new open action in the dock is still announced", () => {

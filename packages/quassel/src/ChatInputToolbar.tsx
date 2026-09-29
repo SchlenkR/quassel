@@ -16,14 +16,14 @@ type DraftAttachment = { id: number; file: File } & (
   | { status: "error"; error: string }
 );
 
-// Unter dieser Panel-Breite klappen mitlaufende Beschriftungen zu ihren Symbolen.
+// Below this panel width, accompanying labels collapse to their icons.
 const COMPACT_WIDTH_PX = 480;
 
 const errorClasses = "qsl:px-3 qsl:py-2 qsl:text-sm qsl:text-destructive";
 const attachmentItemClasses = "qsl:relative qsl:flex qsl:w-[190px] qsl:max-w-full qsl:min-w-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-lg qsl:border qsl:border-border qsl:text-sm";
 const attachmentMediaClasses = "qsl:block qsl:h-[112px] qsl:w-full qsl:bg-secondary qsl:object-contain";
 
-/** Ein Toolbar-Knopf, deklarativ: Symbol, Text oder beides - plus Klick-Handler. */
+/** A toolbar button, declarative: icon, text or both - plus click handler. */
 export interface ToolbarAction {
   icon?: ReactNode;
   label?: string;
@@ -33,9 +33,9 @@ export interface ToolbarAction {
   onClick: () => void;
 }
 
-/** Hosts steuern den Entwurf von aussen, z.B. um eine Vorlage zum Bearbeiten einzusetzen. */
+/** Hosts control the draft from outside, e.g. to insert a template for editing. */
 export interface ChatInputHandle {
-  /** Ersetzt den Entwurf, fokussiert die Eingabe und stellt die Schreibmarke ans Ende. */
+  /** Replaces the draft, focuses the input and puts the caret at the end. */
   insert: (text: string) => void;
   focus: () => void;
   reset: () => void;
@@ -43,11 +43,11 @@ export interface ChatInputHandle {
 }
 
 /**
- * Die Eingabe-Karte: rahmenlose Textarea oben, Toolbar unter einer Haarlinie. Eigene
- * Knöpfe kommen deklarativ über `actions` oder frei über die Slots links/rechts; bei
- * laufender Arbeit bleibt der Stop-Knopf sichtbar, und Tippen zeigt daneben den Senden-Knopf,
- * der zum Dazwischenfunken wird. `rows` bestimmt die Starthöhe; mit `maxRows` wächst die Textarea
- * mit dem Inhalt bis zu dieser Zeilenzahl und scrollt danach.
+ * The input card: borderless textarea on top, toolbar below a hairline. Custom buttons come
+ * declaratively through `actions` or freely through the left/right slots; while work is running
+ * the stop button stays visible, and typing shows the send button next to it, which then
+ * interjects. `rows` sets the initial height; with `maxRows` the textarea grows with its content
+ * up to that number of rows and scrolls after that.
  */
 export function ChatInputToolbar({
   onSend,
@@ -92,7 +92,7 @@ export function ChatInputToolbar({
   toolbarRight?: ReactNode;
   texts?: Partial<ChatTexts>;
   handleRef?: Ref<ChatInputHandle>;
-  /** false = kein Anhängen: weder Knopf noch Ablegen oder Einfügen von Dateien. */
+  /** false = no attaching: neither button nor dropping or pasting files. */
   attachments?: boolean;
   attachmentCapabilities?: { input: readonly string[]; model: string };
   attachmentCapabilitiesError?: string;
@@ -104,7 +104,7 @@ export function ChatInputToolbar({
   onAutoFocusSettled?: () => void;
 }) {
   const sendScope = useContext(ChatSendContext);
-  const alleTexte = { ...defaultTexts, ...texts };
+  const allTexts = { ...defaultTexts, ...texts };
   const { Button, StopButton, Toggle } = useQuasselComponents();
   const [draft, setDraft] = useState(initialValue);
   const [sending, setSending] = useState(false);
@@ -126,11 +126,11 @@ export function ChatInputToolbar({
   const addFiles = (files: File[]) => {
     if (!files.length) return;
     if (disabled || pendingSend.current) {
-      setAttachmentError(alleTexte.attachmentsWhileBusy);
+      setAttachmentError(allTexts.attachmentsWhileBusy);
       return;
     }
     try {
-      validateAttachmentSelection(attachmentsRef.current.map((entry) => entry.file), files, alleTexte);
+      validateAttachmentSelection(attachmentsRef.current.map((entry) => entry.file), files, allTexts);
     } catch (error) {
       setAttachmentError(error instanceof Error ? error.message : String(error));
       return;
@@ -142,17 +142,17 @@ export function ChatInputToolbar({
       void encodeAttachment(entry.file).then(
         (input) => updateAttachments((current) => current.map((item) => item.id === entry.id ? { ...entry, status: "ready", input } : item)),
         () => updateAttachments((current) => current.map((item) => item.id === entry.id ? {
-          ...entry, status: "error", error: alleTexte.attachmentReadFailed,
+          ...entry, status: "error", error: allTexts.attachmentReadFailed,
         } : item)),
       );
     }
   };
   const rootRef = useRef<HTMLDivElement>(null);
-  const eingabeRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoFocusSettled = useRef(false);
   useEffect(() => {
     if (!autoFocus || autoFocusSettled.current) return;
-    const input = eingabeRef.current;
+    const input = textareaRef.current;
     if (!input) return;
     let frame = 0;
     const settle = () => {
@@ -201,7 +201,7 @@ export function ChatInputToolbar({
     disabled: disabled || sending,
     onFiles: addFiles,
     onPasteText: (text) => {
-      const input = eingabeRef.current;
+      const input = textareaRef.current;
       if (!input || disabled || pendingSend.current) return;
       const start = input.selectionStart;
       const end = input.selectionEnd;
@@ -214,7 +214,7 @@ export function ChatInputToolbar({
   const inline = layout === "inline";
   const inputRows = inline || toolbar ? 1 : rows;
   const inputMaxRows = inline || toolbar ? 1 : maxRows;
-  // Die Toolbar-Fassung pulsiert waehrend der Arbeit; der Host gibt nur den Radius vor.
+  // The toolbar variant pulses while working; the host only sets the radius.
   const rootClasses = cn(
     "qsl:flex qsl:shrink-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-[var(--qsl-input-card-radius,--theme(--radius-xl))] qsl:border qsl:border-border-strong qsl:bg-background qsl:shadow-bar qsl:transition-colors qsl:focus-within:border-primary",
     "qsl:in-data-[tone=material]:rounded-xl qsl:in-data-[tone=material]:border-glass-edge/50 qsl:in-data-[tone=material]:bg-background",
@@ -240,11 +240,11 @@ export function ChatInputToolbar({
     insert: (text: string) => {
       pendingFocus.current = true;
       changeDraft(text);
-      const element = eingabeRef.current;
+      const element = textareaRef.current;
       element?.focus();
       if (element?.value === text) element.setSelectionRange(text.length, text.length);
     },
-    focus: () => eingabeRef.current?.focus(),
+    focus: () => textareaRef.current?.focus(),
     submit: (onSubmit, options) => send(onSubmit, options?.allowEmpty),
     reset: () => {
       generation.current += 1;
@@ -267,27 +267,27 @@ export function ChatInputToolbar({
       return;
     }
     pendingFocus.current = false;
-    const element = eingabeRef.current;
+    const element = textareaRef.current;
     if (element) {
       element.focus();
       element.setSelectionRange(element.value.length, element.value.length);
     }
   }, [draft, sending]);
 
-  // Auto-Wachstum: Hoehe folgt dem Inhalt zwischen rows und maxRows, danach scrollt die Textarea.
+  // Auto-grow: the height follows the content between rows and maxRows, then the textarea scrolls.
   const applyAutoGrow = useCallback(() => {
-    const element = eingabeRef.current;
+    const element = textareaRef.current;
     if (!element || inputMaxRows === undefined) {
       return;
     }
-    const stil = getComputedStyle(element);
-    const zeilenhoehe = Number.parseFloat(stil.lineHeight) || Number.parseFloat(stil.fontSize) * 1.4;
-    const polster = Number.parseFloat(stil.paddingTop) + Number.parseFloat(stil.paddingBottom);
-    const maximum = zeilenhoehe * Math.max(inputMaxRows, inputRows) + polster;
+    const style = getComputedStyle(element);
+    const lineHeight = Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) * 1.4;
+    const padding = Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom);
+    const maximum = lineHeight * Math.max(inputMaxRows, inputRows) + padding;
     element.style.height = "auto";
-    const inhalt = element.scrollHeight;
-    element.style.height = `${Math.min(inhalt, maximum)}px`;
-    element.style.overflowY = inhalt > maximum ? "auto" : "hidden";
+    const contentHeight = element.scrollHeight;
+    element.style.height = `${Math.min(contentHeight, maximum)}px`;
+    element.style.overflowY = contentHeight > maximum ? "auto" : "hidden";
   }, [inputMaxRows, inputRows]);
 
   useEffect(() => {
@@ -296,7 +296,7 @@ export function ChatInputToolbar({
 
   // Hosts may lay the composer out a frame later; re-measure once the width settles.
   useEffect(() => {
-    const element = eingabeRef.current;
+    const element = textareaRef.current;
     if (!element || inputMaxRows === undefined) {
       return;
     }
@@ -311,7 +311,7 @@ export function ChatInputToolbar({
     return () => observer.disconnect();
   }, [inputMaxRows, applyAutoGrow]);
 
-  // Panel-Breite statt Viewport-Breite: die Chat-Spalte kann im Host beliebig schmal sein.
+  // Panel width instead of viewport width: the chat column can be arbitrarily narrow in the host.
   useEffect(() => {
     const element = rootRef.current;
     if (!element) {
@@ -319,16 +319,16 @@ export function ChatInputToolbar({
     }
     const update = () => setCompact(element.clientWidth < COMPACT_WIDTH_PX);
     update();
-    const beobachter = new ResizeObserver(update);
-    beobachter.observe(element);
-    return () => beobachter.disconnect();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
 
   const hasAttachments = attachments.length > 0;
   useEffect(() => { onAttachmentsChange?.(hasAttachments); }, [hasAttachments, onAttachmentsChange]);
   const capabilityError = hasAttachments && attachmentCapabilitiesError ? attachmentCapabilitiesError : attachmentCapabilities ? attachmentCapabilityError(attachments.map((entry) => ({
     name: entry.file.name, mediaType: attachmentMediaType(entry.file),
-  })), attachmentCapabilities, alleTexte) : undefined;
+  })), attachmentCapabilities, allTexts) : undefined;
   const hasContent = draft.trim().length > 0 || attachments.length > 0;
   const preparing = attachments.some((entry) => entry.status === "reading");
   const attachmentBlocked = attachments.some((entry) => entry.status !== "ready");
@@ -346,7 +346,7 @@ export function ChatInputToolbar({
     const sentRevision = draftRevision.current;
     const sentDraft = draft;
     const focusOrigin = document.activeElement;
-    const startedFocused = focusOrigin === eingabeRef.current || rootRef.current?.contains(focusOrigin);
+    const startedFocused = focusOrigin === textareaRef.current || rootRef.current?.contains(focusOrigin);
     let leftComposer = false;
     const observeFocus = (event: Event) => {
       const target = event.target;
@@ -378,7 +378,7 @@ export function ChatInputToolbar({
       if (generation.current === sentGeneration) {
         pendingSend.current = false;
         pendingFocus.current = !!startedFocused && !leftComposer && document.hasFocus()
-          && (!toolbar || focusOrigin !== eingabeRef.current) && (document.activeElement === focusOrigin
+          && (!toolbar || focusOrigin !== textareaRef.current) && (document.activeElement === focusOrigin
             || (!toolbar && document.activeElement === document.body));
         setSending(false);
       }
@@ -395,7 +395,7 @@ export function ChatInputToolbar({
 
   const attachmentPreviews = (
     attachments.length > 0 && (
-        <ul className="qsl:flex qsl:max-h-[240px] qsl:flex-wrap qsl:gap-2 qsl:overflow-y-auto qsl:px-3 qsl:pt-2.5 qsl:in-data-[tone=overseer-details]:max-h-40 qsl:in-data-[tone=overseer-details]:overflow-y-auto" aria-label={alleTexte.attachments}>
+        <ul className="qsl:flex qsl:max-h-[240px] qsl:flex-wrap qsl:gap-2 qsl:overflow-y-auto qsl:px-3 qsl:pt-2.5 qsl:in-data-[tone=overseer-details]:max-h-40 qsl:in-data-[tone=overseer-details]:overflow-y-auto" aria-label={allTexts.attachments}>
           {attachments.map((entry) => (
             <li className={attachmentItemClasses} key={entry.id}>
               {entry.status === "ready" && entry.input.mediaType.startsWith("image/") && (
@@ -407,20 +407,20 @@ export function ChatInputToolbar({
               <div className="qsl:flex qsl:flex-col qsl:gap-1 qsl:p-2 qsl:pr-8 qsl:[overflow-wrap:anywhere]">
                 <span className="qsl:font-medium" title={entry.file.name}>{entry.file.name}</span>
                 <small>{formatAttachmentSize(entry.file.size)}</small>
-                {entry.status === "reading" && <small role="status">{alleTexte.attachmentPreparing}</small>}
+                {entry.status === "reading" && <small role="status">{allTexts.attachmentPreparing}</small>}
                 {entry.status === "error" && <small role="alert">{entry.error}</small>}
               </div>
               <Button
-                aria-label={fillText(alleTexte.removeAttachment, { name: entry.file.name })}
+                aria-label={fillText(allTexts.removeAttachment, { name: entry.file.name })}
                 className="qsl:absolute qsl:top-1 qsl:right-1"
                 disabled={disabled || sending}
                 onClick={() => {
                   updateAttachments((current) => current.filter((item) => item.id !== entry.id));
                   setAttachmentError(undefined);
-                  eingabeRef.current?.focus();
+                  textareaRef.current?.focus();
                 }}
                 size="icon-sm"
-                title={fillText(alleTexte.removeAttachment, { name: entry.file.name })}
+                title={fillText(allTexts.removeAttachment, { name: entry.file.name })}
                 variant="outline"
               ><XIcon /></Button>
             </li>
@@ -433,10 +433,10 @@ export function ChatInputToolbar({
       {attachmentError && <p className={errorClasses} role="alert">{attachmentError}</p>}
       {sendError && <p className={errorClasses} role="alert">{sendError}</p>}
       {failedSubmissions.map((failed) => <div className={cn(errorClasses, "qsl:flex qsl:flex-wrap qsl:items-center qsl:gap-2")} key={failed.id} role="status">
-        <span>{alleTexte.notSent} {failed.draft.slice(0, 100)}{failed.draft.length > 100 ? " ..." : ""}{failed.attachments.length > 0 ? ` ${fillText(alleTexte.notSentAttachments, { count: failed.attachments.length })}` : ""} </span>
+        <span>{allTexts.notSent} {failed.draft.slice(0, 100)}{failed.draft.length > 100 ? " ..." : ""}{failed.attachments.length > 0 ? ` ${fillText(allTexts.notSentAttachments, { count: failed.attachments.length })}` : ""} </span>
         <Button disabled={disabled || sending} size="sm" variant="outline" onClick={() => {
           try {
-            validateAttachmentSelection(attachmentsRef.current.map((entry) => entry.file), failed.attachments.map((entry) => entry.file), alleTexte);
+            validateAttachmentSelection(attachmentsRef.current.map((entry) => entry.file), failed.attachments.map((entry) => entry.file), allTexts);
           } catch (error) {
             setAttachmentError(error instanceof Error ? error.message : String(error));
             return;
@@ -447,19 +447,19 @@ export function ChatInputToolbar({
           setFailedSubmissions((current) => current.filter((entry) => entry.id !== failed.id));
           setAttachmentError(undefined);
           pendingFocus.current = true;
-        }}>{alleTexte.insertUnsent}</Button>
+        }}>{allTexts.insertUnsent}</Button>
       </div>)}
   </>;
   const sendButtons = <>
-          {running && onStop && !hasContent && <StopButton className="qsl:flex-none" label={alleTexte.stop} onClick={onStop} size="icon-sm" />}
+          {running && onStop && !hasContent && <StopButton className="qsl:flex-none" label={allTexts.stop} onClick={onStop} size="icon-sm" />}
           {(!running || !onStop || hasContent) && (
             <Button
-              aria-label={alleTexte.send}
+              aria-label={allTexts.send}
               className="qsl:flex-none"
               disabled={disabled || sendDisabled || sending || attachmentBlocked || !!capabilityError || !hasContent}
               onClick={() => { void send(); }}
               size="icon-sm"
-              title={running ? alleTexte.sendIntoRun : alleTexte.send}
+              title={running ? allTexts.sendIntoRun : allTexts.send}
             >
               <SendIcon size={14} />
             </Button>
@@ -469,16 +469,16 @@ export function ChatInputToolbar({
       <div className={toolbarRowClasses} data-input="controls">
         <div className={cn(toolbarSideClasses, "qsl:in-data-[tone=overseer-details]:flex-none", inline || toolbar ? "qsl:flex-none" : "qsl:flex-auto")}>
           {attachmentsEnabled && <Button
-            aria-label={alleTexte.attachFiles}
+            aria-label={allTexts.attachFiles}
             disabled={disabled || sending}
             onClick={() => fileInput.inputRef.current?.click()}
             size="icon-sm"
-            title={fillText(alleTexte.attachFilesHint, { count: MAX_CHAT_ATTACHMENTS, size: maxAttachmentSizeLabel })}
+            title={fillText(allTexts.attachFilesHint, { count: MAX_CHAT_ATTACHMENTS, size: maxAttachmentSizeLabel })}
             variant="ghost"
           >
             <PaperclipIcon />
           </Button>}
-          {preparing && <span className={cn("qsl:text-xs qsl:text-muted-foreground", inline && "qsl:sr-only")} role="status">{alleTexte.attachmentsPreparing}</span>}
+          {preparing && <span className={cn("qsl:text-xs qsl:text-muted-foreground", inline && "qsl:sr-only")} role="status">{allTexts.attachmentsPreparing}</span>}
           {actions?.map((action, index) => action.active === undefined ? (
             <Button disabled={action.disabled} key={index} onClick={action.onClick} size="sm" title={action.title ?? action.label} variant="ghost">
               {action.icon}
@@ -508,13 +508,13 @@ export function ChatInputToolbar({
       <textarea
         aria-controls={inputAriaControls}
         className={textareaClasses}
-        aria-label={alleTexte.placeholder}
+        aria-label={allTexts.placeholder}
         disabled={!toolbar && disabled}
         readOnly={toolbar && disabled}
         onChange={(event) => changeDraft(event.target.value)}
         onKeyDown={onKeyDown}
-        placeholder={running ? alleTexte.steeringPlaceholder : alleTexte.placeholder}
-        ref={eingabeRef}
+        placeholder={running ? allTexts.steeringPlaceholder : allTexts.placeholder}
+        ref={textareaRef}
         rows={inputRows}
         value={draft}
       />
@@ -531,7 +531,7 @@ export function ChatInputToolbar({
       {...(attachmentsEnabled ? fileInput.dropProps : {})}
     >
       {attachmentsEnabled && <input
-        aria-label={alleTexte.attachFiles}
+        aria-label={allTexts.attachFiles}
         hidden
         multiple
         type="file"

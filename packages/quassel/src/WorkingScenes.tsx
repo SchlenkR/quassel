@@ -1,189 +1,189 @@
 import { useEffect, useState } from "react";
 import { cn } from "./ui/cn";
 
-const SPUR = 13;
-const GRUNDTAKT_MS = 90;
-const SZENENWECHSEL_MS = 2600;
+const TRACK = 13;
+const BASE_TICK_MS = 90;
+const SCENE_CHANGE_MS = 2600;
 
-/** Eine Zelle je Figur: Emoji und Satzzeichen teilen sich kein Raster, geschobener Text ruckelt. */
-function bahn(figuren: Record<number, string>, breite = SPUR): string[] {
-  return Array.from({ length: breite }, (_, x) => figuren[x] ?? " ");
+/** One cell per figure: emoji and punctuation share no grid, shifted text judders. */
+function track(figures: Record<number, string>, width = TRACK): string[] {
+  return Array.from({ length: width }, (_, x) => figures[x] ?? " ");
 }
 
-interface Szene {
+interface Scene {
   id: string;
-  takt: number;
-  laufend?: true;
+  tick: number;
+  moving?: true;
   compact?: true;
-  zeichne: (schritt: number) => string | string[];
+  draw: (step: number) => string | string[];
 }
 
 /**
- * Kleine Szenen, in denen etwas Erkennbares passiert - der Zustand aendert sich sichtbar,
- * statt dass nur eine Figur vorbeilaeuft. Szenen mit Bewegung geben ihre Bahn als Zellen
- * zurueck, alle anderen als schlichten Text.
+ * Small scenes in which something recognizable happens - the state changes visibly instead
+ * of a figure just walking past. Scenes with movement return their track as cells, all others
+ * as plain text.
  */
-const SZENEN: Szene[] = [
+const SCENES: Scene[] = [
   {
-    id: "denken",
-    takt: 2,
-    zeichne: (schritt) => {
-      const takt = schritt % 10;
-      if (takt >= 8) return "\u{1F929}\u{1F4A1}";
-      return "\u{1F914}" + "\u{1F4AD}".repeat(Math.min(takt, 3));
+    id: "thinking",
+    tick: 2,
+    draw: (step) => {
+      const tick = step % 10;
+      if (tick >= 8) return "\u{1F929}\u{1F4A1}";
+      return "\u{1F914}" + "\u{1F4AD}".repeat(Math.min(tick, 3));
     },
   },
   {
-    // Fliegt nach rechts und zieht ihren Schweif hinterher.
-    id: "rakete",
-    takt: 2,
-    laufend: true,
-    zeichne: (schritt) => {
-      const x = schritt % SPUR;
-      return bahn({ [x - 2]: "·", [x - 1]: "\u{1F4A8}", [x]: "\u{1F680}" });
+    // Flies to the right, dragging its tail behind.
+    id: "rocket",
+    tick: 2,
+    moving: true,
+    draw: (step) => {
+      const x = step % TRACK;
+      return track({ [x - 2]: "·", [x - 1]: "\u{1F4A8}", [x]: "\u{1F680}" });
     },
   },
   {
-    // Die Punkte bleiben stehen und werden einzeln gefressen.
+    // The dots stay put and are eaten one by one.
     id: "pacman",
-    takt: 2,
-    laufend: true,
-    zeichne: (schritt) => {
-      const x = schritt % SPUR;
-      const figuren: Record<number, string> = {};
-      for (let i = x + 1; i < SPUR; i++) {
-        figuren[i] = "·";
+    tick: 2,
+    moving: true,
+    draw: (step) => {
+      const x = step % TRACK;
+      const figures: Record<number, string> = {};
+      for (let i = x + 1; i < TRACK; i++) {
+        figures[i] = "·";
       }
-      figuren[x] = schritt % 2 === 0 ? "\u{1F7E1}" : "\u{1F315}";
-      return bahn(figuren);
+      figures[x] = step % 2 === 0 ? "\u{1F7E1}" : "\u{1F315}";
+      return track(figures);
     },
   },
   {
-    // Aus einem Samen wird ein Baum, dann von vorn.
-    id: "wachsen",
+    // A seed becomes a tree, then start over.
+    id: "growing",
     compact: true,
-    takt: 2,
-    zeichne: (schritt) => {
-      const stufen = ["\u{1F331}", "\u{1F331}", "\u{1F33F}", "\u{1F33F}", "\u{1F343}", "\u{1F333}", "\u{1F333}", "\u{1F333}"];
-      return stufen[schritt % stufen.length];
+    tick: 2,
+    draw: (step) => {
+      const stages = ["\u{1F331}", "\u{1F331}", "\u{1F33F}", "\u{1F33F}", "\u{1F343}", "\u{1F333}", "\u{1F333}", "\u{1F333}"];
+      return stages[step % stages.length];
     },
   },
   {
-    // Das Ei bekommt Risse, das Kueken schluepft.
-    id: "schluepfen",
+    // The egg cracks, the chick hatches.
+    id: "hatching",
     compact: true,
-    takt: 2,
-    zeichne: (schritt) => {
-      const takt = schritt % 12;
-      if (takt < 4) return "\u{1F95A}";
-      if (takt < 6) return "\u{1F95A}*";
-      if (takt < 9) return "\u{1F423}";
+    tick: 2,
+    draw: (step) => {
+      const tick = step % 12;
+      if (tick < 4) return "\u{1F95A}";
+      if (tick < 6) return "\u{1F95A}*";
+      if (tick < 9) return "\u{1F423}";
       return "\u{1F425}";
     },
   },
   {
-    // Morse-artiges Signal, das sich zu einem OK aufloest.
+    // Morse-like signal that resolves into an OK.
     id: "signal",
-    takt: 2,
-    zeichne: (schritt) => {
-      const takt = schritt % 14;
-      if (takt >= 11) return "\u{1F4E1} OK";
-      const muster = ["·", "··", "·-", "-·", "··-", "-··"];
-      return "\u{1F4E1} " + muster[takt % muster.length];
+    tick: 2,
+    draw: (step) => {
+      const tick = step % 14;
+      if (tick >= 11) return "\u{1F4E1} OK";
+      const pattern = ["·", "··", "·-", "-·", "··-", "-··"];
+      return "\u{1F4E1} " + pattern[tick % pattern.length];
     },
   },
   {
-    // Sanduhr: der Sand laeuft durch, dann wird gedreht.
-    id: "sanduhr",
-    takt: 2,
-    zeichne: (schritt) => {
-      const takt = schritt % 12;
-      const koerner = "·".repeat(Math.max(0, 5 - Math.floor(takt / 2)));
-      return (takt < 10 ? "⏳" : "⌛") + " " + koerner;
+    // Hourglass: the sand runs through, then it is flipped.
+    id: "hourglass",
+    tick: 2,
+    draw: (step) => {
+      const tick = step % 12;
+      const grains = "·".repeat(Math.max(0, 5 - Math.floor(tick / 2)));
+      return (tick < 10 ? "⏳" : "⌛") + " " + grains;
     },
   },
   {
-    // Ei, Kueken, Henne - und die legt das naechste Ei.
-    id: "huhn-kreislauf",
+    // Egg, chick, hen - and she lays the next egg.
+    id: "chicken-cycle",
     compact: true,
-    takt: 3,
-    zeichne: (schritt) => {
-      const takt = schritt % 16;
-      if (takt < 3) return "\u{1F95A}";
-      if (takt < 5) return "\u{1F95A}*";
-      if (takt < 8) return "\u{1F423}";
-      if (takt < 11) return "\u{1F424}";
-      if (takt < 14) return "\u{1F414}";
+    tick: 3,
+    draw: (step) => {
+      const tick = step % 16;
+      if (tick < 3) return "\u{1F95A}";
+      if (tick < 5) return "\u{1F95A}*";
+      if (tick < 8) return "\u{1F423}";
+      if (tick < 11) return "\u{1F424}";
+      if (tick < 14) return "\u{1F414}";
       return "\u{1F414}\u{1F95A}";
     },
   },
   {
-    // Hut, Funken - und das Kaninchen tuermt.
-    id: "zauberhut",
+    // Hat, sparks - and the rabbit bolts.
+    id: "magic-hat",
     compact: true,
-    takt: 3,
-    zeichne: (schritt) => {
-      const takt = schritt % 14;
-      if (takt < 4) return "\u{1F3A9}";
-      if (takt < 7) return "\u{1F3A9}*";
-      if (takt < 11) return "\u{1F3A9}\u{1F407}";
+    tick: 3,
+    draw: (step) => {
+      const tick = step % 14;
+      if (tick < 4) return "\u{1F3A9}";
+      if (tick < 7) return "\u{1F3A9}*";
+      if (tick < 11) return "\u{1F3A9}\u{1F407}";
       return "\u{1F407}\u{1F4A8}";
     },
   },
   {
-    // Rot, Gelb, Gruen - und ab.
-    id: "ampel",
+    // Red, yellow, green - and off.
+    id: "traffic-light",
     compact: true,
-    takt: 3,
-    zeichne: (schritt) => {
-      const takt = schritt % 12;
-      if (takt < 4) return "\u{1F534}";
-      if (takt < 6) return "\u{1F7E1}";
-      if (takt < 8) return "\u{1F7E2}";
+    tick: 3,
+    draw: (step) => {
+      const tick = step % 12;
+      if (tick < 4) return "\u{1F534}";
+      if (tick < 6) return "\u{1F7E1}";
+      if (tick < 8) return "\u{1F7E2}";
       return "\u{1F697}\u{1F4A8}";
     },
   },
   {
-    // Klingeln, verschlafen, losrennen.
-    id: "wecker",
+    // Ringing, oversleeping, running off.
+    id: "alarm-clock",
     compact: true,
-    takt: 2,
-    zeichne: (schritt) => {
-      const takt = schritt % 14;
-      if (takt < 5) return takt % 2 === 0 ? "⏰" : "\u{1F514}";
-      if (takt < 8) return "\u{1F634}";
-      if (takt < 10) return "\u{1F633}";
+    tick: 2,
+    draw: (step) => {
+      const tick = step % 14;
+      if (tick < 5) return tick % 2 === 0 ? "⏰" : "\u{1F514}";
+      if (tick < 8) return "\u{1F634}";
+      if (tick < 10) return "\u{1F633}";
       return "\u{1F3C3}\u{1F4A8}";
     },
   },
   {
-    // Schnecke kriecht zur Flagge - und feiert.
-    id: "schnecke",
-    takt: 4,
-    zeichne: (schritt) => {
-      const takt = schritt % 8;
-      if (takt < 5) return bahn({ [takt]: "\u{1F40C}", 4: "\u{1F3C1}" }, 5);
-      return bahn({ 4: "\u{1F389}" }, 5);
+    // A snail crawls to the flag - and celebrates.
+    id: "snail",
+    tick: 4,
+    draw: (step) => {
+      const tick = step % 8;
+      if (tick < 5) return track({ [tick]: "\u{1F40C}", 4: "\u{1F3C1}" }, 5);
+      return track({ 4: "\u{1F389}" }, 5);
     },
   },
 ];
 
-const COMPACT_SCENES = SZENEN.filter((scene) => scene.compact);
+const COMPACT_SCENES = SCENES.filter((scene) => scene.compact);
 
 export interface WorkingScenesProps {
   /** Limits scenes to one or two visible characters for small status fields. */
   compact?: boolean;
-  /** Text fuer Screenreader, Default "Arbeitet ...". */
+  /** Text for screen readers, default "Working ...". */
   label?: string;
 }
 
 /**
- * Der Default-Working-Indikator: zufaellig rotierende Mini-Szenen. Zufaellige Reihenfolge
- * und Startphase, damit dieselben Szenen nie wie eine Schleife wirken. Ueber die
- * working-Prop von ChatMessages laesst er sich komplett ersetzen.
+ * The default working indicator: randomly rotating mini scenes. Random order and start phase,
+ * so the same scenes never feel like a loop. The working prop of ChatMessages replaces it
+ * completely.
  */
-export function WorkingScenes({ label = "Arbeitet ...", compact = false }: WorkingScenesProps) {
-  const scenes = compact ? COMPACT_SCENES : SZENEN;
+export function WorkingScenes({ label = "Working ...", compact = false }: WorkingScenesProps) {
+  const scenes = compact ? COMPACT_SCENES : SCENES;
   const [sceneIndex, setSceneIndex] = useState(() => Math.floor(Math.random() * scenes.length));
   const [offset, setOffset] = useState(() => Math.floor(Math.random() * 20));
   const [frameTick, setFrameTick] = useState(0);
@@ -205,17 +205,17 @@ export function WorkingScenes({ label = "Arbeitet ...", compact = false }: Worki
       setSceneIndex((previous) => (previous + 1 + Math.floor(Math.random() * (scenes.length - 1))) % scenes.length);
       setOffset(Math.floor(Math.random() * 20));
       setFrameTick(0);
-    }, SZENENWECHSEL_MS);
+    }, SCENE_CHANGE_MS);
     return () => window.clearInterval(timer);
   }, [reducedMotion, scenes]);
 
   useEffect(() => {
     if (reducedMotion) return;
-    const timer = window.setInterval(() => setFrameTick((value) => value + 1), GRUNDTAKT_MS);
+    const timer = window.setInterval(() => setFrameTick((value) => value + 1), BASE_TICK_MS);
     return () => window.clearInterval(timer);
   }, [reducedMotion]);
 
-  const frame = scene.zeichne(Math.floor(frameTick / scene.takt) + (scene.laufend ? offset : 0));
+  const frame = scene.draw(Math.floor(frameTick / scene.tick) + (scene.moving ? offset : 0));
   return (
     <span aria-label={label} className={cn("qsl:flex qsl:items-center qsl:gap-2.5 qsl:text-[13px]", compact ? "qsl:text-inherit" : "qsl:mt-4 qsl:text-foreground")} data-chat="working" role="status">
       {!compact && <span aria-hidden="true" className="qsl:text-muted-foreground qsl:opacity-70">&gt;</span>}

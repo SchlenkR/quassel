@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "quassel: release",
+      "detail": "Check, build and publish to npm with the next patch version",
+      "type": "shell",
+      "command": "pnpm release",
+      "options": { "env": { "NPM_TOKEN": "${env:npm_key}" } },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "quassel: release (dry run)",
+      "detail": "Check and build, show the package contents without publishing",
+      "type": "shell",
+      "command": "pnpm release --dry-run",
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}

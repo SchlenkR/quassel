@@ -1,4 +1,4 @@
 import { createContext } from "react";
 
-/** Ziel offener Aktionen: undefined = im Verlauf, null = das Dock über der Eingabe ist noch nicht eingehängt. */
+/** Target of open actions: undefined = in the transcript, null = the dock above the input is not mounted yet. */
 export const ChatActionDock = createContext<HTMLElement | null | undefined>(undefined);

@@ -31,7 +31,6 @@ export const englishTexts: ChatTexts = {
   detailModeGrouped: "grouped",
   detailModeCompact: "one line",
   detailModeFull: "everything",
-  timestamps: "Timestamps",
   showTimestamps: "Show timestamps",
   hideTimestamps: "Hide timestamps",
   copyMessage: "Copy message",

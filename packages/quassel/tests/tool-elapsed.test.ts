@@ -70,7 +70,7 @@ test("the ticker stops once the result arrives or the chat stops running", () =>
   tick(5_000);
   assert.deepEqual(shown(), ["5 s"]);
   assert.equal(elapsedTicker.active(), true);
-  render([{ ...open(), tool: { ...open().tool!, result: "fertig" } }]);
+  render([{ ...open(), tool: { ...open().tool!, result: "done" } }]);
   assert.deepEqual(shown(), []);
   assert.equal(elapsedTicker.active(), false);
 
@@ -99,13 +99,13 @@ test("the collapsed group header shows the elapsed time of its running step, hid
   tick(12_000);
   const header = container.querySelector("[data-step=group] button[aria-expanded=false]");
   assert.ok(header);
-  assert.match(header.textContent ?? "", /^2 Schrittebash läuft \.\.\.12 s$/);
+  assert.match(header.textContent ?? "", /^2 stepsbash running \.\.\.12 s$/);
   const elapsed = header.querySelector("[data-step=elapsed]");
   assert.equal(elapsed?.getAttribute("aria-hidden"), "true");
   assert.equal(header.querySelectorAll("[aria-live]").length, 0);
 
   render([open(), done("read", "read")], { detailMode: "grouped" });
-  assert.match(container.querySelector("[data-step=group] button")?.textContent ?? "", /^2 Schrittebash läuft \.\.\.12 s$/);
+  assert.match(container.querySelector("[data-step=group] button")?.textContent ?? "", /^2 stepsbash running \.\.\.12 s$/);
 });
 
 test("chips carry the elapsed time, icons do not", () => {

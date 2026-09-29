@@ -4,10 +4,10 @@ export type { Role, ToolInfo, PendingAction, Message, ChatEvent, ChatTextCursor,
 export { applyEvent, prettyJson, compactToolLine } from "./events";
 
 /**
- * current = nur der laufende Schritt, off = nur Antworten, icons = Schritte als reine Symbole nebeneinander,
- * chips = Schritte als Symbol + Kurztext nebeneinander (mit Umbruch),
- * grouped = aufeinanderfolgende Schritte als eine aufklappbare Zeile, dahinter einzeilig,
- * compact = Denken und Werkzeuge einzeilig, full = alles ausgeklappt.
+ * current = only the running step, off = answers only, icons = steps as plain icons side by side,
+ * chips = steps as icon + short text side by side (wrapping),
+ * grouped = consecutive steps as one expandable line, single line each inside,
+ * compact = thinking and tools on a single line, full = everything expanded.
  */
 export type DetailMode = "off" | "current" | "icons" | "chips" | "grouped" | "compact" | "full";
 

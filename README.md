@@ -46,7 +46,7 @@ variables too.
 - Timestamps, day separators, message actions, configurable bubbles and appearance.
 - Screen reader friendly: the transcript is not a live region; finished replies and new
   actions are announced once, with the host in control of the wording.
-- All labels are replaceable through `texts` (defaults are German).
+- All labels are replaceable through `texts` (defaults are English).
 
 ## Install
 
@@ -98,7 +98,7 @@ pnpm release --dry-run
 ```
 
 The full guide - every prop, the event contract, theming, slots, dark mode and publishing -
-is in [docs/guide.md](docs/guide.md) (German). It is written so that an AI assistant can build
+is in [docs/guide.md](docs/guide.md). It is written so that an AI assistant can build
 an application with quassel from it.
 
 ## License

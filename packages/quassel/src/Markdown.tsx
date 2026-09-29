@@ -62,10 +62,10 @@ function MarkdownLink({ href, children }: { href?: string; children?: ReactNode 
   );
 }
 
-// Waagerechte Rollbalken bleiben sichtbar - sonst ist der Ueberlauf nicht auffindbar.
+// Horizontal scrollbars stay visible - otherwise the overflow cannot be found.
 const scrollbar = "qsl:[scrollbar-width:thin] qsl:[&::-webkit-scrollbar]:block qsl:[&::-webkit-scrollbar]:h-2 qsl:[&::-webkit-scrollbar-thumb]:rounded-full qsl:[&::-webkit-scrollbar-thumb]:bg-border";
 
-// Die Deckstreifen verbergen den Umbruch am Rand; --qsl-scroll-cover kommt aus der umgebenden Blase.
+// The cover strips hide the cut at the edge; --qsl-scroll-cover comes from the surrounding bubble.
 const scrollCover = "qsl:bg-[linear-gradient(to_right,var(--qsl-scroll-cover,var(--qsl-background))_50%,transparent)_left/20px_100%_no-repeat_local,linear-gradient(to_left,var(--qsl-scroll-cover,var(--qsl-background))_50%,transparent)_right/20px_100%_no-repeat_local,linear-gradient(to_right,#00000047,transparent)_left/14px_100%_no-repeat_scroll,linear-gradient(to_left,#00000047,transparent)_right/14px_100%_no-repeat_scroll]";
 
 const headingClasses = "qsl:mt-3 qsl:mb-1 qsl:text-[15px] qsl:font-medium";
@@ -94,7 +94,7 @@ const components: Components = {
   code: ({ children, className }) => (
     <code className={cn(className, "qsl:rounded-sm qsl:bg-secondary qsl:px-1 qsl:py-0.5 qsl:font-mono qsl:text-sm qsl:[overflow-wrap:anywhere] qsl:in-data-[tone=on-color]:bg-white/20 qsl:in-data-[tone=on-color]:text-inherit", "qsl:[pre>&]:bg-transparent qsl:[pre>&]:p-0")}>{children}</code>
   ),
-  // Ohne max-content schrumpft die Tabelle auf den Container und stapelt Buchstaben.
+  // Without max-content the table shrinks to the container and stacks letters.
   table: ({ children }) => (
     <div className={cn(scrollbar, scrollCover, "qsl:my-2 qsl:overflow-x-auto")}>
       <table className="qsl:w-max qsl:min-w-full qsl:border-collapse qsl:text-sm">{children}</table>
@@ -134,7 +134,7 @@ export function Markdown({ text, streaming = false }: { text: string; streaming?
   );
 }
 
-/** Dieselbe Syntax wie der Renderer, als Klartext ohne Markup, etwa für Screenreader-Ansagen. */
+/** The same syntax as the renderer, as plain text without markup, e.g. for screen reader announcements. */
 export function markdownPlainText(text: string): string {
   return text
     .split("\n")
@@ -143,7 +143,7 @@ export function markdownPlainText(text: string): string {
       .replace(/^(#{1,6})\s+/, "")
       .replace(/^\s*>\s?/, "")
       .replace(/^\s*([-*+]|\d+[.)])\s+/, "")
-      .replace(/!?\[([^\]]*)\]\(([^)]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|\*([^*]+)\*|`([^`]+)`/g, (_, link, _href, fett, fettUnterstrich, kursiv, code) => link ?? fett ?? fettUnterstrich ?? kursiv ?? code)
+      .replace(/!?\[([^\]]*)\]\(([^)]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|\*([^*]+)\*|`([^`]+)`/g, (_, link, _href, bold, boldUnderscore, italic, code) => link ?? bold ?? boldUnderscore ?? italic ?? code)
       .trim())
     .filter((line) => line !== "")
     .join("\n");

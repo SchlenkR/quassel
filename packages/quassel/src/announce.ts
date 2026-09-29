@@ -1,11 +1,11 @@
-const abstandMs = 400;
-const hoechstensWartend = 5;
+const intervalMs = 400;
+const maxQueued = 5;
 
 let region: HTMLElement | undefined;
-let wartend: readonly string[] = [];
-let laeuft = false;
+let queued: readonly string[] = [];
+let running = false;
 
-function ansageRegion(): HTMLElement {
+function liveRegion(): HTMLElement {
   if (region?.isConnected) {
     return region;
   }
@@ -29,33 +29,33 @@ function ansageRegion(): HTMLElement {
   return element;
 }
 
-function naechste(): void {
-  if (wartend.length === 0) {
-    laeuft = false;
+function next(): void {
+  if (queued.length === 0) {
+    running = false;
     return;
   }
   if (document.visibilityState === "hidden") {
-    document.addEventListener("visibilitychange", naechste, { once: true });
+    document.addEventListener("visibilitychange", next, { once: true });
     return;
   }
-  const [text, ...rest] = wartend;
-  wartend = rest;
-  const ziel = ansageRegion();
-  ziel.textContent = ziel.textContent === text ? `${text}\u00a0` : text;
-  window.setTimeout(naechste, abstandMs);
+  const [text, ...rest] = queued;
+  queued = rest;
+  const target = liveRegion();
+  target.textContent = target.textContent === text ? `${text}\u00a0` : text;
+  window.setTimeout(next, intervalMs);
 }
 
-/** Sagt Text über eine gemeinsame, versteckte Live-Region an: gedrosselt, und bei verstecktem Tab angehalten. */
+/** Announces text through a shared, hidden live region: throttled, and paused while the tab is hidden. */
 export function announce(text: string): void {
-  const inhalt = text.trim();
-  if (!inhalt || typeof document === "undefined") {
+  const content = text.trim();
+  if (!content || typeof document === "undefined") {
     return;
   }
-  wartend = [...wartend, inhalt].slice(-hoechstensWartend);
-  if (laeuft) {
+  queued = [...queued, content].slice(-maxQueued);
+  if (running) {
     return;
   }
-  laeuft = true;
-  ansageRegion();
-  window.setTimeout(naechste, abstandMs);
+  running = true;
+  liveRegion();
+  window.setTimeout(next, intervalMs);
 }

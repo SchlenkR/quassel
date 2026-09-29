@@ -29,7 +29,7 @@ export function createChatScroll(onFollowChange: (following: boolean) => void = 
     },
     scroll(viewport: ScrollViewport, dragging = false) {
       if (viewport.clientHeight <= 0) return;
-      if (atEnd(viewport)) follow(true);
+      if (atEnd(viewport) && viewport.scrollTop >= lastTop) follow(true);
       else if (dragging && viewport.scrollTop < lastTop) follow(false);
       lastTop = viewport.scrollTop;
     },

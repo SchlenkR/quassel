@@ -134,6 +134,7 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
   messages: Message[];
   owner?: string | null;                // contributions with this sender without a speech bubble
   detailMode?: DetailMode;              // default "current"
+  transcriptMode?: TranscriptMode;      // "all" (default) or "latest"
   running?: boolean;                    // working indicator, aria-busy
   working?: ReactNode;                  // custom working indicator instead of WorkingScenes
   stepsExpandable?: boolean;            // default true: clicking a step opens the detail popover
@@ -164,6 +165,27 @@ Its own scroll container: follows the end while you are at the bottom, pauses wh
 (wheel, keys, touch, scrollbar) and then shows a jump-to-end button. It carries the stable
 attribute `data-quassel-transcript`; it gets custom classes through `scrollerClassName`, and
 `scrollerRef` delivers the element itself.
+
+Transcript modes: `all` (the default) shows every message. `latest` keeps every user input and shows at most
+one non-empty assistant message between two user messages: the last one. The same rule applies
+after the last user message and before the first one. Every user message is a boundary, including
+steering, regardless of `Message.steered`. Earlier inputs and their last replies stay visible.
+
+A new assistant block replaces the previous one only within the same interval, as soon as it
+has text or attachments. The previous text stays visible during tool calls and empty streaming
+deltas. Steering preserves the text before it even when a new reply starts after it. Message
+order is preserved; an existing text block can keep streaming in its original position while
+steering arrives. Source messages are never modified; `all` restores all intermediate replies.
+
+Thinking and tool steps still follow `detailMode` independently. Removing intermediate replies
+makes adjacent steps join into the existing groups in `grouped` mode or rows in `chips`/`icons`
+mode. User inputs and the retained answer separate groups. The gallery starts with `grouped`
+to demonstrate this; `current` shows just the running step, and `off` hides steps. System messages
+and actions remain available. Hidden answers are not announced to screen readers.
+
+Set `transcriptMode` directly from host state; no button is required. Optionally place
+`<TranscriptModeSwitch mode={transcriptMode} onChange={setTranscriptMode} />` in the input
+toolbar. The gallery's Input card starts in `latest` mode and lets you switch during streaming.
 
 Detail levels: `current` = only the step running right now; `off` = answers only; `icons` =
 steps as icons; `chips` = icon plus short text with wrapping; `grouped` = consecutive steps
@@ -251,6 +273,7 @@ with an icon collapse their label.
 
 - `DetailModeSwitch` (`mode`, `onChange`, `modes?`, `texts?`, `className?`): icon button with one icon per mode,
   cycles the detail level; `DETAIL_MODES`, `detailModeLabel(mode, texts)`.
+- `TranscriptModeSwitch` (`mode`, `onChange`, `texts?`, `className?`): optional toggle between `all` and `latest`.
 - `TimestampSwitch` (`showTimestamps`, `onChange`, `texts?`, `className?`): icon button, clock on or faded.
 - `Markdown` (`text`, `streaming?`), plus `MarkdownLinks` (`onLinkClick`) and
   `MarkdownCodeBlocks` (`options`, `texts`) as contexts; `markdownPlainText(text)`.
@@ -448,8 +471,8 @@ pnpm test       # package tests (node:test, happy-dom, fake timers)
 pnpm build      # build stylesheet and gallery
 ```
 
-The gallery shows read only, input card with a fake agent (its tool runs for five seconds, so
-that the elapsed time appears), actions, themes and slots. The
+The gallery shows read only, input card with a fake agent (alternating text, thinking and
+multiple tool calls of 3.5 seconds each, including steering), actions, themes and slots. The
 README images come from `packages/gallery/showcase.html`: scenes via
 `?scene=agent|details|questions|party|themes` (`questions` shows the actions: the resolved one
 in the transcript, two open ones in the dock above the composer; `actions` works too; in `agent`

@@ -2,7 +2,7 @@ import { cn } from "./ui/cn";
 import { type CSSProperties, ReactNode, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createChatScroll } from "./chat-scroll";
-import { ChatAnnouncement, DetailMode, Message, PendingAction, prettyJson, stepState, ToolInfo } from "./types";
+import { ChatAnnouncement, DetailMode, Message, PendingAction, prettyJson, stepState, ToolInfo, TranscriptMode } from "./types";
 import { ChatTexts, defaultTexts } from "./texts";
 import { Markdown, MarkdownCodeBlocks, MarkdownLinks, markdownPlainText, type LinkClickHandler } from "./Markdown";
 import { StepPopover } from "./StepPopover";
@@ -65,6 +65,7 @@ export function ChatMessages({
   messages,
   owner,
   detailMode = "current",
+  transcriptMode = "all",
   running = false,
   working,
   stepsExpandable = true,
@@ -95,6 +96,7 @@ export function ChatMessages({
   /** Contributions with this Message.sender appear without a speech bubble; null keeps the message defaults. */
   owner?: string | null;
   detailMode?: DetailMode;
+  transcriptMode?: TranscriptMode;
   running?: boolean;
   working?: ReactNode;
   /** false = thinking and tool steps cannot be expanded (no popover). */
@@ -131,6 +133,21 @@ export function ChatMessages({
   /** Milliseconds before a running tool call shows its elapsed time (from Message.at) while running; false = never. */
   toolElapsedThreshold?: number | false;
 }) {
+  const selected = useMemo(() => {
+    if (transcriptMode === "all") return messages;
+    const answers = new Set<Message>();
+    let hasAnswer = false;
+    for (let index = messages.length - 1; index >= 0; index--) {
+      const message = messages[index];
+      if (message.role === "user") {
+        hasAnswer = false;
+      } else if (message.role === "assistant" && !hasAnswer && (message.text.trim() !== "" || message.attachments?.length)) {
+        answers.add(message);
+        hasAnswer = true;
+      }
+    }
+    return messages.filter((message) => message.role !== "assistant" || answers.has(message));
+  }, [messages, transcriptMode]);
   const allTexts = { ...defaultTexts, ...texts };
   const { Button } = useQuasselComponents();
   const scrollArea = useRef<HTMLDivElement>(null);
@@ -165,11 +182,12 @@ export function ChatMessages({
       return;
     }
     due
+      .filter((message) => selected.includes(message))
       .map((message) => announce
         ? announce({ kind: message.role === "action" ? "action" : "reply", message })
         : markdownPlainText(message.text))
       .forEach((text) => text && announceText(text));
-  }, [messages, running, announce]);
+  }, [messages, selected, running, announce]);
   const updateJumpVisibility = useCallback((viewport: HTMLDivElement) => {
     if (viewport.clientHeight > 0) setShowJumpToEnd(viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop > jumpToEndThreshold);
   }, [jumpToEndThreshold]);
@@ -228,8 +246,8 @@ export function ChatMessages({
   const visible = useMemo(
     () => {
       // Your own inputs after the running step do not end it; any other message does.
-      const lastNonUser = messages.reduce((last, message, index) => message.role === "user" ? last : index, -1);
-      return messages.filter((message, index) => {
+      const lastNonUser = selected.reduce((last, message, index) => message.role === "user" ? last : index, -1);
+      return selected.filter((message, index) => {
         if (dock !== undefined && isOpenAction(message)) {
           return false;
         }
@@ -246,7 +264,7 @@ export function ChatMessages({
         return true;
       });
     },
-    [messages, detailMode, running, dock],
+    [selected, detailMode, running, dock],
   );
   const openActions = dock ? messages.filter(isOpenAction) : [];
 

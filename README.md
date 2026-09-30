@@ -43,6 +43,7 @@ variables too.
 - Streaming-safe Markdown (tables, code with copy button, lists) via Streamdown.
 - Steering: typing while a turn runs sends into it; stop, retry and failed-send recovery built in.
 - Attachments by button, drag and drop or paste, with previews and size limits.
+- Condensed conversation: all user inputs and the latest answer between them, independently of tool/thinking detail.
 - Timestamps, day separators, message actions, configurable bubbles and appearance.
 - Screen reader friendly: the transcript is not a live region; finished replies and new
   actions are announced once, with the host in control of the wording.

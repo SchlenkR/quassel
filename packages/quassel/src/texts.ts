@@ -29,6 +29,8 @@ export interface ChatTexts {
   detailModeGrouped: string;
   detailModeCompact: string;
   detailModeFull: string;
+  showAllMessages?: string;
+  showLatestExchange?: string;
   showTimestamps: string;
   hideTimestamps: string;
   copyMessage: string;
@@ -66,7 +68,7 @@ export interface ChatTexts {
 export const fillText = (text: string, values: Record<string, string | number>): string =>
   text.replace(/\{(\w+)\}/g, (match, name: string) => name in values ? String(values[name]) : match);
 
-export const defaultTexts: ChatTexts = {
+export const defaultTexts: Required<ChatTexts> = {
   working: "Working ...",
   toolRunning: "running ...",
   toolStillRunning: "Tool running ...",
@@ -97,6 +99,8 @@ export const defaultTexts: ChatTexts = {
   detailModeGrouped: "grouped",
   detailModeCompact: "single line",
   detailModeFull: "everything",
+  showAllMessages: "Show intermediate replies",
+  showLatestExchange: "Show latest reply between inputs",
   showTimestamps: "Show timestamps",
   hideTimestamps: "Hide timestamps",
   copyMessage: "Copy message",

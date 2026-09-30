@@ -1,17 +1,17 @@
 import { applyEvent, type ChatEvent, type ChatTextCursor, type Message } from "quassel";
 import { useMemo, useReducer, useRef, useState } from "react";
 
-/**
- * A scripted agent for the gallery: streams thinking, a tool call that runs long enough
- * to show its elapsed time, and a
- * Markdown answer, can be cancelled and accepts interjections, which it answers at the
- * end of the running turn.
- */
+type DemoTurn = {
+  sequence: number;
+  question: string;
+  steering: string[];
+  cancelled: boolean;
+  offset: number;
+};
+
 export class FakeAgent {
-  private steering: string[] = [];
-  private cancelled = false;
-  private running = false;
-  private turn = 0;
+  private active?: DemoTurn;
+  private sequence = 0;
 
   constructor(
     private emit: (event: ChatEvent) => void,
@@ -19,84 +19,76 @@ export class FakeAgent {
   ) {}
 
   send(text: string) {
-    this.emit({ kind: "user", text, at: new Date().toISOString() });
-    if (this.running) {
-      this.steering.push(text);
+    const inputId = crypto.randomUUID();
+    this.emit({ kind: "user", text, inputId, at: new Date().toISOString() });
+    if (this.active) {
+      this.emit({ kind: "steered", inputId });
+      this.active.steering.push(text);
       return;
     }
-    void this.run(text);
+    const turn: DemoTurn = { sequence: ++this.sequence, question: text, steering: [], cancelled: false, offset: 0 };
+    this.active = turn;
+    this.setRunning(true);
+    void this.run(turn);
   }
 
   stop() {
-    if (!this.running) {
-      return;
-    }
-    this.cancelled = true;
-    this.steering = [];
+    if (!this.active) return;
+    this.active.cancelled = true;
+    this.active = undefined;
     this.emit({ kind: "system", text: "Cancelled." });
     this.emit({ kind: "turn-done" });
     this.setRunning(false);
   }
 
-  private async run(text: string) {
-    this.turn += 1;
-    this.running = true;
-    this.cancelled = false;
-    this.setRunning(true);
+  private async run(turn: DemoTurn) {
     try {
-      await this.stream(
-        "thinking",
-        "The question is about the demo data. I will quickly fetch the key figures and then summarize briefly.",
-      );
-      if (this.cancelled) return;
-
-      const id = `tool-${this.turn}`;
-      this.emit({
-        kind: "tool",
-        id,
-        name: "search_data",
-        arguments: JSON.stringify({ question: text, limit: 3 }),
-        label: `search_data { question: "${short(text)}" }`,
-        at: new Date().toISOString(),
-      });
-      await this.sleep(5000);
-      if (this.cancelled) return;
-      this.emit({
-        kind: "tool-result",
-        id,
-        result: JSON.stringify({ hits: 3, durationMs: 412, sources: ["measurements", "reports", "notes"] }),
-      });
-
-      await this.stream("text", answer(text));
-      while (this.steering.length > 0 && !this.cancelled) {
-        const interjection = this.steering.shift()!;
-        await this.stream("thinking", `Placing the interjection: "${short(interjection)}" - I will take that into account.`);
-        if (this.cancelled) return;
-        await this.stream(
-          "text",
-          `\n\nAbout your interjection **"${short(interjection)}"**: good addition, with a real integration the agent would now take it into account in the same turn.`,
-        );
-      }
+      await this.tool(turn, "search_data", { question: turn.question, limit: 3 }, { sources: ["measurements", "reports", "notes"] });
+      await this.stream(turn, "text", "I found three sources. The reports mention two anomalies; I will read those next.");
+      await this.tool(turn, "read_reports", { reports: ["report-a", "report-b"] }, { anomalies: 2 });
+      await this.stream(turn, "thinking", "Both reports refer to the same measurement period. I need to compare them against the raw measurements before drawing a conclusion.");
+      await this.tool(turn, "compare_sources", { sources: ["measurements", "reports"] }, { measurements: 214, anomalies: 2 });
+      await this.stream(turn, "text", "The comparison confirms the two anomalies. I will check the totals and the notes before giving you the summary.");
+      await this.tool(turn, "verify_totals", { includeNotes: true }, { total: 214, notes: 0, verified: true });
+      await this.stream(turn, "thinking", "The totals agree. I can now summarize the findings and include any additional instructions.");
+      const instructions: string[] = [];
+      do {
+        if (turn.cancelled) return;
+        const pending = turn.steering.splice(0);
+        instructions.push(...pending);
+        if (pending.length > 0) {
+          await this.stream(turn, "thinking", `Taking your additions into account: ${pending.map(short).join("; ")}`);
+          await this.tool(turn, `check_additions_${instructions.length}`, { instructions: pending }, { checked: true });
+        }
+        await this.stream(turn, "text", answer(turn.question, instructions));
+      } while (turn.steering.length > 0);
     } finally {
-      if (!this.cancelled) {
+      if (this.active === turn) {
         this.emit({ kind: "turn-done" });
+        this.active = undefined;
         this.setRunning(false);
       }
-      this.running = false;
     }
   }
 
-  private async stream(kind: "text" | "thinking", text: string) {
+  private async tool(turn: DemoTurn, name: string, args: object, result: object) {
+    if (turn.cancelled) return;
+    const id = `${turn.sequence}-${name}`;
+    this.emit({ kind: "tool", id, name, arguments: JSON.stringify(args), at: new Date().toISOString() });
+    await this.sleep(3500);
+    if (turn.cancelled) return;
+    this.emit({ kind: "tool-result", id, result: JSON.stringify(result) });
+  }
+
+  private async stream(turn: DemoTurn, kind: "text" | "thinking", text: string) {
     const parts = text.match(/\S+\s*/g) ?? [];
-    const sequence = this.turn;
-    let offset = 0;
     for (const part of parts) {
-      if (this.cancelled) return;
-      offset += part.replace(/\s/g, "").length;
-      const cursor: ChatTextCursor = { conversationId: "gallery", sequence, offset };
+      if (turn.cancelled) return;
+      if (kind === "text") turn.offset += part.replace(/\s/g, "").length;
+      const cursor: ChatTextCursor = { conversationId: "gallery", sequence: turn.sequence, offset: turn.offset };
       const at = new Date().toISOString();
       this.emit(kind === "text" ? { kind, delta: part, cursor, at } : { kind, delta: part, at });
-      await this.sleep(kind === "thinking" ? 30 : 45);
+      await this.sleep(kind === "thinking" ? 40 : 70);
     }
   }
 
@@ -109,7 +101,7 @@ function short(text: string): string {
   return text.length > 60 ? `${text.slice(0, 60)} ...` : text;
 }
 
-function answer(question: string): string {
+function answer(question: string, instructions: string[]): string {
   return [
     `For your question "${short(question)}" I searched three sources. Summary:`,
     "",
@@ -130,6 +122,7 @@ function answer(question: string): string {
     "```",
     "",
     "Let me know if I should dig deeper into the two report anomalies.",
+    ...instructions.flatMap((instruction) => ["", `Your addition **"${short(instruction)}"** is included in this summary.`]),
   ].join("\n");
 }
 

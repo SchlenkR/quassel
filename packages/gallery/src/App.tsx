@@ -7,6 +7,8 @@ import {
   DetailModeSwitch,
   QuasselProvider,
   TimestampSwitch,
+  TranscriptModeSwitch,
+  type TranscriptMode,
   type DetailMode,
   type Message,
   type QuasselButtonProps,
@@ -87,10 +89,11 @@ function ReadDemo() {
 
 function InputDemo() {
   const { messages, running, agent } = useFakeAgent();
-  const [detailMode, setDetailMode] = useState<DetailMode>("chips");
+  const [detailMode, setDetailMode] = useState<DetailMode>("grouped");
+  const [transcriptMode, setTranscriptMode] = useState<TranscriptMode>("latest");
   const [showTimestamps, setShowTimestamps] = useState(false);
   return (
-    <Stage note="ChatPanel with ChatInputToolbar: stop while running, typing interjects." title="Input card">
+    <Stage note="Keep your inputs and only the latest reply between them, or show intermediate replies too. Try interjecting while the simulated agent works." title="Input card">
       <ChatPanel
         className="panel"
         composer={
@@ -101,6 +104,7 @@ function InputDemo() {
             rows={1}
             running={running}
             toolbarLeft={<>
+              <TranscriptModeSwitch mode={transcriptMode} onChange={setTranscriptMode} />
               <DetailModeSwitch mode={detailMode} onChange={setDetailMode} />
               <TimestampSwitch onChange={setShowTimestamps} showTimestamps={showTimestamps} />
             </>}
@@ -112,6 +116,7 @@ function InputDemo() {
         <ChatMessages
           codeBlockOptions={{ showCopyButton: true }}
           detailMode={detailMode}
+          transcriptMode={transcriptMode}
           emptyState={<div className="empty">Ask a question and feel free to interject while the agent is running.</div>}
           messageActions={{ copy: true }}
           messages={messages}

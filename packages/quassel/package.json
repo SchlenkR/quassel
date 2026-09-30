@@ -1,6 +1,6 @@
 {
   "name": "quassel",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Chat building blocks for React: streaming transcript with thinking and tool steps, input card, themable Tailwind styles and an event contract",
   "license": "MIT",
   "author": "Ronald Schlenker",

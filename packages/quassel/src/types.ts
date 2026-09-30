@@ -3,6 +3,8 @@ import type { Message } from "./events";
 export type { Role, ToolInfo, PendingAction, Message, ChatEvent, ChatTextCursor, ChatJournalCursor, ChatAttachment, ChatAttachmentInput, ChatAttachmentCapabilities, ChatStartupStatus } from "./events";
 export { applyEvent, prettyJson, compactToolLine } from "./events";
 
+export type TranscriptMode = "all" | "latest";
+
 /**
  * current = only the running step, off = answers only, icons = steps as plain icons side by side,
  * chips = steps as icon + short text side by side (wrapping),

@@ -184,7 +184,7 @@ test("the optional switch requests changes in both directions and supports custo
 });
 
 test("existing complete translations remain valid without the new switch labels", () => {
-  const { showAllMessages, showLatestExchange, ...existingTexts } = defaultTexts;
+  const { showAllMessages, showLatestExchange, stepGroupErrorOne, stepGroupErrorMany, ...existingTexts } = defaultTexts;
   const texts: ChatTexts = existingTexts;
   render(history, { transcriptMode: undefined, texts });
   assert.match(text(), /Old question.*Old answer.*Current question.*Checking the sources.*Final answer/);

@@ -193,6 +193,12 @@ behind a header line ("12 steps"), from 11 steps on collapsible at the bottom to
 single line; `full` = with arguments and result. `stepState(message)` returns
 `running | thinking | done | error`, chips carry it as `data-state`.
 
+Group headers show the total number of steps and, when nonzero, the number of failed tool
+calls: "3 steps, 1 error" or "3 Schritte, 1 Fehler". Errors are part of the total, counted from
+`ToolInfo.isError`; successful retries do not erase earlier failed calls. The count is visible
+with collapsed, expanded or non-expandable groups. `stepGroupErrorOne` and `stepGroupErrorMany`
+override the singular and plural labels; both are optional for existing `ChatTexts` objects.
+
 Elapsed time: While `running` holds and a tool step has no result yet, it shows its elapsed time
 since `Message.at` after "running ..." once `toolElapsedThreshold` (default 3 s) has passed:
 under a minute through `texts.toolElapsedSeconds` ("12 s"), then "1:40" and from an hour on
@@ -285,10 +291,22 @@ with an icon collapse their label.
 
 ### Texts
 
-All labels live in `ChatTexts` (default `defaultTexts`, English) and can be partially replaced
-per component through `texts`. quassel fills placeholders such as `{count}`, `{name}`, `{size}`,
-`{kind}`, `{model}`, `{seconds}` itself. A complete replacement set is in
-`packages/gallery/src/texts.ts`.
+All labels live in `ChatTexts`. The package exports complete `englishTexts` and `germanTexts`
+sets; `defaultTexts` remains the English set for backwards compatibility. Pass the chosen set
+to each component's `texts` prop, including toolbar switches. Switching the set at runtime
+changes the UI language without changing messages or the transcript mode.
+
+```tsx
+const texts = language === "de" ? germanTexts : englishTexts;
+<ChatMessages messages={messages} texts={texts} />
+<ChatInputToolbar onSend={send} texts={texts}
+  toolbarLeft={<TranscriptModeSwitch mode={mode} onChange={setMode} texts={texts} />} />
+```
+
+Override individual labels with `{ ...germanTexts, placeholder: "Frage stellen ..." }`.
+quassel fills placeholders such as `{count}`, `{name}`, `{size}`, `{kind}`, `{model}`, `{seconds}`
+itself. Model output, tool names and results are content supplied by the host and are not
+translated. The gallery's input and read-only demos offer `de` / `en` controls.
 
 ## Theming
 

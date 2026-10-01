@@ -5,6 +5,8 @@ import {
   ChatMessages,
   ChatPanel,
   DetailModeSwitch,
+  englishTexts,
+  germanTexts,
   QuasselProvider,
   TimestampSwitch,
   TranscriptModeSwitch,
@@ -79,34 +81,39 @@ export function App() {
 }
 
 function ReadDemo() {
+  const [language, setLanguage] = useState<"de" | "en">("en");
+  const texts = language === "de" ? germanTexts : englishTexts;
   const [detailMode, setDetailMode] = useState<DetailMode>("grouped");
   return (
-    <Stage head={<Toggles onChange={setDetailMode} value={detailMode} values={MODES} />} note="ChatMessages without a composer, step detail level switchable." title="Read only">
-      <ChatMessages detailMode={detailMode} messages={[...research, ...steps]} showTimestamps timestampOptions={{ timeZone: "UTC" }} />
+    <Stage head={<><Toggles onChange={setLanguage} value={language} values={["de", "en"]} /><Toggles onChange={setDetailMode} value={detailMode} values={MODES} /></>} note="ChatMessages without a composer, step detail level switchable." title="Read only">
+      <ChatMessages texts={texts} detailMode={detailMode} messages={[...research, ...steps]} showTimestamps timestampOptions={{ timeZone: "UTC" }} />
     </Stage>
   );
 }
 
 function InputDemo() {
+  const [language, setLanguage] = useState<"de" | "en">("en");
+  const texts = language === "de" ? germanTexts : englishTexts;
   const { messages, running, agent } = useFakeAgent();
   const [detailMode, setDetailMode] = useState<DetailMode>("grouped");
   const [transcriptMode, setTranscriptMode] = useState<TranscriptMode>("latest");
   const [showTimestamps, setShowTimestamps] = useState(false);
   return (
-    <Stage note="Keep your inputs and only the latest reply between them, or show intermediate replies too. Try interjecting while the simulated agent works." title="Input card">
+    <Stage head={<Toggles onChange={setLanguage} value={language} values={["de", "en"]} />} note="Keep your inputs and only the latest reply between them, or show intermediate replies too. Try interjecting while the simulated agent works." title="Input card">
       <ChatPanel
         className="panel"
         composer={
           <ChatInputToolbar
+            texts={texts}
             maxRows={6}
             onSend={(text) => agent.send(text)}
             onStop={() => agent.stop()}
             rows={1}
             running={running}
             toolbarLeft={<>
-              <TranscriptModeSwitch mode={transcriptMode} onChange={setTranscriptMode} />
-              <DetailModeSwitch mode={detailMode} onChange={setDetailMode} />
-              <TimestampSwitch onChange={setShowTimestamps} showTimestamps={showTimestamps} />
+              <TranscriptModeSwitch texts={texts} mode={transcriptMode} onChange={setTranscriptMode} />
+              <DetailModeSwitch texts={texts} mode={detailMode} onChange={setDetailMode} />
+              <TimestampSwitch texts={texts} onChange={setShowTimestamps} showTimestamps={showTimestamps} />
             </>}
           />
         }
@@ -114,6 +121,7 @@ function InputDemo() {
         scrollOnSend
       >
         <ChatMessages
+          texts={texts}
           codeBlockOptions={{ showCopyButton: true }}
           detailMode={detailMode}
           transcriptMode={transcriptMode}

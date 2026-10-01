@@ -8,6 +8,8 @@ export interface ChatTexts {
   toolChip: string;
   stepGroupOne: string;
   stepGroupMany: string;
+  stepGroupErrorOne?: string;
+  stepGroupErrorMany?: string;
   stepGroupCollapse: string;
   thinkingTitle: string;
   toolTitle: string;
@@ -68,7 +70,7 @@ export interface ChatTexts {
 export const fillText = (text: string, values: Record<string, string | number>): string =>
   text.replace(/\{(\w+)\}/g, (match, name: string) => name in values ? String(values[name]) : match);
 
-export const defaultTexts: Required<ChatTexts> = {
+export const englishTexts: Required<ChatTexts> = {
   working: "Working ...",
   toolRunning: "running ...",
   toolStillRunning: "Tool running ...",
@@ -78,6 +80,8 @@ export const defaultTexts: Required<ChatTexts> = {
   toolChip: "Tool",
   stepGroupOne: "1 step",
   stepGroupMany: "{count} steps",
+  stepGroupErrorOne: "1 error",
+  stepGroupErrorMany: "{count} errors",
   stepGroupCollapse: "Collapse",
   thinkingTitle: "Thinking trace",
   toolTitle: "Tool call",
@@ -133,3 +137,73 @@ export const defaultTexts: Required<ChatTexts> = {
   notSentAttachments: "({count} attachments)",
   insertUnsent: "Insert unsent input",
 };
+
+export const germanTexts: Required<ChatTexts> = {
+  working: "Arbeitet ...",
+  toolRunning: "läuft ...",
+  toolStillRunning: "Werkzeug läuft ...",
+  toolElapsedSeconds: "{seconds} s",
+  currentTool: "Werkzeug läuft",
+  thinkingChip: "Denken",
+  toolChip: "Werkzeug",
+  stepGroupOne: "1 Schritt",
+  stepGroupMany: "{count} Schritte",
+  stepGroupErrorOne: "1 Fehler",
+  stepGroupErrorMany: "{count} Fehler",
+  stepGroupCollapse: "Einklappen",
+  thinkingTitle: "Gedankengang",
+  toolTitle: "Werkzeugaufruf",
+  argumentsLabel: "Argumente",
+  resultLabel: "Ergebnis",
+  close: "Schließen",
+  jumpToEnd: "Zum Ende springen",
+  send: "Senden",
+  sendIntoRun: "In die laufende Antwort einreihen",
+  stop: "Bearbeitung stoppen",
+  placeholder: "Nachricht schreiben ...",
+  steeringPlaceholder: "Nachsteuern ...",
+  steered: "In die laufende Antwort eingereiht",
+  detailModeTitle: "Detailgrad der Schritte",
+  detailModeOff: "nur Antworten",
+  detailModeCurrent: "aktueller Schritt",
+  detailModeIcons: "Symbole",
+  detailModeChips: "kompakt",
+  detailModeGrouped: "gruppiert",
+  detailModeCompact: "einzeilig",
+  detailModeFull: "alles",
+  showAllMessages: "Zwischenantworten anzeigen",
+  showLatestExchange: "Letzte Antwort zwischen den Eingaben anzeigen",
+  showTimestamps: "Zeitstempel anzeigen",
+  hideTimestamps: "Zeitstempel ausblenden",
+  copyMessage: "Nachricht kopieren",
+  editMessage: "Nachricht bearbeiten",
+  retryMessage: "Antwort erneut anfordern",
+  copyCode: "Code kopieren",
+  copied: "Kopiert",
+  pendingAction: "wartet auf Eingabe",
+  dismissAction: "Verwerfen",
+  actionDismissed: "verworfen",
+  actionFailed: "Aktion fehlgeschlagen",
+  clipboardUnavailable: "Die Zwischenablage ist nicht verfügbar",
+  transcript: "Chatverlauf",
+  attachments: "Anhänge",
+  attachFiles: "Dateien anhängen",
+  attachFilesHint: "Dateien anhängen (bis zu {count} Dateien, insgesamt {size})",
+  removeAttachment: "{name} entfernen",
+  attachmentPreparing: "Wird vorbereitet ...",
+  attachmentsPreparing: "Anhänge werden vorbereitet ...",
+  attachmentReadFailed: "Die Datei konnte nicht gelesen werden. Den Anhang entfernen und erneut hinzufügen.",
+  attachmentsWhileBusy: "Warten, bis die Eingabe wieder bereit ist, dann die Dateien erneut hinzufügen.",
+  tooManyAttachments: "Höchstens {count} Anhänge pro Nachricht. Zuerst einen Anhang entfernen.",
+  attachmentsTooLarge: "Anhänge dürfen zusammen höchstens {size} groß sein. Kleinere Dateien auswählen.",
+  attachmentUnsupported: "Dieser Chat unterstützt {name} nicht als {kind}. Den Anhang entfernen.",
+  attachmentUnsupportedByModel: "Das Modell {model} unterstützt {name} nicht als {kind}. Ein passendes Modell auswählen oder den Anhang entfernen.",
+  attachmentKindImage: "Bild",
+  attachmentKindVideo: "Video",
+  attachmentKindPdf: "PDF",
+  notSent: "Nicht gesendet:",
+  notSentAttachments: "({count} Anhänge)",
+  insertUnsent: "Nicht gesendete Eingabe einfügen",
+};
+
+export const defaultTexts = englishTexts;

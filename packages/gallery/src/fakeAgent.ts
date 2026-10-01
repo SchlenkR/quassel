@@ -45,7 +45,9 @@ export class FakeAgent {
     try {
       await this.tool(turn, "search_data", { question: turn.question, limit: 3 }, { sources: ["measurements", "reports", "notes"] });
       await this.stream(turn, "text", "I found three sources. The reports mention two anomalies; I will read those next.");
-      await this.tool(turn, "read_reports", { reports: ["report-a", "report-b"] }, { anomalies: 2 });
+      await this.tool(turn, "read_reports", { reports: ["report-a", "report-b"] }, { error: "The report source timed out." }, true);
+      await this.stream(turn, "text", "The report source timed out. I will retry before comparing the measurements.");
+      await this.tool(turn, "retry_reports", { reports: ["report-a", "report-b"] }, { anomalies: 2 });
       await this.stream(turn, "thinking", "Both reports refer to the same measurement period. I need to compare them against the raw measurements before drawing a conclusion.");
       await this.tool(turn, "compare_sources", { sources: ["measurements", "reports"] }, { measurements: 214, anomalies: 2 });
       await this.stream(turn, "text", "The comparison confirms the two anomalies. I will check the totals and the notes before giving you the summary.");
@@ -71,13 +73,13 @@ export class FakeAgent {
     }
   }
 
-  private async tool(turn: DemoTurn, name: string, args: object, result: object) {
+  private async tool(turn: DemoTurn, name: string, args: object, result: object, isError = false) {
     if (turn.cancelled) return;
     const id = `${turn.sequence}-${name}`;
     this.emit({ kind: "tool", id, name, arguments: JSON.stringify(args), at: new Date().toISOString() });
     await this.sleep(3500);
     if (turn.cancelled) return;
-    this.emit({ kind: "tool-result", id, result: JSON.stringify(result) });
+    this.emit({ kind: "tool-result", id, result: JSON.stringify(result), isError });
   }
 
   private async stream(turn: DemoTurn, kind: "text" | "thinking", text: string) {

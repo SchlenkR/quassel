@@ -564,14 +564,18 @@ function StepGroup({
     }
   }, [open]);
   const active = runningStep !== undefined;
-  const failed = messages.some((message) => message.tool?.isError);
+  const errorCount = messages.filter((message) => message.tool?.isError).length;
+  const errorLabel = errorCount === 1
+    ? texts.stepGroupErrorOne ?? defaultTexts.stepGroupErrorOne
+    : (texts.stepGroupErrorMany ?? defaultTexts.stepGroupErrorMany).replace("{count}", String(errorCount));
   const count = messages.length === 1 ? texts.stepGroupOne : texts.stepGroupMany.replace("{count}", String(messages.length));
   const runningLabel = runningStep && (runningStep.role === "thinking" ? texts.thinkingChip : runningStep.tool?.name || runningStep.text || texts.toolChip);
   const summary = (
     <>
-      <LayersIcon className={failed ? traceErrorIconClasses : traceIconClasses} size={12} />
+      <LayersIcon className={errorCount > 0 ? traceErrorIconClasses : traceIconClasses} size={12} />
       <span className={cn(traceLineClasses, "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap")}>
         {count}
+        {errorCount > 0 && <span className="qsl:text-destructive" data-step="errors">{`, ${errorLabel}`}</span>}
         {runningLabel && <span className={traceRunningClasses}>{runningLabel} {texts.toolRunning}</span>}
         {runningStep && <ToolElapsed after={elapsedAfter} message={runningStep} texts={texts} />}
       </span>

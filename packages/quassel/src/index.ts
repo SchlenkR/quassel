@@ -4,7 +4,7 @@ export type {
 } from "./types";
 export { applyEvent, prettyJson, compactToolLine, stepState } from "./types";
 export type { ChatTexts } from "./texts";
-export { defaultTexts, fillText } from "./texts";
+export { defaultTexts, englishTexts, germanTexts, fillText } from "./texts";
 export { ChatMessages } from "./ChatMessages";
 export { ChatPanel } from "./ChatPanel";
 export { ChatInputToolbar, type ChatInputHandle, type ToolbarAction } from "./ChatInputToolbar";

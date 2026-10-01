@@ -47,7 +47,8 @@ variables too.
 - Timestamps, day separators, message actions, configurable bubbles and appearance.
 - Screen reader friendly: the transcript is not a live region; finished replies and new
   actions are announced once, with the host in control of the wording.
-- All labels are replaceable through `texts` (defaults are English).
+- Complete English and German UI labels through `englishTexts` / `germanTexts`; `texts` can override any label (English by default).
+- Grouped steps show their error count even while collapsed.
 
 ## Install
 

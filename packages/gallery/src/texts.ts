@@ -10,6 +10,8 @@ export const englishTexts: ChatTexts = {
   toolChip: "Tool",
   stepGroupOne: "1 step",
   stepGroupMany: "{count} steps",
+  stepGroupErrorOne: "1 error",
+  stepGroupErrorMany: "{count} errors",
   stepGroupCollapse: "Collapse",
   thinkingTitle: "Thinking",
   toolTitle: "Tool call",

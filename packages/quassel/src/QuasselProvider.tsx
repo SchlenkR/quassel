@@ -90,16 +90,19 @@ export const defaultComponents: QuasselComponents = { Button, Toggle, Card, Stop
 interface QuasselSettings {
   components: QuasselComponents;
   allowUrl?: (url: string) => boolean;
+  resolveUrl?: (url: string) => string;
   portalContainer?: QuasselPortalContainer;
 }
 
 const QuasselContext = createContext<QuasselSettings>({ components: defaultComponents });
 
-export function QuasselProvider({ components, allowUrl, portalContainer, children }: {
+export function QuasselProvider({ components, allowUrl, resolveUrl, portalContainer, children }: {
   /** Replaces single primitives; the rest stay the built-in ones or those of an outer provider. */
   components?: Partial<QuasselComponents>;
   /** Keeps Markdown link and image URLs that the default policy (http, https, mailto, tel, ftp, irc, xmpp, relative) would drop. */
   allowUrl?: (url: string) => boolean;
+  /** Maps every Markdown link and image URL before the link policy applies, e.g. relative paths onto the host's file route. */
+  resolveUrl?: (url: string) => string;
   /** Mounts quassel's popovers inside this element instead of document.body, e.g. within the host's theme wrapper. */
   portalContainer?: QuasselPortalContainer;
   children: ReactNode;
@@ -108,14 +111,17 @@ export function QuasselProvider({ components, allowUrl, portalContainer, childre
   const value = useMemo(() => ({
     components: { ...outer.components, ...components },
     allowUrl: allowUrl ?? outer.allowUrl,
+    resolveUrl: resolveUrl ?? outer.resolveUrl,
     portalContainer: portalContainer ?? outer.portalContainer,
-  }), [outer, components, allowUrl, portalContainer]);
+  }), [outer, components, allowUrl, resolveUrl, portalContainer]);
   return <QuasselContext.Provider value={value}>{children}</QuasselContext.Provider>;
 }
 
 export const useQuasselComponents = (): QuasselComponents => useContext(QuasselContext).components;
 
 export const useAllowUrl = (): ((url: string) => boolean) | undefined => useContext(QuasselContext).allowUrl;
+
+export const useResolveUrl = (): ((url: string) => string) | undefined => useContext(QuasselContext).resolveUrl;
 
 export function useQuasselPortalContainer(): QuasselPortalTarget | undefined {
   const container = useContext(QuasselContext).portalContainer;

@@ -2,7 +2,7 @@ import { createContext, ReactNode, useCallback, useContext, useRef } from "react
 import { Streamdown, type Components } from "streamdown";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { cn } from "./ui/cn";
-import { useAllowUrl, useQuasselComponents } from "./QuasselProvider";
+import { useAllowUrl, useQuasselComponents, useResolveUrl } from "./QuasselProvider";
 import type { CodeBlockOptions } from "./options";
 import { type ChatTexts, defaultTexts } from "./texts";
 import { copyChatText, useChatAction } from "./useChatAction";
@@ -107,15 +107,17 @@ const components: Components = {
   td: ({ children }) => <td className={cellClasses}>{children}</td>,
 };
 
-function transformUrl(url: string, allowUrl?: (url: string) => boolean) {
-  if (allowUrl?.(url)) return url;
-  const scheme = /^[^/?#]*:/.exec(url);
-  return !scheme || /^(https?|mailto|tel|ftp|irc|ircs|xmpp):$/i.test(scheme[0]) ? url : "";
+function transformUrl(url: string, allowUrl?: (url: string) => boolean, resolveUrl?: (url: string) => string) {
+  const resolved = resolveUrl ? resolveUrl(url) : url;
+  if (allowUrl?.(resolved)) return resolved;
+  const scheme = /^[^/?#]*:/.exec(resolved);
+  return !scheme || /^(https?|mailto|tel|ftp|irc|ircs|xmpp):$/i.test(scheme[0]) ? resolved : "";
 }
 
 export function Markdown({ text, streaming = false }: { text: string; streaming?: boolean }) {
   const allowUrl = useAllowUrl();
-  const urlTransform = useCallback((url: string) => transformUrl(url, allowUrl), [allowUrl]);
+  const resolveUrl = useResolveUrl();
+  const urlTransform = useCallback((url: string) => transformUrl(url, allowUrl, resolveUrl), [allowUrl, resolveUrl]);
   return (
     <Streamdown
       className="space-y-0 text-inherit"

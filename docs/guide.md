@@ -441,6 +441,17 @@ a custom action card.
 `allowUrl` extends the link policy of the Markdown: the defaults are http, https, mailto, tel,
 ftp, irc, xmpp and relative addresses; everything else is dropped unless `allowUrl` allows it.
 
+`resolveUrl` maps every link and image address of the Markdown before that policy applies, for
+example relative paths of a document onto the host's file route; the policy then checks the
+result. An inner provider's `resolveUrl` replaces the outer one, so a document view can resolve
+against its own folder inside a chat that resolves against something else:
+
+```tsx
+<QuasselProvider resolveUrl={(url) => url.startsWith("docs/") ? `/files/${url}` : url}>
+  <Markdown text={report} />
+</QuasselProvider>
+```
+
 ## CSS
 
 ### Hosts without Tailwind

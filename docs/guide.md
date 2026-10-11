@@ -162,9 +162,13 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
 ```
 
 Its own scroll container: follows the end while you are at the bottom, pauses when scrolling up
-(wheel, keys, touch, scrollbar) and then shows a jump-to-end button. It carries the stable
+(wheel, keys, touch, scrollbar, or a native scroll over unchanged content) and then shows a
+jump-to-end button; content that grows or shrinks does not pause it. It carries the stable
 attribute `data-quassel-transcript`; it gets custom classes through `scrollerClassName`, and
 `scrollerRef` delivers the element itself.
+
+With `showTimestamps`, the time column of the `time` format is at least five digits wide and never
+wraps, so it follows `--qsl-text-meta` and the root font size; longer formats widen it.
 
 Transcript modes: `all` (the default) shows every message. `latest` keeps every user input and shows at most
 one non-empty assistant message between two user messages: the last one. The same rule applies
@@ -192,6 +196,10 @@ steps as icons; `chips` = icon plus short text with wrapping; `grouped` = consec
 behind a header line ("12 steps"), from 11 steps on collapsible at the bottom too; `compact` =
 single line; `full` = with arguments and result. `stepState(message)` returns
 `running | thinking | done | error`, chips carry it as `data-state`.
+
+Thinking and tool detail popovers stay within the available viewport space, up to 70 percent
+of the viewport height or 620 px. Long content scrolls inside the body; the title and close
+button remain visible, including when an open popup's viewport is resized.
 
 Group headers show the total number of steps and, when nonzero, the number of failed tool
 calls: "3 steps, 1 error" or "3 Schritte, 1 Fehler". Errors are part of the total, counted from

@@ -23,7 +23,7 @@ function CodeBlock({ children }: { children?: ReactNode }) {
   const action = useChatAction();
   const label = action.status === "done" ? texts.copied : texts.copyCode;
   const block = <pre ref={code} data-chat="code-block"
-    className={cn(scrollbar, "qsl:my-2 qsl:overflow-auto qsl:rounded-lg qsl:bg-secondary qsl:px-3 qsl:py-2 qsl:font-mono qsl:text-sm qsl:leading-relaxed qsl:in-data-[tone=on-color]:bg-black/30 qsl:in-data-[tone=on-color]:text-inherit")}
+    className={cn(scrollbar, "qsl:my-2 qsl:overflow-auto qsl:rounded-lg qsl:bg-secondary qsl:px-3 qsl:py-2 qsl:font-mono qsl:text-[length:1em] qsl:leading-relaxed qsl:in-data-[tone=on-color]:bg-black/30 qsl:in-data-[tone=on-color]:text-inherit")}
     style={{ maxHeight: options?.maxHeight, whiteSpace: options?.wrap ? "pre-wrap" : undefined, overflowWrap: options?.wrap ? "anywhere" : undefined }}>{children}</pre>;
   if (!options?.showCopyButton) return block;
   return <div className="qsl:relative">
@@ -92,7 +92,7 @@ const components: Components = {
   a: ({ href, children }) => <MarkdownLink href={href}>{children}</MarkdownLink>,
   pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
   code: ({ children, className }) => (
-    <code className={cn(className, "qsl:rounded-sm qsl:bg-secondary qsl:px-1 qsl:py-0.5 qsl:font-mono qsl:text-sm qsl:[overflow-wrap:anywhere] qsl:in-data-[tone=on-color]:bg-white/20 qsl:in-data-[tone=on-color]:text-inherit", "qsl:[pre>&]:bg-transparent qsl:[pre>&]:p-0")}>{children}</code>
+    <code className={cn(className, "qsl:rounded-sm qsl:bg-secondary qsl:px-1 qsl:py-0.5 qsl:font-mono qsl:text-[length:1em] qsl:[overflow-wrap:anywhere] qsl:in-data-[tone=on-color]:bg-white/20 qsl:in-data-[tone=on-color]:text-inherit", "qsl:[pre>&]:bg-transparent qsl:[pre>&]:p-0")}>{children}</code>
   ),
   // Without max-content the table shrinks to the container and stacks letters.
   table: ({ children }) => (

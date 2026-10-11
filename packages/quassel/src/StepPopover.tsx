@@ -21,7 +21,12 @@ export function StepPopover({
   onClose: () => void;
 }) {
   const anchor = useMemo(() => ({
-    getBoundingClientRect: () => new DOMRect(position.x, position.y, 0, 0),
+    getBoundingClientRect: () => new DOMRect(
+      Math.max(16, Math.min(position.x, window.innerWidth - 16)),
+      Math.max(16, Math.min(position.y, window.innerHeight - 16)),
+      0,
+      0,
+    ),
     contextElement: document.documentElement,
   }), [position]);
   const { Button, Popover, PopoverContent } = useQuasselComponents();
@@ -38,7 +43,7 @@ export function StepPopover({
         aria-label={title}
         className={cn(
           "qsl:w-[min(680px,calc(100vw-32px))] qsl:gap-0 qsl:overflow-hidden qsl:p-0 qsl:text-[13px] qsl:leading-normal qsl:shadow-pop",
-          thinking ? "qsl:max-h-none" : "qsl:max-h-[min(70vh,620px)]",
+          "qsl:max-h-[min(70dvh,620px,var(--available-height))]",
         )}
         collisionPadding={16}
         portalContainer={portalContainer}
@@ -56,7 +61,7 @@ export function StepPopover({
             <XIcon />
           </Button>
         </div>
-        <div className={cn("qsl:min-h-0 qsl:p-4", thinking ? "qsl:overflow-visible" : "qsl:overflow-auto")}>
+        <div className="qsl:min-h-0 qsl:flex-1 qsl:overflow-auto qsl:overscroll-contain qsl:p-4">
           {thinking ? (
             <div className="qsl:text-sm qsl:leading-[1.625] qsl:whitespace-pre-wrap">{message.text}</div>
           ) : tool ? (

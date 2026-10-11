@@ -273,7 +273,7 @@ export function ChatMessages({
       ? (
         <div className={cn("qsl:flex qsl:items-baseline qsl:gap-2", dense ? denseStepClasses : stepClasses)} key={`time-${key}`}>
           <time dateTime={messageDate(at)?.toISOString()} className={cn("qsl:flex-none qsl:text-meta qsl:tabular-nums qsl:text-muted-foreground qsl:opacity-85",
-            timestampOptions?.format && timestampOptions.format !== "time" ? "qsl:w-[clamp(60px,20%,120px)]" : "qsl:w-[34px]")}>
+            timestampOptions?.format && timestampOptions.format !== "time" ? "qsl:w-[clamp(60px,20%,120px)]" : "qsl:min-w-[5ch] qsl:whitespace-nowrap")}>
             {messageDate(at) ? timestampLabel(messageDate(at)!, timestampOptions, now) : ""}
           </time>
           <div className="qsl:min-w-0 qsl:flex-1 qsl:[&>*:first-child]:mt-0">{content}</div>

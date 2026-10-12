@@ -47,7 +47,7 @@ export interface ChatInputHandle {
  * declaratively through `actions` or freely through the left/right slots; while work is running
  * the stop button stays visible, and typing shows the send button next to it, which then
  * interjects. `rows` sets the initial height; with `maxRows` the textarea grows with its content
- * up to that number of rows and scrolls after that.
+ * up to that number of rows and scrolls after that. `inline` starts with one row and grows the same way.
  */
 export function ChatInputToolbar({
   onSend,
@@ -213,7 +213,7 @@ export function ChatInputToolbar({
   const toolbar = layout === "toolbar";
   const inline = layout === "inline";
   const inputRows = inline || toolbar ? 1 : rows;
-  const inputMaxRows = inline || toolbar ? 1 : maxRows;
+  const inputMaxRows = toolbar ? 1 : inline ? (maxRows ?? 1) : maxRows;
   // The toolbar variant pulses while working; the host only sets the radius.
   const rootClasses = cn(
     "qsl:flex qsl:shrink-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-[var(--qsl-input-card-radius,--theme(--radius-xl))] qsl:border qsl:border-border-strong qsl:bg-background qsl:shadow-bar qsl:transition-colors qsl:focus-within:border-primary",
@@ -538,7 +538,7 @@ export function ChatInputToolbar({
         {...fileInput.inputProps}
       />}
       {!toolbar && attachmentPreviews}
-      {inline ? <>{errors}<div className="qsl:flex qsl:min-w-0 qsl:items-center">{input}{detailToolbar}</div></> : input}
+      {inline ? <>{errors}<div className="qsl:flex qsl:min-w-0 qsl:items-end">{input}{detailToolbar}</div></> : input}
       {toolbar ? <>
         <div className="qsl:flex qsl:flex-none qsl:items-center qsl:gap-1 qsl:p-1">{sendButtons}</div>
         {detailsContainer && createPortal(details, detailsContainer)}

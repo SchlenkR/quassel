@@ -261,7 +261,7 @@ errors or cancellation through the same region: one shared, hidden `role="status
   disabled?: boolean; sendDisabled?: boolean;
   layout?: "card" | "toolbar" | "inline";  // default "card"
   detailsContainer?: HTMLElement | null;   // with "toolbar": target for attachments, errors and buttons (portal)
-  rows?: number;                        // default 3; with maxRows the input grows up to that
+  rows?: number;                        // default 3; with maxRows the input grows up to that ("inline" starts at 1)
   maxRows?: number;
   actions?: ToolbarAction[];            // { icon?, label?, title?, disabled?, active?, onClick }; active makes a toggle
   toolbarLeft?: ReactNode; toolbarRight?: ReactNode;

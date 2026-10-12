@@ -28,6 +28,10 @@ const traceIconClasses = "qsl:mt-0.5 qsl:flex-none qsl:opacity-60";
 const traceErrorIconClasses = "qsl:mt-0.5 qsl:flex-none qsl:text-destructive qsl:opacity-100";
 const traceLineClasses = "qsl:min-w-0 qsl:self-baseline qsl:font-mono qsl:[overflow-wrap:anywhere]";
 const traceRunningClasses = "qsl:ml-1.5 qsl:opacity-60";
+// Single-line rows center icon and text; the multi-line detail keeps them on the first line.
+const rowIconClasses = cn(traceIconClasses, "qsl:mt-0");
+const rowErrorIconClasses = cn(traceErrorIconClasses, "qsl:mt-0");
+const rowLineClasses = cn(traceLineClasses, "qsl:self-auto");
 
 const chipClasses = cn(
   "qsl:inline-flex qsl:max-w-[220px] qsl:items-center qsl:gap-[5px] qsl:rounded-full qsl:border qsl:border-border-soft qsl:px-2.5 qsl:py-0.5",
@@ -572,8 +576,8 @@ function StepGroup({
   const runningLabel = runningStep && (runningStep.role === "thinking" ? texts.thinkingChip : runningStep.tool?.name || runningStep.text || texts.toolChip);
   const summary = (
     <>
-      <LayersIcon className={errorCount > 0 ? traceErrorIconClasses : traceIconClasses} size={12} />
-      <span className={cn(traceLineClasses, "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap")}>
+      <LayersIcon className={errorCount > 0 ? rowErrorIconClasses : rowIconClasses} size={12} />
+      <span className={cn(rowLineClasses, "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap")}>
         {count}
         {errorCount > 0 && <span className="qsl:text-destructive" data-step="errors">{`, ${errorLabel}`}</span>}
         {runningLabel && <span className={traceRunningClasses}>{runningLabel} {texts.toolRunning}</span>}
@@ -620,7 +624,7 @@ function StepGroup({
           type="button"
         >
           <ChevronUpIcon className="qsl:flex-none qsl:opacity-60" size={12} />
-          <span className={traceLineClasses}>{texts.stepGroupCollapse}</span>
+          <span className={rowLineClasses}>{texts.stepGroupCollapse}</span>
         </button>
       )}
     </div>
@@ -646,14 +650,14 @@ function TraceLine({
   const [detailPosition, setDetailPosition] = useState<{ x: number; y: number }>();
   const thinking = message.role === "thinking";
   const tool = message.tool;
-  const classes = cn(traceClasses, className);
-  const line = cn(traceLineClasses, thinking && "qsl:font-sans qsl:italic qsl:whitespace-pre-wrap", "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap");
+  const classes = cn(traceClasses, "qsl:items-center", className);
+  const line = cn(rowLineClasses, thinking && "qsl:font-sans qsl:italic qsl:whitespace-pre-wrap", "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap");
   const content = (
     <>
       {thinking ? (
-        <SparklesIcon className={traceIconClasses} size={12} />
+        <SparklesIcon className={rowIconClasses} size={12} />
       ) : (
-        <WrenchIcon className={tool?.isError ? traceErrorIconClasses : traceIconClasses} size={12} />
+        <WrenchIcon className={tool?.isError ? rowErrorIconClasses : rowIconClasses} size={12} />
       )}
       <span className={line}>
         {message.text}

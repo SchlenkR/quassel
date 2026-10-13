@@ -348,7 +348,7 @@ export function ChatMessages({
       return;
     }
     if ((chipMode || groupMode) && isStep(message)) {
-      group = [...group, message];
+      group.push(message);
       return;
     }
     closeGroup();

@@ -10,7 +10,7 @@ importers:
 
   packages/gallery:
     dependencies:
-      quassel:
+      '@schlenkr/quassel':
         specifier: workspace:*
         version: link:../quassel
       react:

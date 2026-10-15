@@ -23,15 +23,16 @@ fundamental decisions:
    Attachments allowed (`attachments`)? Custom buttons (`actions`, `toolbarLeft`, `toolbarRight`)?
 4. **Steps**: Which detail level as default (`current`, `off`, `icons`, `chips`, `grouped`,
    `compact`, `full`)? Should the user be able to switch (`DetailModeSwitch`)?
-5. **Look**: RAgents default or custom colors, radii, font (`--qsl-*`)? Dark mode fixed, by
+5. **Look**: RAgents default or custom colors, radii, font (`--qsl-*`; the text size follows the
+   host by itself)? Dark mode fixed, by
    switch or following the system? Custom primitives of the host design system (`QuasselProvider`)?
-6. **Styles in the host**: Does the host have Tailwind? Without Tailwind `quassel/chat.css` is enough.
+6. **Styles in the host**: Does the host have Tailwind? Without Tailwind `@schlenkr/quassel/chat.css` is enough.
 7. **Texts**: Keep the English default labels or replace them through `texts`?
 
 Stick to these rules while building:
 
 - The components are deliberately dumb: `messages` and callbacks in, state and transport belong
-  to the host. Frontend and backend only talk through `quassel/events`.
+  to the host. Frontend and backend only talk through `@schlenkr/quassel/events`.
 - Style through `--qsl-*` variables on a wrapper and through slots, not by copying or forking the
   components.
 - Classes that the host passes to quassel components through `className` are host classes;
@@ -42,17 +43,17 @@ Stick to these rules while building:
 ## Setup
 
 ```sh
-npm install quassel        # the host brings React 18 or 19 itself
+npm install @schlenkr/quassel        # the host brings React 18 or 19 itself
 ```
 
 | Import | Contents |
 |---|---|
-| `quassel` | React building blocks, `QuasselProvider`, types, texts, `announce`, `markdownPlainText` |
-| `quassel/events` | Event contract, `applyEvent`, attachment limits and validation, without React - for the backend too |
-| `quassel/chat.css` | Compiled stylesheet: theme variables, scoped reset, all utilities in use |
+| `@schlenkr/quassel` | React building blocks, `QuasselProvider`, types, texts, `announce`, `markdownPlainText` |
+| `@schlenkr/quassel/events` | Event contract, `applyEvent`, attachment limits and validation, without React - for the backend too |
+| `@schlenkr/quassel/chat.css` | Compiled stylesheet: theme variables, scoped reset, all utilities in use |
 
 Runtime dependencies: `@base-ui/react`, `class-variance-authority`, `cn`, `lucide-react`,
-`streamdown`. In the repo `quassel` is a source package (`packages/quassel`, TypeScript without a
+`streamdown`. In the repo `@schlenkr/quassel` is a source package (`packages/quassel`, TypeScript without a
 build step, `chat.css` from `build/`); the gallery includes it through `workspace:*`.
 
 ## quassel/events - the contract
@@ -98,7 +99,7 @@ then attached to the `user` event as `ChatAttachment` (`{ name, mediaType, size,
 
 ## quassel - the components
 
-Always import once: `import "quassel/chat.css"`.
+Always import once: `import "@schlenkr/quassel/chat.css"`.
 
 ### ChatPanel
 
@@ -168,7 +169,7 @@ attribute `data-quassel-transcript`; it gets custom classes through `scrollerCla
 `scrollerRef` delivers the element itself.
 
 With `showTimestamps`, the time column of the `time` format is at least five digits wide and never
-wraps, so it follows `--qsl-text-meta` and the root font size; longer formats widen it.
+wraps, so it follows `--qsl-text-meta` and the host's text size; longer formats widen it.
 
 Transcript modes: `all` (the default) shows every message. `latest` keeps every user input and shows at most
 one non-empty assistant message between two user messages: the last one. The same rule applies
@@ -342,16 +343,18 @@ for the whole page or on a wrapper for one chat.
 | `--qsl-radius-panel` | cards, e.g. the action card | `17px` |
 | `--qsl-input-card-radius` | input card | not set: `--qsl-radius-xl` |
 | `--qsl-bubble-radius` | speech bubble of own messages | not set: `10px 10px 4px 10px` (`material` tone: `9px`) |
-| `--qsl-text-meta` | chips, timestamps, arguments and result in the `full` detail level | `10.5px` |
-| `--qsl-text-trace` | step lines, group header, section titles and content in the step popover | `11px` |
-| `--qsl-text-label` | sender identifier on speech bubbles, the "fed into" note | `0.72rem` |
+| `--qsl-font-size` | text size of the quassel root, see [Text size](#text-size) | not set: inherited from the host |
+| `--qsl-text-meta` | chips, timestamps, arguments and result in the `full` detail level | `0.8 * --qsl-base` |
+| `--qsl-text-trace` | step lines, group header, section titles and content in the step popover | `0.85 * --qsl-base` |
+| `--qsl-text-label` | sender identifier on speech bubbles, the "fed into" note | `0.85 * --qsl-base` |
 | `--qsl-text-small` | `<small>` (size of attachments) | not set: `80%` |
 | `--qsl-font`, `--qsl-mono` | fonts | system font, `ui-monospace` |
 | `--qsl-color-scheme` | `color-scheme` of the quassel elements | `light` / `dark` |
 
 Plus the scales from the Tailwind theme: `--qsl-spacing` (0.235rem, compact unit),
-`--qsl-text-xs` to `--qsl-text-lg` including `--line-height` (`--qsl-text-xs` is 0.68rem) and
-the chat dimensions `--qsl-chat-font-size` (13px), `--qsl-chat-line-height`,
+`--qsl-text-xs` to `--qsl-text-xl` including `--line-height` (derived from the text size, see
+[Text size](#text-size)) and the chat dimensions `--qsl-chat-font-size` (`--qsl-base`),
+`--qsl-chat-line-height`,
 `--qsl-chat-message-gap` (16px), `--qsl-chat-dense-message-gap` (8px),
 `--qsl-chat-content-max-width`, `--qsl-chat-horizontal-padding` (24px; these six are also set
 by `appearance`, `maxWidth` and `horizontalPadding`).
@@ -378,6 +381,45 @@ Popovers live in `document.body` by default and only inherit the wrapper's varia
 A host with its own design system simply binds its tokens: `--qsl-primary: var(--brand);`.
 Examples: `packages/gallery/src/themes.css`.
 
+### Text size
+
+quassel takes its text size from the host, so it fits in without overrides. The outermost
+quassel element (panel, transcript, composer or popover) inherits the font size of the place it
+is mounted in, and every size inside derives from that one value:
+
+- `--qsl-base` holds it as an absolute length. quassel sets it once on its root and nested
+  elements inherit it unchanged, so sizes never compound. It is a registered `<length>`
+  property (`@property`, initial value `14px`) to be read, not set.
+- Chat text, the input and open actions are `--qsl-base` itself (`--qsl-chat-font-size`).
+  Small UI text (tables, system messages, action cards, buttons: `--qsl-text-sm`) is
+  `* 0.9`, step lines and group headers (`--qsl-text-trace`) and labels (`--qsl-text-label`)
+  `* 0.85`, chips, timestamps and tool arguments (`--qsl-text-meta`) and `--qsl-text-xs`
+  `* 0.8`. `--qsl-text-lg` and `--qsl-text-xl` are `* 1.15` and `* 1.3`. Headings in Markdown are
+  relative to the chat text (`1.2em`, `1.1em`).
+- Step and tool rows use the UI font. Monospace is only for code, tool arguments and results.
+
+To change the size, set `--qsl-font-size` on the quassel root or on any ancestor. It takes any
+length; `em` and `%` refer to the parent's font size. Single steps keep their own variables, and
+all of them override from any ancestor:
+
+```css
+.my-chat {
+    --qsl-font-size: 15px;      /* everything follows */
+    --qsl-chat-font-size: 16px; /* chat text and input only */
+    --qsl-text-meta: 12px;      /* one step of the scale */
+}
+```
+
+A step popover renders in `document.body` (or `portalContainer`), outside the chat. quassel
+hands it the `--qsl-base` of the chat that opened it, so it matches the chat even where the
+text size around `document.body` differs. A custom `PopoverContent` applies the `style` prop it
+receives to its popup for the same effect. Spacing is not part of this: it is still based on
+`--qsl-spacing` in `rem`.
+
+`@property` registrations are ignored inside shadow trees. A host that mounts quassel in a
+shadow root includes `@schlenkr/quassel/chat.css` in the document as well; otherwise
+`--qsl-base` is an ordinary variable and nested elements compound their sizes.
+
 ### Dark mode
 
 As in RAgents, `data-theme` on an ancestor decides, usually `<html>`:
@@ -399,7 +441,7 @@ popovers. Those not given stay the built-in ones (Base UI plus Tailwind), provid
 nested.
 
 ```tsx
-import { QuasselProvider, type QuasselButtonProps } from "quassel";
+import { QuasselProvider, type QuasselButtonProps } from "@schlenkr/quassel";
 
 function HostButton({ variant, size, className, children, ...rest }: QuasselButtonProps) {
   return <button {...rest} className={`host-button host-button--${variant ?? "default"} ${className ?? ""}`} type="button">{children}</button>;
@@ -438,11 +480,12 @@ host's own popovers. The built-in popover carries `data-quassel-popover` (plus
 | `Card` | `size` (default, sm), `className`, `children` |
 | `StopButton` | `label`, `busy`, `size`, `className`, `disabled`, `title`, `onClick` |
 | `Popover` | `open`, `onOpenChange`, `children` |
-| `PopoverContent` | `anchor` (virtual element with `getBoundingClientRect`), `align`, `side`, `sideOffset`, `collisionPadding`, `className`, `aria-label`, `portalContainer` (resolved target or `undefined` for `document.body`), `children` |
+| `PopoverContent` | `anchor` (virtual element with `getBoundingClientRect`), `align`, `side`, `sideOffset`, `collisionPadding`, `className`, `style` (carries `--qsl-base`), `aria-label`, `portalContainer` (resolved target or `undefined` for `document.body`), `children` |
 
 `className` contains quassel's own layout classes (e.g. the position of a button); a slot should
-keep them. A custom `PopoverContent` should pass `portalContainer` to its portal and, if the host
-wants to detect open popovers, set `data-quassel-popover` itself. `defaultComponents` returns the
+keep them. A custom `PopoverContent` should pass `portalContainer` to its portal, apply `style` to
+its popup (text size, see [Text size](#text-size)) and, if the host wants to detect open
+popovers, set `data-quassel-popover` itself. `defaultComponents` returns the
 built-in primitives for wrapping, `useQuasselComponents()` the currently effective ones, e.g. for
 a custom action card.
 
@@ -464,7 +507,7 @@ against its own folder inside a chat that resolves against something else:
 
 ### Hosts without Tailwind
 
-`quassel/chat.css` is precompiled and needs nothing else. It does not change the host page:
+`@schlenkr/quassel/chat.css` is precompiled and needs nothing else. It does not change the host page:
 
 - All utilities carry the `qsl:` prefix (in CSS `.qsl\:flex`), the theme variables `--qsl-*`,
   its own keyframes `qsl-*`.
@@ -475,17 +518,17 @@ against its own folder inside a chat that resolves against something else:
   host therefore always win - good for custom classes through `className`, but global element
   rules of the host (`button { ... }`, `a { ... }`) reach into quassel too. Such rules belong in
   a layer of their own or on classes of their own.
-- The only global things are Tailwind's `@property` registrations for `--tw-*` and the keyframes
-  `enter` and `exit` from tw-animate-css.
+- The only global things are Tailwind's `@property` registrations for `--tw-*`, quassel's
+  `@property --qsl-base` and the keyframes `enter` and `exit` from tw-animate-css.
 
 ### Hosts with Tailwind
 
-A Tailwind host also simply includes `quassel/chat.css`; thanks to the prefix nothing collides
+A Tailwind host also simply includes `@schlenkr/quassel/chat.css`; thanks to the prefix nothing collides
 with its own utilities, and the layer names fit in with its own. For adjustments through
 `className` it uses its own classes and sets variables as an arbitrary property:
 `className="[--qsl-input-card-radius:var(--radius-lg)]"`.
 
-Order, as soon as the host passes its own primitives as slots: include `quassel/chat.css` AFTER
+Order, as soon as the host passes its own primitives as slots: include `@schlenkr/quassel/chat.css` AFTER
 the host's utilities. Only then do quassel's layout classes win against the base classes of the
 host primitives (the host's `cn` does not know `qsl:` classes and does not resolve the conflict).
 A host class that should then win against a quassel class needs `!`, e.g.
@@ -493,8 +536,8 @@ A host class that should then win against a quassel class needs `!`, e.g.
 selectors are more specific.
 
 Developing on quassel and the host at the same time: include quassel in the host through
-`"quassel": "link:../quassel/packages/quassel"` (the host's bundler compiles the TypeScript
-sources along) and run `pnpm --filter quassel dev` in quassel. That keeps
+`"@schlenkr/quassel": "link:../quassel/packages/quassel"` (the host's bundler compiles the TypeScript
+sources along) and run `pnpm --filter @schlenkr/quassel dev` in quassel. That keeps
 `packages/quassel/build/chat.css` up to date through Tailwind watch; the host's dev server
 reloads the file on every change.
 
@@ -538,7 +581,7 @@ Tailwind CLI and writes its own `package.json` with the built paths. It takes th
 - **Chat with a custom backend**: receive events via SSE or WebSocket, reduce them with
   `useReducer(applyEvent, [])`, pass `status.running` on as `running`, wire `onSend` and
   `onStop` to your own endpoints (model for the flow: `packages/gallery/src/fakeAgent.ts`).
-- **Server**: use `applyEvent` and `parseChatAttachments` from `quassel/events` in the backend
+- **Server**: use `applyEvent` and `parseChatAttachments` from `@schlenkr/quassel/events` in the backend
   to keep the same transcript and to validate attachments.
 - **Custom look**: wrapper with `--qsl-*`, see `themes.css`; design system buttons through
   `QuasselProvider`.

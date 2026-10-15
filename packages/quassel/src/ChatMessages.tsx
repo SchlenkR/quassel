@@ -5,7 +5,7 @@ import { createChatScroll } from "./chat-scroll";
 import { ChatAnnouncement, DetailMode, Message, PendingAction, prettyJson, stepState, ToolInfo, TranscriptMode } from "./types";
 import { ChatTexts, defaultTexts } from "./texts";
 import { Markdown, MarkdownCodeBlocks, MarkdownLinks, markdownPlainText, type LinkClickHandler } from "./Markdown";
-import { StepPopover } from "./StepPopover";
+import { StepPopover, stepPopoverOrigin, type StepPopoverOrigin } from "./StepPopover";
 import { PendingActionCard } from "./PendingActionCard";
 import { WorkingScenes } from "./WorkingScenes";
 import { attachmentDownloadUrl, formatAttachmentSize } from "./attachments";
@@ -26,7 +26,7 @@ const traceClasses = "qsl:flex qsl:w-full qsl:gap-2 qsl:pl-6 qsl:text-left qsl:t
 const traceButtonClasses = "qsl:cursor-pointer qsl:rounded-md qsl:py-1 qsl:pr-2 qsl:transition-colors qsl:hover:bg-secondary qsl:hover:text-foreground qsl:focus-visible:bg-secondary qsl:focus-visible:text-foreground qsl:focus-visible:outline-none";
 const traceIconClasses = "qsl:mt-0.5 qsl:flex-none qsl:opacity-60";
 const traceErrorIconClasses = "qsl:mt-0.5 qsl:flex-none qsl:text-destructive qsl:opacity-100";
-const traceLineClasses = "qsl:min-w-0 qsl:self-baseline qsl:font-mono qsl:[overflow-wrap:anywhere]";
+const traceLineClasses = "qsl:min-w-0 qsl:self-baseline qsl:[overflow-wrap:anywhere]";
 const traceRunningClasses = "qsl:ml-1.5 qsl:opacity-60";
 // Single-line rows center icon and text; the multi-line detail keeps them on the first line.
 const rowIconClasses = cn(traceIconClasses, "qsl:mt-0");
@@ -35,7 +35,7 @@ const rowLineClasses = cn(traceLineClasses, "qsl:self-auto");
 
 const chipClasses = cn(
   "qsl:inline-flex qsl:max-w-[220px] qsl:items-center qsl:gap-[5px] qsl:rounded-full qsl:border qsl:border-border-soft qsl:px-2.5 qsl:py-0.5",
-  "qsl:font-mono qsl:text-meta qsl:leading-[1.6] qsl:text-muted-foreground qsl:transition-colors",
+  "qsl:text-meta qsl:leading-[1.6] qsl:text-muted-foreground qsl:transition-colors",
   "qsl:data-[state=running]:border-[color-mix(in_srgb,var(--qsl-primary)_40%,var(--qsl-border-soft))]",
   "qsl:data-[state=thinking]:border-[color-mix(in_srgb,var(--qsl-primary)_40%,var(--qsl-border-soft))]",
   "qsl:data-[state=error]:border-[color-mix(in_srgb,var(--qsl-destructive)_45%,var(--qsl-border-soft))]",
@@ -385,7 +385,7 @@ export function ChatMessages({
       <div
         aria-label={allTexts.transcript}
         className={cn(
-          "qsl:min-h-0 qsl:flex-1 qsl:cursor-default qsl:overflow-y-auto qsl:text-[length:var(--qsl-chat-font-size,13px)] qsl:text-foreground",
+          "qsl:min-h-0 qsl:flex-1 qsl:cursor-default qsl:overflow-y-auto qsl:overscroll-contain qsl:text-chat qsl:text-foreground",
           "qsl:[--qsl-fade-edge:calc(100%_-_var(--qsl-composer-height,0px))]",
           "qsl:[-webkit-mask-image:linear-gradient(to_bottom,#000_calc(var(--qsl-fade-edge)_-_40px),transparent_calc(var(--qsl-fade-edge)_+_16px))]",
           "qsl:[mask-image:linear-gradient(to_bottom,#000_calc(var(--qsl-fade-edge)_-_40px),transparent_calc(var(--qsl-fade-edge)_+_16px))]",
@@ -446,7 +446,7 @@ export function ChatMessages({
         </div>
       )}
       {dock && openActions.length > 0 && createPortal(
-        <div className="qsl:flex qsl:flex-col qsl:gap-[var(--qsl-chat-dense-message-gap,8px)] qsl:text-[length:var(--qsl-chat-font-size,13px)] qsl:text-foreground" style={appearanceStyle(appearance)}>
+        <div className="qsl:flex qsl:flex-col qsl:gap-[var(--qsl-chat-dense-message-gap,8px)] qsl:text-chat qsl:text-foreground" style={appearanceStyle(appearance)}>
           {openActions.map((message) => (
             <div key={message.key}>
               <ActionContent action={message.action} onDismissAction={onDismissAction} renderAction={renderAction} text={message.text} texts={allTexts} />
@@ -479,7 +479,7 @@ function StepRow({
   toolArgumentsText: (tool: ToolInfo) => string;
   toolLabel?: string;
 }) {
-  const [detail, setDetail] = useState<{ key: string; position: { x: number; y: number } }>();
+  const [detail, setDetail] = useState<{ key: string; position: StepPopoverOrigin }>();
   const open = expandable && detail && messages.find((message) => message.key === detail.key);
 
   return (
@@ -518,7 +518,7 @@ function StepRow({
             data-state={state}
             data-step="chip"
             key={message.key}
-            onClick={(event) => setDetail({ key: message.key, position: { x: event.clientX, y: event.clientY } })}
+            onClick={(event) => setDetail({ key: message.key, position: stepPopoverOrigin(event) })}
             title={label}
             type="button"
           >
@@ -647,11 +647,11 @@ function TraceLine({
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
 }) {
-  const [detailPosition, setDetailPosition] = useState<{ x: number; y: number }>();
+  const [detailPosition, setDetailPosition] = useState<StepPopoverOrigin>();
   const thinking = message.role === "thinking";
   const tool = message.tool;
   const classes = cn(traceClasses, "qsl:items-center", className);
-  const line = cn(rowLineClasses, thinking && "qsl:font-sans qsl:italic qsl:whitespace-pre-wrap", "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap");
+  const line = cn(rowLineClasses, thinking && "qsl:italic qsl:whitespace-pre-wrap", "qsl:overflow-hidden qsl:text-ellipsis qsl:whitespace-nowrap");
   const content = (
     <>
       {thinking ? (
@@ -677,7 +677,7 @@ function TraceLine({
         aria-haspopup="dialog"
         className={cn(classes, traceButtonClasses)}
         {...marks}
-        onClick={(event) => setDetailPosition({ x: event.clientX, y: event.clientY })}
+        onClick={(event) => setDetailPosition(stepPopoverOrigin(event))}
         type="button"
       >
         {content}
@@ -758,12 +758,12 @@ function Bubble({
       <div className={cn(traceClasses, stepSpacing)} data-kind={thinking ? "thinking" : "tool"} data-step="detail">
         {icon}
         <div className="qsl:min-w-0 qsl:flex-1">
-          <div className={cn(traceLineClasses, thinking && "qsl:font-sans qsl:italic qsl:whitespace-pre-wrap")}>{line}</div>
+          <div className={cn(traceLineClasses, thinking && "qsl:italic qsl:whitespace-pre-wrap")}>{line}</div>
           {tool && (
             <div className="qsl:mt-0.5 qsl:border-l-2 qsl:border-border-soft qsl:pl-2">
-              <pre className="qsl:mb-0.5 qsl:max-h-[208px] qsl:overflow-auto qsl:font-mono qsl:text-meta qsl:leading-[1.375] qsl:break-all qsl:whitespace-pre-wrap qsl:opacity-80">{toolArgumentsText(tool)}</pre>
+              <pre className="qsl:mb-0.5 qsl:max-h-[208px] qsl:overflow-auto qsl:overscroll-contain qsl:font-mono qsl:text-meta qsl:leading-[1.375] qsl:break-all qsl:whitespace-pre-wrap qsl:opacity-80">{toolArgumentsText(tool)}</pre>
               {tool.result !== undefined && (
-                <pre className={cn("qsl:mb-0.5 qsl:max-h-[208px] qsl:overflow-auto qsl:font-mono qsl:text-meta qsl:leading-[1.375] qsl:break-all qsl:whitespace-pre-wrap qsl:opacity-80",
+                <pre className={cn("qsl:mb-0.5 qsl:max-h-[208px] qsl:overflow-auto qsl:overscroll-contain qsl:font-mono qsl:text-meta qsl:leading-[1.375] qsl:break-all qsl:whitespace-pre-wrap qsl:opacity-80",
                   tool.isError && "qsl:text-destructive qsl:opacity-100")}>{prettyJson(tool.result)}</pre>
               )}
             </div>

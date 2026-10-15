@@ -23,7 +23,7 @@ function CodeBlock({ children }: { children?: ReactNode }) {
   const action = useChatAction();
   const label = action.status === "done" ? texts.copied : texts.copyCode;
   const block = <pre ref={code} data-chat="code-block"
-    className={cn(scrollbar, "qsl:my-2 qsl:overflow-auto qsl:rounded-lg qsl:bg-secondary qsl:px-3 qsl:py-2 qsl:font-mono qsl:text-[length:1em] qsl:leading-relaxed qsl:in-data-[tone=on-color]:bg-black/30 qsl:in-data-[tone=on-color]:text-inherit")}
+    className={cn(scrollbar, "qsl:my-2 qsl:overflow-auto qsl:overscroll-contain qsl:rounded-lg qsl:bg-secondary qsl:px-3 qsl:py-2 qsl:font-mono qsl:text-[length:1em] qsl:leading-relaxed qsl:in-data-[tone=on-color]:bg-black/30 qsl:in-data-[tone=on-color]:text-inherit")}
     style={{ maxHeight: options?.maxHeight, whiteSpace: options?.wrap ? "pre-wrap" : undefined, overflowWrap: options?.wrap ? "anywhere" : undefined }}>{children}</pre>;
   if (!options?.showCopyButton) return block;
   return <div className="qsl:relative">
@@ -68,16 +68,16 @@ const scrollbar = "qsl:[scrollbar-width:thin] qsl:[&::-webkit-scrollbar]:block q
 // The cover strips hide the cut at the edge; --qsl-scroll-cover comes from the surrounding bubble.
 const scrollCover = "qsl:bg-[linear-gradient(to_right,var(--qsl-scroll-cover,var(--qsl-background))_50%,transparent)_left/20px_100%_no-repeat_local,linear-gradient(to_left,var(--qsl-scroll-cover,var(--qsl-background))_50%,transparent)_right/20px_100%_no-repeat_local,linear-gradient(to_right,#00000047,transparent)_left/14px_100%_no-repeat_scroll,linear-gradient(to_left,#00000047,transparent)_right/14px_100%_no-repeat_scroll]";
 
-const headingClasses = "qsl:mt-3 qsl:mb-1 qsl:text-[15px] qsl:font-medium";
+const headingClasses = "qsl:mt-3 qsl:mb-1 qsl:text-[length:1.1em] qsl:font-medium";
 const cellClasses = "qsl:max-w-[44ch] qsl:border qsl:border-border qsl:px-2 qsl:py-1 qsl:text-left qsl:align-top qsl:in-data-[tone=on-color]:border-white/35";
 
 const components: Components = {
-  h1: ({ children }) => <h1 className="qsl:mt-3 qsl:mb-1 qsl:text-lg qsl:font-semibold">{children}</h1>,
+  h1: ({ children }) => <h1 className="qsl:mt-3 qsl:mb-1 qsl:text-[length:1.2em] qsl:font-semibold">{children}</h1>,
   h2: ({ children }) => <h2 className={headingClasses}>{children}</h2>,
   h3: ({ children }) => <h3 className={headingClasses}>{children}</h3>,
-  h4: ({ children }) => <h4 className="qsl:mt-2 qsl:mb-1 qsl:text-base qsl:font-medium">{children}</h4>,
-  h5: ({ children }) => <h5 className="qsl:mt-2 qsl:mb-1 qsl:text-base qsl:font-medium">{children}</h5>,
-  h6: ({ children }) => <h6 className="qsl:mt-2 qsl:mb-1 qsl:text-base qsl:font-medium">{children}</h6>,
+  h4: ({ children }) => <h4 className="qsl:mt-2 qsl:mb-1 qsl:font-medium">{children}</h4>,
+  h5: ({ children }) => <h5 className="qsl:mt-2 qsl:mb-1 qsl:font-medium">{children}</h5>,
+  h6: ({ children }) => <h6 className="qsl:mt-2 qsl:mb-1 qsl:font-medium">{children}</h6>,
   p: ({ children }) => <p className="qsl:[p+&]:mt-2">{children}</p>,
   ul: ({ children }) => <ul className="qsl:my-2 qsl:list-disc qsl:pl-6 qsl:[li>&]:my-0">{children}</ul>,
   ol: ({ children }) => <ol className="qsl:my-2 qsl:list-decimal qsl:pl-6 qsl:[li>&]:my-0">{children}</ol>,
@@ -96,7 +96,7 @@ const components: Components = {
   ),
   // Without max-content the table shrinks to the container and stacks letters.
   table: ({ children }) => (
-    <div className={cn(scrollbar, scrollCover, "qsl:my-2 qsl:overflow-x-auto")}>
+    <div className={cn(scrollbar, scrollCover, "qsl:my-2 qsl:overflow-x-auto qsl:overscroll-x-contain")}>
       <table className="qsl:w-max qsl:min-w-full qsl:border-collapse qsl:text-sm">{children}</table>
     </div>
   ),

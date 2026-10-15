@@ -4,7 +4,7 @@ Chat building blocks for React: a streaming transcript with thinking and tool st
 actions, an input card with attachments and steering, and a small event contract that works
 on the server as well. quassel is the chat of [RAgents](https://github.com/SchlenkR/RAgents),
 published as a library. It ships a compiled stylesheet, so hosts need no Tailwind, and every
-color, radius, font and font size is a `--qsl-*` variable.
+color, radius, font and font size is a `--qsl-*` variable, and the text size follows the host by default.
 
 ![An agent chat with grouped steps, timestamps, Markdown and the input card](docs/images/agent.png)
 
@@ -49,23 +49,26 @@ variables too.
   actions are announced once, with the host in control of the wording.
 - Complete English and German UI labels through `englishTexts` / `germanTexts`; `texts` can override any label (English by default).
 - Grouped steps show their error count even while collapsed.
+- Text size follows the host: no overrides needed to fit in (see below).
 
 ## Install
 
 ```sh
-npm install quassel
+npm install @schlenkr/quassel
 ```
+
+Up to 0.4.9 the package was published without scope as `quassel`; from 0.5.0 on it is `@schlenkr/quassel` with the same API.
 
 | Import | Contents |
 |---|---|
-| `quassel` | React components, `QuasselProvider`, types, texts, `announce`, `markdownPlainText` |
-| `quassel/events` | The event contract, the pure reducer `applyEvent` and the attachment limits, without React |
-| `quassel/chat.css` | The compiled stylesheet: theme variables, scoped reset and all utilities quassel uses |
+| `@schlenkr/quassel` | React components, `QuasselProvider`, types, texts, `announce`, `markdownPlainText` |
+| `@schlenkr/quassel/events` | The event contract, the pure reducer `applyEvent` and the attachment limits, without React |
+| `@schlenkr/quassel/chat.css` | The compiled stylesheet: theme variables, scoped reset and all utilities quassel uses |
 
 ```tsx
 import { useReducer, useState } from "react";
-import { applyEvent, ChatInputToolbar, ChatMessages, ChatPanel, type Message } from "quassel";
-import "quassel/chat.css";
+import { applyEvent, ChatInputToolbar, ChatMessages, ChatPanel, type Message } from "@schlenkr/quassel";
+import "@schlenkr/quassel/chat.css";
 
 export function Chat({ send, stop }: { send: (text: string) => Promise<void>; stop: () => void }) {
   const [messages, dispatch] = useReducer(applyEvent, [] as Message[]);
@@ -86,7 +89,24 @@ export function Chat({ send, stop }: { send: (text: string) => Promise<void>; st
 }
 ```
 
-Any backend that emits the `quassel/events` stream works with the same components.
+Any backend that emits the `@schlenkr/quassel/events` stream works with the same components.
+
+## Text size
+
+quassel inherits the font size of the place it is mounted in. Chat text and the input use that
+size, meta lines, step rows and labels are derived from it as smaller steps, and nothing
+compounds when elements nest. One variable changes it for a chat:
+
+```css
+.my-chat {
+    --qsl-font-size: 15px;
+}
+```
+
+`--qsl-chat-font-size` and `--qsl-text-meta` (and `-trace`, `-label`, `-xs` to `-xl`) override
+single steps. Up to 0.4.9 the root was fixed at 14px and the chat text at 13px, so hosts had to
+override sizes by hand; from 0.5.0 on that is no longer needed. Details in the
+[guide](docs/guide.md#text-size).
 
 ## Development
 

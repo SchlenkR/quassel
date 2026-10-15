@@ -41,7 +41,7 @@ if (!dryRun && version !== declared.version) {
   writeFileSync(pkgFile, readFileSync(pkgFile, "utf8").replace(/"version": "[^"]*"/, `"version": "${version}"`));
 }
 
-run("pnpm", ["--filter", "quassel", "check"]);
+run("pnpm", ["--filter", "@schlenkr/quassel", "check"]);
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });

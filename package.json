@@ -2,10 +2,10 @@
   "name": "quassel-workspace",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter quassel css && pnpm --parallel --filter quassel --filter gallery dev",
-    "build": "pnpm --filter quassel css && pnpm --filter gallery build",
-    "check": "pnpm --filter quassel check && pnpm --filter gallery exec tsc --noEmit",
-    "test": "pnpm --filter quassel test",
+    "dev": "pnpm --filter @schlenkr/quassel css && pnpm --parallel --filter @schlenkr/quassel --filter gallery dev",
+    "build": "pnpm --filter @schlenkr/quassel css && pnpm --filter gallery build",
+    "check": "pnpm --filter @schlenkr/quassel check && pnpm --filter gallery exec tsc --noEmit",
+    "test": "pnpm --filter @schlenkr/quassel test",
     "release": "node scripts/publish.mjs"
   }
 }

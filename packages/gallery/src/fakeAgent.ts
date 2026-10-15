@@ -1,4 +1,4 @@
-import { applyEvent, type ChatEvent, type ChatTextCursor, type Message } from "quassel";
+import { applyEvent, type ChatEvent, type ChatTextCursor, type Message } from "@schlenkr/quassel";
 import { useMemo, useReducer, useRef, useState } from "react";
 
 type DemoTurn = {

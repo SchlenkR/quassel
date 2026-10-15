@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ComponentType, type ReactNode, type RefObject } from "react";
+import { createContext, useContext, useMemo, type ComponentType, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Popover, PopoverContent } from "./ui/popover";
@@ -69,6 +69,8 @@ export interface QuasselPopoverContentProps {
   sideOffset?: number;
   collisionPadding?: number;
   className?: string;
+  /** Carries --qsl-base, the text size of the chat that opened the popover; pass it on to the popup. */
+  style?: CSSProperties;
   "aria-label"?: string;
   /** The resolved portalContainer of QuasselProvider; undefined = document.body. */
   portalContainer?: QuasselPortalTarget;

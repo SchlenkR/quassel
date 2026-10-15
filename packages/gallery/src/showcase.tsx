@@ -10,8 +10,8 @@ import {
   TimestampSwitch,
   type DetailMode,
   type Message,
-} from "quassel";
-import "quassel/chat.css";
+} from "@schlenkr/quassel";
+import "@schlenkr/quassel/chat.css";
 import "./themes.css";
 import "./showcase.css";
 import { ChoiceCard } from "./ChoiceCard";

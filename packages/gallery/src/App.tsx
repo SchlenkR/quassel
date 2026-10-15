@@ -14,7 +14,7 @@ import {
   type DetailMode,
   type Message,
   type QuasselButtonProps,
-} from "quassel";
+} from "@schlenkr/quassel";
 import { ChoiceCard } from "./ChoiceCard";
 import { useFakeAgent } from "./fakeAgent";
 import { actions, research, steps } from "./samples";

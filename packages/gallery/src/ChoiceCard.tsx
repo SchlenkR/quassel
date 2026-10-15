@@ -1,5 +1,5 @@
 import "./ChoiceCard.css";
-import { useQuasselComponents, type PendingAction } from "quassel";
+import { useQuasselComponents, type PendingAction } from "@schlenkr/quassel";
 
 /** A host-owned rendering of a pending action: the options as buttons, the answer once resolved. */
 export function ChoiceCard({ action, text, onChoose }: { action: PendingAction; text: string; onChoose: (option: string) => void }) {

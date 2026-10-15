@@ -1,4 +1,4 @@
-import type { Message } from "quassel";
+import type { Message } from "@schlenkr/quassel";
 
 const at = (minute: number) => `2026-09-26T09:${String(minute).padStart(2, "0")}:00Z`;
 

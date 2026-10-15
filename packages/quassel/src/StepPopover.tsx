@@ -1,9 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, type CSSProperties, type MouseEvent } from "react";
 import { SparklesIcon, WrenchIcon, XIcon } from "lucide-react";
 import { cn } from "./ui/cn";
 import { useQuasselComponents, useQuasselPortalContainer } from "./QuasselProvider";
 import { Message, prettyJson } from "./types";
 import { ChatTexts } from "./texts";
+
+export type StepPopoverOrigin = { x: number; y: number; base: string };
+
+export const stepPopoverOrigin = (event: MouseEvent<HTMLElement>): StepPopoverOrigin => ({
+  x: event.clientX,
+  y: event.clientY,
+  base: getComputedStyle(event.currentTarget).getPropertyValue("--qsl-base"),
+});
 
 const preClasses = "qsl:rounded-lg qsl:bg-secondary qsl:p-3 qsl:font-mono qsl:text-trace qsl:leading-[1.625] qsl:break-all qsl:whitespace-pre-wrap";
 
@@ -15,7 +23,7 @@ export function StepPopover({
   onClose,
 }: {
   message: Message;
-  position: { x: number; y: number };
+  position: StepPopoverOrigin;
   texts: ChatTexts;
   toolArgumentsText: (tool: NonNullable<Message["tool"]>) => string;
   onClose: () => void;
@@ -42,13 +50,14 @@ export function StepPopover({
         anchor={anchor}
         aria-label={title}
         className={cn(
-          "qsl:w-[min(680px,calc(100vw-32px))] qsl:gap-0 qsl:overflow-hidden qsl:p-0 qsl:text-[13px] qsl:leading-normal qsl:shadow-pop",
+          "qsl:w-[min(680px,calc(100vw-32px))] qsl:gap-0 qsl:overflow-hidden qsl:p-0 qsl:text-base qsl:leading-normal qsl:shadow-pop",
           "qsl:max-h-[min(70dvh,620px,var(--available-height))]",
         )}
         collisionPadding={16}
         portalContainer={portalContainer}
         side="bottom"
         sideOffset={10}
+        style={{ "--qsl-base": position.base || undefined } as CSSProperties}
       >
         <div className="qsl:flex qsl:flex-none qsl:items-center qsl:gap-2 qsl:border-b qsl:border-border-soft qsl:px-4 qsl:py-2.5">
           {thinking ? (

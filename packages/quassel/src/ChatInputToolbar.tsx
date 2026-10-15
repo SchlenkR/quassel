@@ -222,7 +222,7 @@ export function ChatInputToolbar({
     fileInput.dragging && "qsl:outline-2 qsl:outline-offset-[3px] qsl:outline-dashed qsl:outline-primary",
   );
   const textareaClasses = cn(
-    "qsl:resize-none qsl:border-0 qsl:bg-transparent qsl:text-[length:var(--qsl-chat-font-size,13px)] qsl:leading-[var(--qsl-chat-line-height,1.5)] qsl:text-foreground qsl:placeholder:text-muted-foreground qsl:focus:outline-none",
+    "qsl:resize-none qsl:overscroll-contain qsl:border-0 qsl:bg-transparent qsl:text-chat qsl:leading-[var(--qsl-chat-line-height,1.5)] qsl:text-foreground qsl:placeholder:text-muted-foreground qsl:focus:outline-none",
     inline ? "qsl:min-w-0 qsl:flex-1 qsl:px-2.5 qsl:py-2" : toolbar ? "qsl:w-full qsl:min-w-0 qsl:flex-auto qsl:px-2 qsl:py-[3px] qsl:leading-[1.3]" : "qsl:px-3 qsl:pt-3 qsl:pb-2",
   );
   const toolbarRowClasses = cn(
@@ -395,7 +395,7 @@ export function ChatInputToolbar({
 
   const attachmentPreviews = (
     attachments.length > 0 && (
-        <ul className="qsl:flex qsl:max-h-[240px] qsl:flex-wrap qsl:gap-2 qsl:overflow-y-auto qsl:px-3 qsl:pt-2.5 qsl:in-data-[tone=overseer-details]:max-h-40 qsl:in-data-[tone=overseer-details]:overflow-y-auto" aria-label={allTexts.attachments}>
+        <ul className="qsl:flex qsl:max-h-[240px] qsl:flex-wrap qsl:gap-2 qsl:overflow-y-auto qsl:overscroll-contain qsl:px-3 qsl:pt-2.5 qsl:in-data-[tone=overseer-details]:max-h-40 qsl:in-data-[tone=overseer-details]:overflow-y-auto" aria-label={allTexts.attachments}>
           {attachments.map((entry) => (
             <li className={attachmentItemClasses} key={entry.id}>
               {entry.status === "ready" && entry.input.mediaType.startsWith("image/") && (

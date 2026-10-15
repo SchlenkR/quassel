@@ -1,4 +1,4 @@
-import type { ChatTexts } from "quassel";
+import type { ChatTexts } from "@schlenkr/quassel";
 
 export const englishTexts: ChatTexts = {
   working: "Working ...",

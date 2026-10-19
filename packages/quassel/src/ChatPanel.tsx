@@ -83,7 +83,7 @@ export function ChatPanel({
         <div className="qsl:absolute qsl:inset-x-0 qsl:bottom-0 qsl:z-[5] qsl:px-[var(--qsl-chat-horizontal-padding,24px)] qsl:pb-3.5 qsl:*:mx-auto qsl:*:max-w-[var(--qsl-chat-content-max-width,none)]" data-chat="composer" ref={composerRef}>
           <div>
             <div
-              className="qsl:-mx-[16px] qsl:max-h-[calc(var(--qsl-panel-height,100dvh)_/_2)] qsl:overflow-y-auto qsl:overscroll-contain qsl:px-[16px] qsl:pb-[var(--qsl-chat-message-gap,16px)] qsl:[-webkit-mask-image:linear-gradient(to_bottom,#000_calc(100%_-_var(--qsl-chat-message-gap,16px)),transparent)] qsl:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_var(--qsl-chat-message-gap,16px)),transparent)] qsl:empty:hidden"
+              className="qsl:-mx-[16px] qsl:max-h-[calc(var(--qsl-panel-height,100dvh)_/_2)] qsl:overflow-y-auto qsl:overscroll-contain qsl:px-[16px] qsl:pb-[var(--qsl-chat-message-gap,10px)] qsl:[-webkit-mask-image:linear-gradient(to_bottom,#000_calc(100%_-_var(--qsl-chat-message-gap,10px)),transparent)] qsl:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_var(--qsl-chat-message-gap,10px)),transparent)] qsl:empty:hidden"
               data-chat="actions"
               ref={setDock}
             />

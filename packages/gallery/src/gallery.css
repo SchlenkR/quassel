@@ -66,10 +66,33 @@ body {
 
 .stage-head {
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
     padding: 14px 24px 10px;
+}
+
+.layout-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+}
+
+.layout-controls label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.layout-controls select {
+    font: inherit;
+}
+
+.layout-controls input[type="range"] {
+    width: 80px;
 }
 
 .stage-head h2 {

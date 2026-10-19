@@ -4,7 +4,7 @@ Chat building blocks for React: a streaming transcript with thinking and tool st
 actions, an input card with attachments and steering, and a small event contract that works
 on the server as well. quassel is the chat of [RAgents](https://github.com/SchlenkR/RAgents),
 published as a library. It ships a compiled stylesheet, so hosts need no Tailwind, and every
-color, radius, font and font size is a `--qsl-*` variable, and the text size follows the host by default.
+color, radius, font and font size is a `--qsl-*` variable, with compact defaults for text and tool steps.
 
 ![An agent chat with grouped steps, timestamps, Markdown and the input card](docs/images/agent.png)
 
@@ -93,20 +93,28 @@ Any backend that emits the `@schlenkr/quassel/events` stream works with the same
 
 ## Text size
 
-quassel inherits the font size of the place it is mounted in. Chat text and the input use that
-size, meta lines, step rows and labels are derived from it as smaller steps, and nothing
-compounds when elements nest. One variable changes it for a chat:
+quassel starts at 13px with a line height of 1.5, a 10px message gap and a 3px dense
+step gap. Tool rows and timestamps use 88% of the text size. Expanded tool groups have a
+1px gap between rows; tool rows have 1px of vertical padding on each side.
 
-```css
-.my-chat {
-    --qsl-font-size: 15px;
-}
+Every size derives from one base, so nested elements never compound. Set `--qsl-font-size`
+on a wrapper, or `appearance.fontSize`, to change it. Use `1em` to follow the host's font size.
+`appearance` also offers `toolFontScale`, `toolGroupGap` and `toolRowPadding`.
+
+User message backgrounds fill the available row by default while text keeps its width and
+alignment. `bubbleOptions={{ userBackgroundFullWidth: false }}` restores a fitted background.
+Timestamps sit beside messages by default; their size follows the tool text unless overridden:
+
+```tsx
+<ChatMessages
+    messages={messages}
+    showTimestamps
+    timestampOptions={{ position: "above", fontScale: 0.88 }}
+/>
 ```
 
-`--qsl-chat-font-size` and `--qsl-text-meta` (and `-trace`, `-label`, `-xs` to `-xl`) override
-single steps. Up to 0.4.9 the root was fixed at 14px and the chat text at 13px, so hosts had to
-override sizes by hand; from 0.5.0 on that is no longer needed. Details in the
-[guide](docs/guide.md#text-size).
+`--qsl-text-trace`, `--qsl-timestamp-font-size` and the other `--qsl-text-*` variables override
+individual sizes. The [guide](docs/guide.md#text-size) lists the full API.
 
 ## Development
 

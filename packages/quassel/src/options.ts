@@ -6,9 +6,14 @@ export interface ChatAppearance {
   lineHeight?: CSSProperties["lineHeight"];
   messageGap?: CSSProperties["marginTop"];
   denseMessageGap?: CSSProperties["marginTop"];
+  toolFontScale?: number;
+  toolGroupGap?: CSSProperties["rowGap"];
+  toolRowPadding?: CSSProperties["paddingBlock"];
 }
 
 export interface TimestampOptions {
+  position?: "aside" | "above";
+  fontScale?: number;
   format?: "time" | "date-time" | "relative";
   locale?: string;
   timeZone?: string;
@@ -22,6 +27,7 @@ export interface CodeBlockOptions {
 }
 
 export interface BubbleOptions {
+  userBackgroundFullWidth?: boolean;
   variant?: "default" | "plain" | "bubbles";
   maxWidth?: CSSProperties["maxWidth"];
   userSide?: "start" | "end";
@@ -50,8 +56,12 @@ export type SendShortcut = "enter" | "mod-enter";
 const cssLength = (value: string | number | undefined) => typeof value === "number" ? `${value}px` : value;
 
 export const appearanceStyle = (appearance?: ChatAppearance): CSSProperties => ({
+  "--qsl-font-size": cssLength(appearance?.fontSize),
   "--qsl-chat-font-size": cssLength(appearance?.fontSize),
   "--qsl-chat-line-height": appearance?.lineHeight,
   "--qsl-chat-message-gap": cssLength(appearance?.messageGap),
   "--qsl-chat-dense-message-gap": cssLength(appearance?.denseMessageGap),
+  "--qsl-tool-font-scale": appearance?.toolFontScale,
+  "--qsl-tool-group-gap": cssLength(appearance?.toolGroupGap),
+  "--qsl-tool-row-padding": cssLength(appearance?.toolRowPadding),
 } as CSSProperties);

@@ -21,6 +21,7 @@ import { actions, research, steps } from "./samples";
 
 const DEMOS = [
   { id: "read", title: "Read only", note: "Transcript without a composer" },
+  { id: "layout", title: "Layout", note: "Message backgrounds and timestamps" },
   { id: "input", title: "Input card", note: "Stop, interjecting, attachments" },
   { id: "actions", title: "Actions", note: "Pending actions above the composer" },
   { id: "themes", title: "Themes", note: "Only --qsl-* overridden" },
@@ -71,6 +72,7 @@ export function App() {
       </aside>
       <main className="stage">
         {demo === "read" && <ReadDemo />}
+        {demo === "layout" && <LayoutDemo />}
         {demo === "input" && <InputDemo />}
         {demo === "actions" && <ActionDemo />}
         {demo === "themes" && <ThemeDemo />}
@@ -87,6 +89,23 @@ function ReadDemo() {
   return (
     <Stage head={<><Toggles onChange={setLanguage} value={language} values={["de", "en"]} /><Toggles onChange={setDetailMode} value={detailMode} values={MODES} /></>} note="ChatMessages without a composer, step detail level switchable." title="Read only">
       <ChatMessages texts={texts} detailMode={detailMode} messages={[...research, ...steps]} showTimestamps timestampOptions={{ timeZone: "UTC" }} />
+    </Stage>
+  );
+}
+
+function LayoutDemo() {
+  const [fullWidth, setFullWidth] = useState(true);
+  const [position, setPosition] = useState<"aside" | "above">("aside");
+  const [fontScale, setFontScale] = useState(0.88);
+  return (
+    <Stage title="Layout" note="The user background expands independently of the text. Timestamps default to the tool text size." head={
+      <div className="layout-controls">
+        <label><input type="checkbox" checked={fullWidth} onChange={(event) => setFullWidth(event.target.checked)} />Full row background</label>
+        <label>Timestamps<select value={position} onChange={(event) => setPosition(event.target.value as "aside" | "above")}><option value="aside">Beside the message</option><option value="above">Above the message</option></select></label>
+        <label>Timestamp size<input aria-label="Timestamp size" type="range" min="0.7" max="1.1" step="0.01" value={fontScale} onChange={(event) => setFontScale(Number(event.target.value))} /><output>{Math.round(fontScale * 100)}%</output></label>
+      </div>
+    }>
+      <ChatMessages messages={[...research, ...steps]} detailMode="grouped" showTimestamps bubbleOptions={{ userBackgroundFullWidth: fullWidth }} timestampOptions={{ position, fontScale, timeZone: "UTC" }} />
     </Stage>
   );
 }

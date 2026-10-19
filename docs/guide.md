@@ -123,7 +123,7 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
   nodeRef?: Ref<HTMLDivElement>;
   maxWidth?: CSSProperties["maxWidth"];            // content width for transcript and composer
   horizontalPadding?: CSSProperties["paddingInline"]; // default 24px
-  appearance?: ChatAppearance;          // fontSize, lineHeight, messageGap, denseMessageGap
+  appearance?: ChatAppearance;          // fontSize, lineHeight, gaps, toolFontScale, toolGroupGap, toolRowPadding
   scrollOnSend?: boolean;               // default false; true jumps to the end after a successful send
 }
 ```
@@ -154,9 +154,9 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
   scrollerRef?: (element: HTMLDivElement | null) => void;
   maxWidth?; horizontalPadding?; appearance?;
   jumpToEndThreshold?: number;          // default 120px
-  timestampOptions?: TimestampOptions;  // format "time" | "date-time" | "relative", locale, timeZone, showDaySeparators
+  timestampOptions?: TimestampOptions;  // position "aside" | "above", fontScale, format, locale, timeZone, showDaySeparators
   codeBlockOptions?: CodeBlockOptions;  // wrap, maxHeight, showCopyButton
-  bubbleOptions?: BubbleOptions;        // variant "default" | "plain" | "bubbles", maxWidth, userSide, assistantSide, showSender, senderLabel
+  bubbleOptions?: BubbleOptions;        // userBackgroundFullWidth, variant, maxWidth, sides, showSender, senderLabel
   messageActions?: MessageActionsOptions; // copy, edit, retry, custom
   toolElapsedThreshold?: number | false;  // default 3000 ms until running tools show their elapsed time, false = never
 }
@@ -168,8 +168,20 @@ jump-to-end button; content that grows or shrinks does not pause it. It carries 
 attribute `data-quassel-transcript`; it gets custom classes through `scrollerClassName`, and
 `scrollerRef` delivers the element itself.
 
-With `showTimestamps`, the time column of the `time` format is at least five digits wide and never
-wraps, so it follows `--qsl-text-meta` and the host's text size; longer formats widen it.
+With `showTimestamps`, `timestampOptions.position` chooses `"aside"` (the default, a left
+column) or `"above"` (a line above each block). The `time` column beside a message is at least
+five digits wide and never wraps; longer formats widen it. Timestamps use the UI font at the
+same size as tool text: 88% of the base by default, also following `appearance.toolFontScale`
+or `--qsl-text-trace`. `timestampOptions.fontScale` sets an independent ratio such as `0.8`;
+`--qsl-timestamp-font-size` accepts an explicit CSS length.
+
+`bubbleOptions.userBackgroundFullWidth` defaults to `true`: a user message has a background
+across the available message row. Only the background expands; the content keeps its normal
+width, `bubbleOptions.maxWidth`, alignment and sender label. `false` restores a background
+around the content. `variant: "plain"` and contributions made plain through `owner` stay plain.
+Assistant bubbles and custom bubble colors retain their existing behavior. A full background
+uses `data-chat="bubble-background"`, its content `data-chat="bubble-content"`; the message
+row carries `data-background-width="full"` or `"content"` when rendered as a bubble.
 
 Transcript modes: `all` (the default) shows every message. `latest` keeps every user input and shows at most
 one non-empty assistant message between two user messages: the last one. The same rule applies
@@ -343,9 +355,13 @@ for the whole page or on a wrapper for one chat.
 | `--qsl-radius-panel` | cards, e.g. the action card | `17px` |
 | `--qsl-input-card-radius` | input card | not set: `--qsl-radius-xl` |
 | `--qsl-bubble-radius` | speech bubble of own messages | not set: `10px 10px 4px 10px` (`material` tone: `9px`) |
-| `--qsl-font-size` | text size of the quassel root, see [Text size](#text-size) | not set: inherited from the host |
-| `--qsl-text-meta` | chips, timestamps, arguments and result in the `full` detail level | `0.8 * --qsl-base` |
-| `--qsl-text-trace` | step lines, group header, section titles and content in the step popover | `0.85 * --qsl-base` |
+| `--qsl-font-size` | text size of the quassel root, see [Text size](#text-size) | `13px`; `1em` follows the host |
+| `--qsl-text-meta` | chips, arguments and result in the `full` detail level | `0.8 * --qsl-base` |
+| `--qsl-text-trace` | step lines, group header, section titles and content in the step popover | `0.88 * --qsl-base` |
+| `--qsl-tool-font-scale` | tool text ratio, also used by timestamps | `0.88` |
+| `--qsl-timestamp-font-size` | timestamp text size | tool text size |
+| `--qsl-tool-group-gap` | gap between rows in an expanded group | `1px` |
+| `--qsl-tool-row-padding` | vertical padding inside tool/thinking rows and group headers | `1px` |
 | `--qsl-text-label` | sender identifier on speech bubbles, the "fed into" note | `0.85 * --qsl-base` |
 | `--qsl-text-small` | `<small>` (size of attachments) | not set: `80%` |
 | `--qsl-font`, `--qsl-mono` | fonts | system font, `ui-monospace` |
@@ -354,10 +370,12 @@ for the whole page or on a wrapper for one chat.
 Plus the scales from the Tailwind theme: `--qsl-spacing` (0.235rem, compact unit),
 `--qsl-text-xs` to `--qsl-text-xl` including `--line-height` (derived from the text size, see
 [Text size](#text-size)) and the chat dimensions `--qsl-chat-font-size` (`--qsl-base`),
-`--qsl-chat-line-height`,
-`--qsl-chat-message-gap` (16px), `--qsl-chat-dense-message-gap` (8px),
+`--qsl-chat-line-height` (1.5),
+`--qsl-chat-message-gap` (10px), `--qsl-chat-dense-message-gap` (3px),
 `--qsl-chat-content-max-width`, `--qsl-chat-horizontal-padding` (24px; these six are also set
-by `appearance`, `maxWidth` and `horizontalPadding`).
+by `appearance`, `maxWidth` and `horizontalPadding`). `appearance` additionally accepts
+`toolFontScale` (ratio), `toolGroupGap` and `toolRowPadding` (CSS lengths; numbers are pixels).
+`appearance.fontSize` sets the base for the whole chat, including tool text and timestamps.
 
 Every variable takes effect from the element it is set on, the radii too: "not set" means
 quassel defines them nowhere itself and computes with the default at the place of use. A wrapper
@@ -383,18 +401,18 @@ Examples: `packages/gallery/src/themes.css`.
 
 ### Text size
 
-quassel takes its text size from the host, so it fits in without overrides. The outermost
-quassel element (panel, transcript, composer or popover) inherits the font size of the place it
-is mounted in, and every size inside derives from that one value:
+quassel starts at 13px; every size inside derives from that one value. A host sets
+`--qsl-font-size` to its chosen size, or `1em` to inherit the surrounding text size:
 
 - `--qsl-base` holds it as an absolute length. quassel sets it once on its root and nested
   elements inherit it unchanged, so sizes never compound. It is a registered `<length>`
-  property (`@property`, initial value `14px`) to be read, not set.
+  property (`@property`, initial value `13px`) to be read, not set.
 - Chat text, the input and open actions are `--qsl-base` itself (`--qsl-chat-font-size`).
   Small UI text (tables, system messages, action cards, buttons: `--qsl-text-sm`) is
-  `* 0.9`, step lines and group headers (`--qsl-text-trace`) and labels (`--qsl-text-label`)
-  `* 0.85`, chips, timestamps and tool arguments (`--qsl-text-meta`) and `--qsl-text-xs`
-  `* 0.8`. `--qsl-text-lg` and `--qsl-text-xl` are `* 1.15` and `* 1.3`. Headings in Markdown are
+  `* 0.9`, step lines and group headers (`--qsl-text-trace`) `* 0.88`, labels (`--qsl-text-label`)
+  `* 0.85`, chips and tool arguments (`--qsl-text-meta`) and `--qsl-text-xs` `* 0.8`.
+  Timestamps follow the tool text size by default; `timestampOptions.fontScale` or
+  `--qsl-timestamp-font-size` sets an independent size. `--qsl-text-lg` and `--qsl-text-xl` are `* 1.15` and `* 1.3`. Headings in Markdown are
   relative to the chat text (`1.2em`, `1.1em`).
 - Step and tool rows use the UI font. Monospace is only for code, tool arguments and results.
 

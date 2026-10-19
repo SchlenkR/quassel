@@ -96,6 +96,8 @@ interface ChatTextCursor { conversationId: string; sequence: number; offset: num
 A custom backend is quassel-compatible as soon as it delivers this event stream. Attachments
 come in as `ChatAttachmentInput` (`{ name, mediaType, data }`, Base64) through `onSend` and are
 then attached to the `user` event as `ChatAttachment` (`{ name, mediaType, size, url }`).
+The transcript shows image attachments as a preview; a click opens them large in a dialog with
+download and close, Escape or a click beside the image closes it.
 
 ## quassel - the components
 

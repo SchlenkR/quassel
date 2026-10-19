@@ -1,9 +1,10 @@
 import { cn } from "./ui/cn";
 import { type CSSProperties, ReactNode, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Dialog } from "@base-ui/react/dialog";
 import { createChatScroll } from "./chat-scroll";
-import { ChatAnnouncement, DetailMode, Message, PendingAction, prettyJson, stepState, ToolInfo, TranscriptMode } from "./types";
-import { ChatTexts, defaultTexts } from "./texts";
+import { ChatAnnouncement, ChatAttachment, DetailMode, Message, PendingAction, prettyJson, stepState, ToolInfo, TranscriptMode } from "./types";
+import { ChatTexts, defaultTexts, fillText } from "./texts";
 import { Markdown, MarkdownCodeBlocks, MarkdownLinks, markdownPlainText, type LinkClickHandler } from "./Markdown";
 import { StepPopover, stepPopoverOrigin, type StepPopoverOrigin } from "./StepPopover";
 import { PendingActionCard } from "./PendingActionCard";
@@ -17,7 +18,7 @@ import { MessageActions } from "./MessageActions";
 import { ChatSendContext } from "./ChatSendContext";
 import { ChatActionDock } from "./ChatActionDock";
 import { announce as announceText } from "./announce";
-import { useQuasselComponents } from "./QuasselProvider";
+import { useQuasselComponents, useQuasselPortalContainer } from "./QuasselProvider";
 
 const stepClasses = "qsl:mt-[var(--qsl-chat-message-gap,10px)]";
 const denseStepClasses = "qsl:mt-[var(--qsl-chat-dense-message-gap,3px)]";
@@ -787,7 +788,7 @@ function Bubble({
     return (
       <div className={cn(stepSpacing, "qsl:border-l-2 qsl:border-destructive/50 qsl:pl-3 qsl:text-sm qsl:text-muted-foreground")} data-message="system">
         <Markdown text={message.text} />
-        <MessageAttachments label={texts.attachments} message={message} />
+        <MessageAttachments message={message} texts={texts} />
       </div>
     );
   }
@@ -804,7 +805,7 @@ function Bubble({
     {showSender && sender && <span className={cn("qsl:mb-[5px] qsl:table qsl:text-label qsl:leading-[1.45] qsl:font-semibold",
       useBubble && message.bubble && "qsl:rounded-full qsl:border qsl:border-white/30 qsl:bg-black/15 qsl:px-[7px] qsl:py-px qsl:tracking-[0.02em]")} data-chat="sender">{sender}</span>}
     <Markdown text={message.text} streaming={message.role === "assistant" && !message.closed} />
-    <MessageAttachments label={texts.attachments} message={message} />
+    <MessageAttachments message={message} texts={texts} />
     {message.steered && <small className="qsl:mt-1 qsl:block qsl:text-label qsl:leading-[1.45] qsl:opacity-70" data-chat="steered">{texts.steered}</small>}
     <MessageActions message={message} options={messageActions} texts={texts} />
   </>;
@@ -859,20 +860,63 @@ function ActionContent({
   );
 }
 
-function MessageAttachments({ message, label }: { message: Message; label: string }) {
+function MessageAttachments({ message, texts }: { message: Message; texts: ChatTexts }) {
+  const [enlarged, setEnlarged] = useState<ChatAttachment>();
   if (!message.attachments?.length) return null;
   return (
-    <ul className="qsl:mt-2.5 qsl:flex qsl:flex-wrap qsl:gap-2" aria-label={label}>
-      {message.attachments.map((attachment, index) => (
-        <li className="qsl:relative qsl:flex qsl:w-[190px] qsl:max-w-full qsl:min-w-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-lg qsl:border qsl:border-border qsl:text-sm" key={`${attachment.url}-${index}`}>
-          {attachment.mediaType.startsWith("image/") && <a href={attachmentDownloadUrl(attachment.url)} download={attachment.name}><img className="qsl:block qsl:h-[112px] qsl:w-full qsl:bg-secondary qsl:object-contain" src={attachment.url} alt={attachment.name} loading="lazy" /></a>}
-          {attachment.mediaType.startsWith("video/") && <video className="qsl:block qsl:h-[112px] qsl:w-full qsl:bg-secondary qsl:object-contain" src={attachment.url} controls preload="metadata" aria-label={attachment.name} />}
-          <div className="qsl:flex qsl:flex-col qsl:gap-1 qsl:p-2 qsl:[overflow-wrap:anywhere]">
-            <a className="qsl:font-medium" href={attachmentDownloadUrl(attachment.url)} download={attachment.name}>{attachment.name}</a>
-            <small>{formatAttachmentSize(attachment.size)}</small>
-          </div>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="qsl:mt-2.5 qsl:flex qsl:flex-wrap qsl:gap-2" aria-label={texts.attachments}>
+        {message.attachments.map((attachment, index) => {
+          const isImage = attachment.mediaType.startsWith("image/");
+          return (
+            <li className={cn("qsl:relative qsl:flex qsl:max-w-full qsl:min-w-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-lg qsl:border qsl:border-border qsl:text-sm", isImage ? "qsl:w-[320px]" : "qsl:w-[190px]")} key={`${attachment.url}-${index}`}>
+              {isImage && (
+                <button
+                  type="button"
+                  className="qsl:block qsl:w-full qsl:cursor-zoom-in qsl:bg-secondary"
+                  aria-label={fillText(texts.enlargeImage ?? defaultTexts.enlargeImage, { name: attachment.name })}
+                  onClick={() => setEnlarged(attachment)}
+                  data-chat="attachment-image"
+                >
+                  <img className="qsl:mx-auto qsl:block qsl:max-h-[240px] qsl:max-w-full qsl:object-contain" src={attachment.url} alt={attachment.name} loading="lazy" />
+                </button>
+              )}
+              {attachment.mediaType.startsWith("video/") && <video className="qsl:block qsl:h-[112px] qsl:w-full qsl:bg-secondary qsl:object-contain" src={attachment.url} controls preload="metadata" aria-label={attachment.name} />}
+              <div className="qsl:flex qsl:flex-col qsl:gap-1 qsl:p-2 qsl:[overflow-wrap:anywhere]">
+                <a className="qsl:font-medium" href={attachmentDownloadUrl(attachment.url)} download={attachment.name}>{attachment.name}</a>
+                <small>{formatAttachmentSize(attachment.size)}</small>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <ImageViewer attachment={enlarged} onClose={() => setEnlarged(undefined)} texts={texts} />
+    </>
+  );
+}
+
+function ImageViewer({ attachment, onClose, texts }: { attachment?: ChatAttachment; onClose: () => void; texts: ChatTexts }) {
+  const portalContainer = useQuasselPortalContainer();
+  return (
+    <Dialog.Root open={attachment !== undefined} onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal container={portalContainer}>
+        <Dialog.Backdrop className="qsl:fixed qsl:inset-0 qsl:z-[120] qsl:bg-black/75" data-quassel="" />
+        <Dialog.Popup
+          className="qsl:fixed qsl:top-1/2 qsl:left-1/2 qsl:z-[121] qsl:flex qsl:max-w-[94vw] qsl:-translate-x-1/2 qsl:-translate-y-1/2 qsl:flex-col qsl:items-center qsl:gap-2 qsl:outline-none"
+          aria-label={attachment?.name}
+          data-quassel=""
+          data-chat="image-viewer"
+        >
+          {attachment && <>
+            <img className="qsl:block qsl:max-h-[calc(100vh-6rem)] qsl:max-w-full qsl:rounded-md qsl:bg-background qsl:object-contain qsl:shadow-lg" src={attachment.url} alt={attachment.name} />
+            <div className="qsl:flex qsl:items-center qsl:gap-4 qsl:text-sm qsl:text-white">
+              <span className="qsl:[overflow-wrap:anywhere]">{attachment.name}</span>
+              <a className="qsl:underline" href={attachmentDownloadUrl(attachment.url)} download={attachment.name}>{texts.downloadAttachment ?? defaultTexts.downloadAttachment}</a>
+              <Dialog.Close className="qsl:cursor-pointer qsl:underline">{texts.close}</Dialog.Close>
+            </div>
+          </>}
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

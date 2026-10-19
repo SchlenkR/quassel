@@ -50,6 +50,8 @@ export interface ChatTexts {
   attachFiles: string;
   attachFilesHint: string;
   removeAttachment: string;
+  enlargeImage?: string;
+  downloadAttachment?: string;
   attachmentPreparing: string;
   attachmentsPreparing: string;
   attachmentReadFailed: string;
@@ -122,6 +124,8 @@ export const englishTexts: Required<ChatTexts> = {
   attachFiles: "Attach files",
   attachFilesHint: "Attach files (up to {count} files, {size} in total)",
   removeAttachment: "Remove {name}",
+  enlargeImage: "Enlarge {name}",
+  downloadAttachment: "Download",
   attachmentPreparing: "Preparing ...",
   attachmentsPreparing: "Preparing attachments ...",
   attachmentReadFailed: "The file could not be read. Remove it and add it again.",
@@ -190,6 +194,8 @@ export const germanTexts: Required<ChatTexts> = {
   attachFiles: "Dateien anhängen",
   attachFilesHint: "Dateien anhängen (bis zu {count} Dateien, insgesamt {size})",
   removeAttachment: "{name} entfernen",
+  enlargeImage: "{name} vergrößern",
+  downloadAttachment: "Herunterladen",
   attachmentPreparing: "Wird vorbereitet ...",
   attachmentsPreparing: "Anhänge werden vorbereitet ...",
   attachmentReadFailed: "Die Datei konnte nicht gelesen werden. Den Anhang entfernen und erneut hinzufügen.",

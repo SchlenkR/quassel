@@ -11,8 +11,17 @@ const tool = (key: string, name: string, args: string, result: string | undefine
   tool: { id: key, name, arguments: args, result, isError },
 });
 
+const loginPage = `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="300" viewBox="0 0 480 300"><rect width="480" height="300" fill="#f1f5f9"/><rect x="140" y="40" width="200" height="220" rx="10" fill="#fff" stroke="#cbd5e1"/><rect x="165" y="80" width="150" height="24" rx="4" fill="#e2e8f0"/><rect x="165" y="120" width="150" height="24" rx="4" fill="#e2e8f0"/><rect x="165" y="170" width="150" height="30" rx="6" fill="#3b82f6"/><rect x="190" y="220" width="100" height="8" rx="4" fill="#cbd5e1"/></svg>`;
+
 export const research: Message[] = [
-  { key: "u1", role: "user", text: "Which of our open issues are about the login page?", closed: true, at: at(12) },
+  {
+    key: "u1",
+    role: "user",
+    text: "Which of our open issues are about the login page?",
+    closed: true,
+    at: at(12),
+    attachments: [{ name: "login-page.svg", mediaType: "image/svg+xml", size: 498, url: `data:image/svg+xml,${encodeURIComponent(loginPage)}` }],
+  },
   { key: "th1", role: "thinking", text: "Search the tracker, then group the hits by topic.", closed: true, at: at(12) },
   tool("t1", "search_issues", '{ "query": "login" }', '{ "hits": 7 }', 12),
   tool("t2", "read_issue", '{ "id": 412 }', '{ "title": "Password reset mail arrives late" }', 12),

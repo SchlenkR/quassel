@@ -13,6 +13,10 @@ const globals = {
   Event: window.Event,
   ResizeObserver: window.ResizeObserver,
   getComputedStyle: window.getComputedStyle.bind(window),
+  requestAnimationFrame: window.requestAnimationFrame.bind(window),
+  cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
+  MutationObserver: window.MutationObserver,
+  KeyboardEvent: window.KeyboardEvent,
   IS_REACT_ACT_ENVIRONMENT: true,
 };
 

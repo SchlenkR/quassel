@@ -48,7 +48,7 @@ const collapseAtBottomFrom = 11;
 
 const maxAnnouncementsAtOnce = 2;
 
-const bubbleBodyClasses = "qsl:relative qsl:max-w-[86%] qsl:px-3 qsl:py-2 qsl:leading-[var(--qsl-chat-line-height,1.5)] qsl:[overflow-wrap:anywhere] qsl:@max-[620px]/chat:max-w-full";
+const bubbleBodyClasses = "qsl:relative qsl:max-w-[86%] qsl:px-3 qsl:py-2 qsl:leading-[var(--qsl-chat-line-height,1.65)] qsl:[overflow-wrap:anywhere] qsl:@max-[620px]/chat:max-w-full";
 
 function isStep(message?: Message): boolean {
   return !!message && (message.role === "thinking" || message.role === "tool");
@@ -811,7 +811,7 @@ function Bubble({
   </>;
   const cursor = message.role === "assistant" && message.textCursor ? JSON.stringify(message.textCursor) : undefined;
   if (!useBubble) return (
-    <div data-chat-text-cursor={cursor} className={cn(stepSpacing, "qsl:group qsl:relative qsl:w-full qsl:leading-[var(--qsl-chat-line-height,1.5)] qsl:text-foreground")} data-message="answer">
+    <div data-chat-text-cursor={cursor} className={cn(stepSpacing, "qsl:group qsl:relative qsl:w-full qsl:leading-[var(--qsl-chat-line-height,1.65)] qsl:text-foreground")} data-message="answer">
       {content}
     </div>
   );

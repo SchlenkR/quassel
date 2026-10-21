@@ -372,7 +372,7 @@ for the whole page or on a wrapper for one chat.
 Plus the scales from the Tailwind theme: `--qsl-spacing` (0.235rem, compact unit),
 `--qsl-text-xs` to `--qsl-text-xl` including `--line-height` (derived from the text size, see
 [Text size](#text-size)) and the chat dimensions `--qsl-chat-font-size` (`--qsl-base`),
-`--qsl-chat-line-height` (1.5),
+`--qsl-chat-line-height` (1.65),
 `--qsl-chat-message-gap` (10px), `--qsl-chat-dense-message-gap` (3px),
 `--qsl-chat-content-max-width`, `--qsl-chat-horizontal-padding` (24px; these six are also set
 by `appearance`, `maxWidth` and `horizontalPadding`). `appearance` additionally accepts

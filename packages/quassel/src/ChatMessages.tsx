@@ -2,7 +2,7 @@ import { cn } from "./ui/cn";
 import { type CSSProperties, ReactNode, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Dialog } from "@base-ui/react/dialog";
-import { createChatScroll } from "./chat-scroll";
+import { createChatScroll, defaultJumpToEndThreshold } from "./chat-scroll";
 import { ChatAnnouncement, ChatAttachment, DetailMode, Message, PendingAction, prettyJson, stepState, ToolInfo, TranscriptMode } from "./types";
 import { ChatTexts, defaultTexts, fillText } from "./texts";
 import { Markdown, MarkdownCodeBlocks, MarkdownLinks, markdownPlainText, type LinkClickHandler } from "./Markdown";
@@ -89,7 +89,7 @@ export function ChatMessages({
   scrollerRef,
   maxWidth,
   horizontalPadding,
-  jumpToEndThreshold = 120,
+  jumpToEndThreshold = defaultJumpToEndThreshold,
   appearance,
   timestampOptions,
   codeBlockOptions,
@@ -160,7 +160,9 @@ export function ChatMessages({
   const scrollbarDragging = useRef(false);
   const touchY = useRef<number | undefined>(undefined);
   const [showJumpToEnd, setShowJumpToEnd] = useState(false);
-  const [scroll] = useState(() => createChatScroll());
+  const endThreshold = useRef(jumpToEndThreshold);
+  useLayoutEffect(() => { endThreshold.current = jumpToEndThreshold; }, [jumpToEndThreshold]);
+  const [scroll] = useState(() => createChatScroll((following) => setShowJumpToEnd(!following), () => endThreshold.current));
   const sendScope = useContext(ChatSendContext);
   const dock = useContext(ChatActionDock);
   const [now, setNow] = useState(() => Date.now());
@@ -193,15 +195,11 @@ export function ChatMessages({
         : markdownPlainText(message.text))
       .forEach((text) => text && announceText(text));
   }, [messages, selected, running, announce]);
-  const updateJumpVisibility = useCallback((viewport: HTMLDivElement) => {
-    if (viewport.clientHeight > 0) setShowJumpToEnd(viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop > jumpToEndThreshold);
-  }, [jumpToEndThreshold]);
   useLayoutEffect(() => sendScope?.subscribe(() => {
     const viewport = scrollArea.current;
     if (!viewport) return;
     scroll.jump(viewport);
-    updateJumpVisibility(viewport);
-  }), [sendScope, scroll, updateJumpVisibility]);
+  }), [sendScope, scroll]);
 
   const pauseUp = (viewport: HTMLDivElement, target: EventTarget) => {
     let element = target instanceof Element ? target : null;
@@ -216,9 +214,8 @@ export function ChatMessages({
     const area = scrollArea.current;
     if (area) {
       scroll.scroll(area, scrollbarDragging.current);
-      updateJumpVisibility(area);
     }
-  }, [scroll, updateJumpVisibility]);
+  }, [scroll]);
 
   useEffect(() => {
     const finishDrag = () => {
@@ -239,7 +236,6 @@ export function ChatMessages({
     if (!area) return;
     const align = () => {
       scroll.layout(area, scrollbarDragging.current);
-      updateJumpVisibility(area);
     };
     align();
     const observer = new ResizeObserver(align);
@@ -441,7 +437,6 @@ export function ChatMessages({
           <Button aria-label={allTexts.jumpToEnd} className="qsl:pointer-events-auto qsl:rounded-full qsl:border qsl:border-primary-foreground/20 qsl:shadow-md" size="icon" title={allTexts.jumpToEnd} variant="default" onClick={() => {
             if (scrollArea.current) {
               scroll.jump(scrollArea.current);
-              updateJumpVisibility(scrollArea.current);
             }
           }}>
             <ChevronDownIcon />

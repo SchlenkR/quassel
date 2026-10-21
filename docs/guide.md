@@ -155,7 +155,7 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
   announce?: false | ((announcement: ChatAnnouncement) => string | undefined);
   scrollerRef?: (element: HTMLDivElement | null) => void;
   maxWidth?; horizontalPadding?; appearance?;
-  jumpToEndThreshold?: number;          // default 120px
+  jumpToEndThreshold?: number;          // default 120px; tolerance for following and the jump button
   timestampOptions?: TimestampOptions;  // position "aside" | "above", fontScale, format, locale, timeZone, showDaySeparators
   codeBlockOptions?: CodeBlockOptions;  // wrap, maxHeight, showCopyButton
   bubbleOptions?: BubbleOptions;        // userBackgroundFullWidth, variant, maxWidth, sides, showSender, senderLabel
@@ -164,9 +164,11 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
 }
 ```
 
-Its own scroll container: follows the end while you are at the bottom, pauses when scrolling up
-(wheel, keys, touch, scrollbar, or a native scroll over unchanged content) and then shows a
-jump-to-end button; content that grows or shrinks does not pause it. It carries the stable
+Its own scroll container: follows the end while you are within `jumpToEndThreshold` pixels
+of the bottom. Scrolling beyond that tolerance pauses following and immediately shows the
+jump-to-end button. Returning within the tolerance resumes following and hides the button.
+Wheel, keys, touch, scrollbar, and native scrolling use the same boundary; content growth
+does not pause following. It carries the stable
 attribute `data-quassel-transcript`; it gets custom classes through `scrollerClassName`, and
 `scrollerRef` delivers the element itself.
 

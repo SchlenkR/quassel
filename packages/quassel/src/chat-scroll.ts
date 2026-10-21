@@ -4,9 +4,10 @@ interface ScrollViewport {
   readonly clientHeight: number;
 }
 
-const atEnd = (viewport: ScrollViewport) => viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 24;
+export const defaultJumpToEndThreshold = 120;
 
-export function createChatScroll(onFollowChange: (following: boolean) => void = () => {}) {
+export function createChatScroll(onFollowChange: (following: boolean) => void = () => {}, getThreshold = () => defaultJumpToEndThreshold) {
+  const atEnd = (viewport: ScrollViewport) => viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= getThreshold();
   let following = true;
   let lastTop = 0;
   let lastHeight = 0;
@@ -27,18 +28,18 @@ export function createChatScroll(onFollowChange: (following: boolean) => void = 
   const layout = (viewport: ScrollViewport, dragging = false) => {
     if (viewport.clientHeight <= 0) return;
     if (movedUp(viewport, dragging) && !atEnd(viewport)) follow(false);
+    if (atEnd(viewport)) follow(true);
     if (following) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
-    else if (viewport.scrollHeight <= viewport.clientHeight) follow(true);
     remember(viewport);
   };
   return {
     layout,
     pause(viewport: ScrollViewport) {
-      if (viewport.scrollHeight > viewport.clientHeight) follow(false);
+      if (viewport.clientHeight > 0) follow(atEnd(viewport));
     },
     scroll(viewport: ScrollViewport, dragging = false) {
       if (viewport.clientHeight <= 0) return;
-      if (atEnd(viewport) && viewport.scrollTop > lastTop) follow(true);
+      if (atEnd(viewport)) follow(true);
       else if (movedUp(viewport, dragging) && !atEnd(viewport)) follow(false);
       remember(viewport);
     },

@@ -166,9 +166,10 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
 
 Its own scroll container: follows the end while you are within `jumpToEndThreshold` pixels
 of the bottom. Scrolling beyond that tolerance pauses following and immediately shows the
-jump-to-end button. Returning within the tolerance resumes following and hides the button.
-Wheel, keys, touch, scrollbar, and native scrolling use the same boundary; content growth
-does not pause following. It carries the stable
+jump-to-end button. An upward wheel, key, or touch gesture pauses at once, also within the
+tolerance and while content keeps growing before its scroll event arrives. Scrolling back down
+within the tolerance resumes following and hides the button. Scrollbar and native scrolling
+use the same boundary; content growth does not pause following. It carries the stable
 attribute `data-quassel-transcript`; it gets custom classes through `scrollerClassName`, and
 `scrollerRef` delivers the element itself.
 

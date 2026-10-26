@@ -46,6 +46,7 @@ export interface MessageAction {
 
 export interface MessageActionsOptions {
   copy?: boolean | ((message: Message) => boolean);
+  copyFormatted?: boolean | ((message: Message) => boolean);
   edit?: (message: Message) => void | Promise<void>;
   retry?: (message: Message) => void | Promise<void>;
   custom?: (message: Message) => readonly MessageAction[];

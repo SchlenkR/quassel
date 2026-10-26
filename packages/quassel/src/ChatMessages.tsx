@@ -733,6 +733,7 @@ function Bubble({
   messageActions?: MessageActionsOptions;
 }) {
   const stepSpacing = dense ? denseStepClasses : stepClasses;
+  const textRef = useRef<HTMLDivElement>(null);
 
   if (message.role === "thinking" || (message.role === "tool" && message.tool)) {
     if (detailMode === "compact") {
@@ -799,26 +800,26 @@ function Bubble({
   const content = <>
     {showSender && sender && <span className={cn("qsl:mb-[5px] qsl:table qsl:text-label qsl:leading-[1.45] qsl:font-semibold",
       useBubble && message.bubble && "qsl:rounded-full qsl:border qsl:border-white/30 qsl:bg-black/15 qsl:px-[7px] qsl:py-px qsl:tracking-[0.02em]")} data-chat="sender">{sender}</span>}
-    <Markdown text={message.text} streaming={message.role === "assistant" && !message.closed} />
+    <div data-chat="message-text" ref={textRef}><Markdown text={message.text} streaming={message.role === "assistant" && !message.closed} /></div>
     <MessageAttachments message={message} texts={texts} />
     {message.steered && <small className="qsl:mt-1 qsl:block qsl:text-label qsl:leading-[1.45] qsl:opacity-70" data-chat="steered">{texts.steered}</small>}
-    <MessageActions message={message} options={messageActions} texts={texts} />
   </>;
   const cursor = message.role === "assistant" && message.textCursor ? JSON.stringify(message.textCursor) : undefined;
   if (!useBubble) return (
-    <div data-chat-text-cursor={cursor} className={cn(stepSpacing, "qsl:group qsl:relative qsl:w-full qsl:leading-[var(--qsl-chat-line-height,1.65)] qsl:text-foreground")} data-message="answer">
+    <div data-chat-text-cursor={cursor} className={cn(stepSpacing, "qsl:group/message qsl:relative qsl:w-full qsl:leading-[var(--qsl-chat-line-height,1.65)] qsl:text-foreground")} data-message="answer">
       {content}
+      <MessageActions contentRef={textRef} message={message} options={messageActions} side={side} texts={texts} />
     </div>
   );
   const fullBackground = message.role === "user" && bubbleOptions?.userBackgroundFullWidth !== false;
   const surfaceClasses = message.bubble
     ? "qsl:rounded-lg"
     : "qsl:rounded-[var(--qsl-bubble-radius,10px_10px_4px_10px)] qsl:border qsl:border-border qsl:bg-secondary qsl:in-data-[tone=material]:rounded-[var(--qsl-bubble-radius,9px)] qsl:in-data-[tone=material]:border-glass-edge/20 qsl:in-data-[tone=material]:bg-primary/15";
-  return (
-    <div data-chat-text-cursor={cursor} className={cn(stepSpacing, "qsl:relative qsl:flex", side === "end" ? "qsl:justify-end" : "qsl:justify-start")}
+  return <div className={cn(stepSpacing, "qsl:group/message")}>
+    <div data-chat-text-cursor={cursor} className={cn("qsl:relative qsl:flex", side === "end" ? "qsl:justify-end" : "qsl:justify-start")}
       data-message={message.role === "user" && !message.bubble && variant === "default" ? "user" : "bubble"} data-side={side} data-background-width={fullBackground ? "full" : "content"}>
       {fullBackground && <div aria-hidden="true" className={cn("qsl:pointer-events-none qsl:absolute qsl:inset-0", surfaceClasses)} data-chat="bubble-background" style={{ background: message.bubble?.color }} />}
-      <div className={cn(bubbleBodyClasses, "qsl:group", !fullBackground && surfaceClasses, fullBackground && !message.bubble && "qsl:border qsl:border-transparent", message.bubble
+      <div className={cn(bubbleBodyClasses, !fullBackground && surfaceClasses, fullBackground && !message.bubble && "qsl:border qsl:border-transparent", message.bubble
         ? "qsl:text-white qsl:[--qsl-scroll-cover:var(--qsl-primary)]"
         : "qsl:text-foreground qsl:[--qsl-scroll-cover:var(--qsl-secondary)]")}
         data-chat="bubble-content"
@@ -827,7 +828,8 @@ function Bubble({
         {content}
       </div>
     </div>
-  );
+    <MessageActions contentRef={textRef} message={message} options={messageActions} side={side} texts={texts} />
+  </div>;
 }
 
 function ActionContent({

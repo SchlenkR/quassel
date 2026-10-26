@@ -92,3 +92,12 @@ test("appearance dimensions reach nested chats and timestamp sizing has an indep
   assert.equal(panel.style.getPropertyValue("--qsl-tool-row-padding"), "3px");
   assert.match(container.querySelector<HTMLElement>('[data-quassel-transcript]')!.parentElement!.style.getPropertyValue("--qsl-timestamp-font-size"), /0\.75/);
 });
+
+test("copy actions sit below the message: Markdown for inputs, Markdown and formatted for answers", () => {
+  render();
+  const labels = (actions: Element) => [...actions.querySelectorAll("button")].map((button) => button.getAttribute("aria-label"));
+  const userActions = container.querySelector('[data-message="user"]')!.parentElement!.querySelector('[data-chat="message-actions"]')!;
+  assert.equal(userActions.closest('[data-chat="bubble-content"]'), null);
+  assert.deepEqual(labels(userActions), ["Copy as Markdown"]);
+  assert.deepEqual(labels(container.querySelector('[data-message="answer"] [data-chat="message-actions"]')!), ["Copy as Markdown", "Copy with formatting"]);
+});

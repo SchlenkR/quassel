@@ -1,3 +1,4 @@
+import { markdownPlainText } from "./Markdown";
 import { useEffect, useRef, useState } from "react";
 
 export function useChatAction() {
@@ -31,4 +32,14 @@ export function useChatAction() {
 export async function copyChatText(text: string, unavailable: string) {
   if (!navigator.clipboard) throw new Error(unavailable);
   await navigator.clipboard.writeText(text);
+}
+
+export async function copyChatHtml(element: HTMLElement, text: string, unavailable: string) {
+  if (!navigator.clipboard) throw new Error(unavailable);
+  if (typeof ClipboardItem === "undefined" || !navigator.clipboard.write) return navigator.clipboard.writeText(text);
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll("button").forEach((button) => button.remove());
+  clone.querySelectorAll("[class]").forEach((node) => node.removeAttribute("class"));
+  const blob = (content: string, type: string) => new Blob([content], { type });
+  await navigator.clipboard.write([new ClipboardItem({ "text/html": blob(clone.innerHTML, "text/html"), "text/plain": blob(markdownPlainText(text), "text/plain") })]);
 }

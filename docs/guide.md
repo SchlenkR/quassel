@@ -159,7 +159,7 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
   timestampOptions?: TimestampOptions;  // position "aside" | "above", fontScale, format, locale, timeZone, showDaySeparators
   codeBlockOptions?: CodeBlockOptions;  // wrap, maxHeight, showCopyButton
   bubbleOptions?: BubbleOptions;        // userBackgroundFullWidth, variant, maxWidth, sides, showSender, senderLabel
-  messageActions?: MessageActionsOptions; // copy, edit, retry, custom
+  messageActions?: MessageActionsOptions; // copy, copyFormatted, edit, retry, custom
   toolElapsedThreshold?: number | false;  // default 3000 ms until running tools show their elapsed time, false = never
 }
 ```
@@ -311,7 +311,7 @@ with an icon collapse their label.
 - `PendingActionCard`, `StepPopover`, `MessageActions`, `WorkingScenes` (`label?`, `compact?`).
 - Helpers: `stepState`, `applyEvent`, `fillText`, `formatAttachmentSize`, `encodeAttachment`,
   `validateAttachmentSelection`, `attachmentCapabilityError`, `timestampLabel`, `useChatAction`,
-  `copyChatText`, `createChatScroll`, `ChatSendContext`, `formatElapsed(ms, texts)` and
+  `copyChatText`, `copyChatHtml`, `createChatScroll`, `ChatSendContext`, `formatElapsed(ms, texts)` and
   `useElapsed(startMs)` (elapsed time on the shared tick, e.g. for custom `renderTool` renderings).
 
 ### Texts

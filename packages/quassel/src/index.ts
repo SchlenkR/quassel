@@ -17,7 +17,7 @@ export { PendingActionCard } from "./PendingActionCard";
 export { StepPopover } from "./StepPopover";
 export { WorkingScenes, type WorkingScenesProps } from "./WorkingScenes";
 export { announce } from "./announce";
-export { useChatAction, copyChatText } from "./useChatAction";
+export { useChatAction, copyChatText, copyChatHtml } from "./useChatAction";
 export { createChatScroll } from "./chat-scroll";
 export { ChatSendContext, createChatSendScope, type ChatSendScope } from "./ChatSendContext";
 export { messageDate, timestampDay, timestampLabel } from "./timestamps";

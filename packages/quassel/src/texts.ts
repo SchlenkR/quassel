@@ -36,6 +36,7 @@ export interface ChatTexts {
   showTimestamps: string;
   hideTimestamps: string;
   copyMessage: string;
+  copyFormatted?: string;
   editMessage: string;
   retryMessage: string;
   copyCode: string;
@@ -109,7 +110,8 @@ export const englishTexts: Required<ChatTexts> = {
   showLatestExchange: "Show latest reply between inputs",
   showTimestamps: "Show timestamps",
   hideTimestamps: "Hide timestamps",
-  copyMessage: "Copy message",
+  copyMessage: "Copy as Markdown",
+  copyFormatted: "Copy with formatting",
   editMessage: "Edit message",
   retryMessage: "Request answer again",
   copyCode: "Copy code",
@@ -179,7 +181,8 @@ export const germanTexts: Required<ChatTexts> = {
   showLatestExchange: "Letzte Antwort zwischen den Eingaben anzeigen",
   showTimestamps: "Zeitstempel anzeigen",
   hideTimestamps: "Zeitstempel ausblenden",
-  copyMessage: "Nachricht kopieren",
+  copyMessage: "Als Markdown kopieren",
+  copyFormatted: "Mit Formatierung kopieren",
   editMessage: "Nachricht bearbeiten",
   retryMessage: "Antwort erneut anfordern",
   copyCode: "Code kopieren",

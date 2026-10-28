@@ -49,6 +49,6 @@ export function MessageActions({ message, options, texts, contentRef, side = mes
           }}>{copied ? <CheckIcon /> : item.icon ?? item.label}</Button>;
       })}
     </div>}
-    {action.error && <p className="qsl:mt-2 qsl:text-sm qsl:text-destructive" role="alert">{action.error}</p>}
+    {action.error && <p className="qsl:mt-2 qsl:text-small qsl:text-destructive" role="alert">{action.error}</p>}
   </>;
 }

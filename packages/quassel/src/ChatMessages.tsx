@@ -23,7 +23,7 @@ import { useQuasselComponents, useQuasselPortalContainer } from "./QuasselProvid
 const stepClasses = "qsl:mt-[var(--qsl-chat-message-gap,10px)]";
 const denseStepClasses = "qsl:mt-[var(--qsl-chat-dense-message-gap,3px)]";
 
-const traceClasses = "qsl:flex qsl:w-full qsl:gap-2 qsl:py-[var(--qsl-tool-row-padding,1px)] qsl:pl-6 qsl:text-left qsl:text-trace qsl:leading-[1.375] qsl:text-muted-foreground";
+const traceClasses = "qsl:flex qsl:w-full qsl:gap-2 qsl:py-[var(--qsl-tool-row-padding,1px)] qsl:pl-6 qsl:text-left qsl:text-small qsl:text-muted-foreground";
 const traceButtonClasses = "qsl:cursor-pointer qsl:rounded-md qsl:pr-2 qsl:transition-colors qsl:hover:bg-secondary qsl:hover:text-foreground qsl:focus-visible:bg-secondary qsl:focus-visible:text-foreground qsl:focus-visible:outline-none";
 const traceIconClasses = "qsl:mt-0.5 qsl:flex-none qsl:opacity-60";
 const traceErrorIconClasses = "qsl:mt-0.5 qsl:flex-none qsl:text-destructive qsl:opacity-100";
@@ -36,7 +36,7 @@ const rowLineClasses = cn(traceLineClasses, "qsl:self-auto");
 
 const chipClasses = cn(
   "qsl:inline-flex qsl:max-w-[220px] qsl:items-center qsl:gap-[5px] qsl:rounded-full qsl:border qsl:border-border-soft qsl:px-2.5 qsl:py-0.5",
-  "qsl:text-meta qsl:leading-[1.6] qsl:text-muted-foreground qsl:transition-colors",
+  "qsl:text-small qsl:text-muted-foreground qsl:transition-colors",
   "qsl:data-[state=running]:border-[color-mix(in_srgb,var(--qsl-primary)_40%,var(--qsl-border-soft))]",
   "qsl:data-[state=thinking]:border-[color-mix(in_srgb,var(--qsl-primary)_40%,var(--qsl-border-soft))]",
   "qsl:data-[state=error]:border-[color-mix(in_srgb,var(--qsl-destructive)_45%,var(--qsl-border-soft))]",
@@ -48,7 +48,7 @@ const collapseAtBottomFrom = 11;
 
 const maxAnnouncementsAtOnce = 2;
 
-const bubbleBodyClasses = "qsl:relative qsl:max-w-[86%] qsl:px-3 qsl:py-2 qsl:leading-[var(--qsl-chat-line-height,1.65)] qsl:[overflow-wrap:anywhere] qsl:@max-[620px]/chat:max-w-full";
+const bubbleBodyClasses = "qsl:relative qsl:max-w-[86%] qsl:px-3 qsl:py-2 qsl:text-body qsl:[overflow-wrap:anywhere] qsl:@max-[620px]/chat:max-w-full";
 
 function isStep(message?: Message): boolean {
   return !!message && (message.role === "thinking" || message.role === "tool");
@@ -274,7 +274,7 @@ export function ChatMessages({
       ? (
         <div className={cn("qsl:flex", timestampOptions?.position === "above" ? "qsl:flex-col qsl:items-stretch qsl:gap-1" : "qsl:items-baseline qsl:gap-2", dense ? denseStepClasses : stepClasses)}
           data-chat="timestamped" data-timestamp-position={timestampOptions?.position ?? "aside"} key={`time-${key}`}>
-          <time dateTime={messageDate(at)?.toISOString()} className={cn("qsl:flex-none qsl:text-timestamp qsl:leading-[1.375] qsl:tabular-nums qsl:text-muted-foreground qsl:opacity-85",
+          <time dateTime={messageDate(at)?.toISOString()} className={cn("qsl:flex-none qsl:text-small qsl:tabular-nums qsl:text-muted-foreground qsl:opacity-85",
             timestampOptions?.position === "above" ? "qsl:self-start" : timestampOptions?.format && timestampOptions.format !== "time" ? "qsl:w-[clamp(60px,20%,120px)]" : "qsl:min-w-[5ch] qsl:whitespace-nowrap")}>
             {messageDate(at) ? timestampLabel(messageDate(at)!, timestampOptions, now) : ""}
           </time>
@@ -329,7 +329,7 @@ export function ChatMessages({
       const day = timestampDay(date, timestampOptions);
       if (day.key !== lastDay) {
         closeGroup();
-        blocks.push(<div className={cn(stepClasses, "qsl:text-center qsl:text-xs qsl:text-muted-foreground")} data-chat="day-separator" data-day={day.key} key={`day-${message.key}`}>{day.label}</div>);
+        blocks.push(<div className={cn(stepClasses, "qsl:text-center qsl:text-small qsl:text-muted-foreground")} data-chat="day-separator" data-day={day.key} key={`day-${message.key}`}>{day.label}</div>);
         lastDay = day.key;
       }
     }
@@ -379,12 +379,11 @@ export function ChatMessages({
       ...appearanceStyle(appearance),
       "--qsl-chat-content-max-width": typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth,
       "--qsl-chat-horizontal-padding": typeof horizontalPadding === "number" ? `${horizontalPadding}px` : horizontalPadding,
-      "--qsl-timestamp-font-size": timestampOptions?.fontScale === undefined ? undefined : `calc(var(--qsl-base) * ${timestampOptions.fontScale})`,
     } as CSSProperties}>
       <div
         aria-label={allTexts.transcript}
         className={cn(
-          "qsl:min-h-0 qsl:flex-1 qsl:cursor-default qsl:overflow-y-auto qsl:overscroll-contain qsl:text-chat qsl:text-foreground",
+          "qsl:min-h-0 qsl:flex-1 qsl:cursor-default qsl:overflow-y-auto qsl:overscroll-contain qsl:text-body qsl:text-foreground",
           "qsl:[--qsl-fade-edge:calc(100%_-_var(--qsl-composer-height,0px))]",
           "qsl:[-webkit-mask-image:linear-gradient(to_bottom,#000_calc(var(--qsl-fade-edge)_-_40px),transparent_calc(var(--qsl-fade-edge)_+_16px))]",
           "qsl:[mask-image:linear-gradient(to_bottom,#000_calc(var(--qsl-fade-edge)_-_40px),transparent_calc(var(--qsl-fade-edge)_+_16px))]",
@@ -444,7 +443,7 @@ export function ChatMessages({
         </div>
       )}
       {dock && openActions.length > 0 && createPortal(
-        <div className="qsl:flex qsl:flex-col qsl:gap-[var(--qsl-chat-dense-message-gap,3px)] qsl:text-chat qsl:text-foreground" style={appearanceStyle(appearance)}>
+        <div className="qsl:flex qsl:flex-col qsl:gap-[var(--qsl-chat-dense-message-gap,3px)] qsl:text-body qsl:text-foreground" style={appearanceStyle(appearance)}>
           {openActions.map((message) => (
             <div key={message.key}>
               <ActionContent action={message.action} onDismissAction={onDismissAction} renderAction={renderAction} text={message.text} texts={allTexts} />
@@ -760,9 +759,9 @@ function Bubble({
           <div className={cn(traceLineClasses, thinking && "qsl:italic qsl:whitespace-pre-wrap")}>{line}</div>
           {tool && (
             <div className="qsl:mt-0.5 qsl:border-l-2 qsl:border-border-soft qsl:pl-2">
-              <pre className="qsl:mb-0.5 qsl:max-h-[208px] qsl:overflow-auto qsl:overscroll-contain qsl:font-mono qsl:text-meta qsl:leading-[1.375] qsl:break-all qsl:whitespace-pre-wrap qsl:opacity-80">{toolArgumentsText(tool)}</pre>
+              <pre className="qsl:mb-0.5 qsl:max-h-[208px] qsl:overflow-auto qsl:overscroll-contain qsl:font-mono qsl:text-small qsl:break-all qsl:whitespace-pre-wrap qsl:opacity-80">{toolArgumentsText(tool)}</pre>
               {tool.result !== undefined && (
-                <pre className={cn("qsl:mb-0.5 qsl:max-h-[208px] qsl:overflow-auto qsl:overscroll-contain qsl:font-mono qsl:text-meta qsl:leading-[1.375] qsl:break-all qsl:whitespace-pre-wrap qsl:opacity-80",
+                <pre className={cn("qsl:mb-0.5 qsl:max-h-[208px] qsl:overflow-auto qsl:overscroll-contain qsl:font-mono qsl:text-small qsl:break-all qsl:whitespace-pre-wrap qsl:opacity-80",
                   tool.isError && "qsl:text-destructive qsl:opacity-100")}>{prettyJson(tool.result)}</pre>
               )}
             </div>
@@ -782,7 +781,7 @@ function Bubble({
 
   if (message.role === "system") {
     return (
-      <div className={cn(stepSpacing, "qsl:border-l-2 qsl:border-destructive/50 qsl:pl-3 qsl:text-sm qsl:text-muted-foreground")} data-message="system">
+      <div className={cn(stepSpacing, "qsl:border-l-2 qsl:border-destructive/50 qsl:pl-3 qsl:text-small qsl:text-muted-foreground")} data-message="system">
         <Markdown text={message.text} />
         <MessageAttachments message={message} texts={texts} />
       </div>
@@ -798,15 +797,15 @@ function Bubble({
   const sender = bubbleOptions?.senderLabel?.(message) ?? message.bubble?.label ?? message.sender;
   const showSender = bubbleOptions?.showSender ?? (!!message.bubble?.label && !plain);
   const content = <>
-    {showSender && sender && <span className={cn("qsl:mb-[5px] qsl:table qsl:text-label qsl:leading-[1.45] qsl:font-semibold",
+    {showSender && sender && <span className={cn("qsl:mb-[5px] qsl:table qsl:text-small qsl:font-semibold",
       useBubble && message.bubble && "qsl:rounded-full qsl:border qsl:border-white/30 qsl:bg-black/15 qsl:px-[7px] qsl:py-px qsl:tracking-[0.02em]")} data-chat="sender">{sender}</span>}
     <div data-chat="message-text" ref={textRef}><Markdown text={message.text} streaming={message.role === "assistant" && !message.closed} /></div>
     <MessageAttachments message={message} texts={texts} />
-    {message.steered && <small className="qsl:mt-1 qsl:block qsl:text-label qsl:leading-[1.45] qsl:opacity-70" data-chat="steered">{texts.steered}</small>}
+    {message.steered && <small className="qsl:mt-1 qsl:block qsl:text-small qsl:opacity-70" data-chat="steered">{texts.steered}</small>}
   </>;
   const cursor = message.role === "assistant" && message.textCursor ? JSON.stringify(message.textCursor) : undefined;
   if (!useBubble) return (
-    <div data-chat-text-cursor={cursor} className={cn(stepSpacing, "qsl:group/message qsl:relative qsl:w-full qsl:leading-[var(--qsl-chat-line-height,1.65)] qsl:text-foreground")} data-message="answer">
+    <div data-chat-text-cursor={cursor} className={cn(stepSpacing, "qsl:group/message qsl:relative qsl:w-full qsl:text-foreground")} data-message="answer">
       {content}
       <MessageActions contentRef={textRef} message={message} options={messageActions} side={side} texts={texts} />
     </div>
@@ -866,7 +865,7 @@ function MessageAttachments({ message, texts }: { message: Message; texts: ChatT
         {message.attachments.map((attachment, index) => {
           const isImage = attachment.mediaType.startsWith("image/");
           return (
-            <li className={cn("qsl:relative qsl:flex qsl:max-w-full qsl:min-w-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-lg qsl:border qsl:border-border qsl:text-sm", isImage ? "qsl:w-[320px]" : "qsl:w-[190px]")} key={`${attachment.url}-${index}`}>
+            <li className={cn("qsl:relative qsl:flex qsl:max-w-full qsl:min-w-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-lg qsl:border qsl:border-border qsl:text-small", isImage ? "qsl:w-[320px]" : "qsl:w-[190px]")} key={`${attachment.url}-${index}`}>
               {isImage && (
                 <button
                   type="button"
@@ -906,7 +905,7 @@ function ImageViewer({ attachment, onClose, texts }: { attachment?: ChatAttachme
         >
           {attachment && <>
             <img className="qsl:block qsl:max-h-[calc(100vh-6rem)] qsl:max-w-full qsl:rounded-md qsl:bg-background qsl:object-contain qsl:shadow-lg" src={attachment.url} alt={attachment.name} />
-            <div className="qsl:flex qsl:items-center qsl:gap-4 qsl:text-sm qsl:text-white">
+            <div className="qsl:flex qsl:items-center qsl:gap-4 qsl:text-small qsl:text-white">
               <span className="qsl:[overflow-wrap:anywhere]">{attachment.name}</span>
               <a className="qsl:underline" href={attachmentDownloadUrl(attachment.url)} download={attachment.name}>{texts.downloadAttachment ?? defaultTexts.downloadAttachment}</a>
               <Dialog.Close className="qsl:cursor-pointer qsl:underline">{texts.close}</Dialog.Close>

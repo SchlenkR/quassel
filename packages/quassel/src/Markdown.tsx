@@ -23,7 +23,7 @@ function CodeBlock({ children }: { children?: ReactNode }) {
   const action = useChatAction();
   const label = action.status === "done" ? texts.copied : texts.copyCode;
   const block = <pre ref={code} data-chat="code-block"
-    className={cn(scrollbar, "qsl:my-2 qsl:overflow-auto qsl:overscroll-contain qsl:rounded-lg qsl:bg-secondary qsl:px-3 qsl:py-2 qsl:font-mono qsl:text-[length:1em] qsl:leading-relaxed qsl:in-data-[tone=on-color]:bg-black/30 qsl:in-data-[tone=on-color]:text-inherit")}
+    className={cn(scrollbar, "qsl:overflow-auto qsl:overscroll-contain")}
     style={{ maxHeight: options?.maxHeight, whiteSpace: options?.wrap ? "pre-wrap" : undefined, overflowWrap: options?.wrap ? "anywhere" : undefined }}>{children}</pre>;
   if (!options?.showCopyButton) return block;
   return <div className="qsl:relative">
@@ -32,7 +32,7 @@ function CodeBlock({ children }: { children?: ReactNode }) {
       onClick={() => { void action.invoke(() => copyChatText(code.current?.textContent ?? "", texts.clipboardUnavailable), texts.actionFailed); }}>
       {action.status === "done" ? <CheckIcon /> : <CopyIcon />}
     </Button>
-    {action.error && <p className="qsl:text-sm qsl:text-destructive" role="alert">{action.error}</p>}
+    {action.error && <p className="qsl:text-small qsl:text-destructive" role="alert">{action.error}</p>}
   </div>;
 }
 
@@ -47,7 +47,6 @@ function MarkdownLink({ href, children }: { href?: string; children?: ReactNode 
   }
   return (
     <a
-      className="qsl:text-primary qsl:[text-underline-offset:2px] qsl:in-data-[tone=on-color]:text-inherit qsl:in-data-[tone=on-color]:underline"
       href={href}
       onClick={(event) => {
         if (href && onLinkClick?.(href, event.currentTarget.textContent ?? "")) {
@@ -68,43 +67,40 @@ const scrollbar = "qsl:[scrollbar-width:thin] qsl:[&::-webkit-scrollbar]:block q
 // The cover strips hide the cut at the edge; --qsl-scroll-cover comes from the surrounding bubble.
 const scrollCover = "qsl:bg-[linear-gradient(to_right,var(--qsl-scroll-cover,var(--qsl-background))_50%,transparent)_left/20px_100%_no-repeat_local,linear-gradient(to_left,var(--qsl-scroll-cover,var(--qsl-background))_50%,transparent)_right/20px_100%_no-repeat_local,linear-gradient(to_right,#00000047,transparent)_left/14px_100%_no-repeat_scroll,linear-gradient(to_left,#00000047,transparent)_right/14px_100%_no-repeat_scroll]";
 
-const headingClasses = "qsl:mt-3 qsl:mb-1 qsl:text-[length:1.1em] qsl:font-medium";
-const cellClasses = "qsl:max-w-[44ch] qsl:border qsl:border-border qsl:px-2 qsl:py-1 qsl:text-left qsl:align-top qsl:in-data-[tone=on-color]:border-white/35";
-
 const components: Components = {
-  h1: ({ children }) => <h1 className="qsl:mt-3 qsl:mb-1 qsl:text-[length:1.2em] qsl:font-semibold">{children}</h1>,
-  h2: ({ children }) => <h2 className={headingClasses}>{children}</h2>,
-  h3: ({ children }) => <h3 className={headingClasses}>{children}</h3>,
-  h4: ({ children }) => <h4 className="qsl:mt-2 qsl:mb-1 qsl:font-medium">{children}</h4>,
-  h5: ({ children }) => <h5 className="qsl:mt-2 qsl:mb-1 qsl:font-medium">{children}</h5>,
-  h6: ({ children }) => <h6 className="qsl:mt-2 qsl:mb-1 qsl:font-medium">{children}</h6>,
-  p: ({ children }) => <p className="qsl:[p+&]:mt-3">{children}</p>,
-  ul: ({ children }) => <ul className="qsl:my-3 qsl:list-disc qsl:pl-6 qsl:[li>&]:my-0">{children}</ul>,
-  ol: ({ children }) => <ol className="qsl:my-3 qsl:list-decimal qsl:pl-6 qsl:[li>&]:my-0">{children}</ol>,
-  li: ({ children }) => <li className="qsl:[li+&]:mt-1 qsl:marker:text-muted-foreground qsl:in-data-[tone=on-color]:marker:text-inherit">{children}</li>,
-  hr: () => <hr className="qsl:my-3 qsl:border-t qsl:border-border" />,
+  h1: ({ children }) => <h1>{children}</h1>,
+  h2: ({ children }) => <h2>{children}</h2>,
+  h3: ({ children }) => <h3>{children}</h3>,
+  h4: ({ children }) => <h4>{children}</h4>,
+  h5: ({ children }) => <h5>{children}</h5>,
+  h6: ({ children }) => <h6>{children}</h6>,
+  p: ({ children }) => <p>{children}</p>,
+  ul: ({ children }) => <ul>{children}</ul>,
+  ol: ({ children }) => <ol>{children}</ol>,
+  li: ({ children }) => <li>{children}</li>,
+  hr: () => <hr />,
   img: ({ src, alt }) => <img alt={alt} className="qsl:h-auto qsl:max-w-full" src={typeof src === "string" ? src : undefined} />,
   blockquote: ({ children }) => (
-    <blockquote className="qsl:my-1 qsl:border-l-2 qsl:border-border qsl:pl-3 qsl:text-muted-foreground qsl:in-data-[tone=on-color]:border-white/50 qsl:in-data-[tone=on-color]:text-inherit">{children}</blockquote>
+    <blockquote>{children}</blockquote>
   ),
-  strong: ({ children }) => <strong className="qsl:font-medium">{children}</strong>,
+  strong: ({ children }) => <strong>{children}</strong>,
   em: ({ children }) => <em>{children}</em>,
   a: ({ href, children }) => <MarkdownLink href={href}>{children}</MarkdownLink>,
   pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
   code: ({ children, className }) => (
-    <code className={cn(className, "qsl:rounded-sm qsl:bg-secondary qsl:px-1 qsl:py-0.5 qsl:font-mono qsl:text-[length:1em] qsl:[overflow-wrap:anywhere] qsl:in-data-[tone=on-color]:bg-white/20 qsl:in-data-[tone=on-color]:text-inherit", "qsl:[pre>&]:bg-transparent qsl:[pre>&]:p-0")}>{children}</code>
+    <code className={className}>{children}</code>
   ),
   // Without max-content the table shrinks to the container and stacks letters.
   table: ({ children }) => (
-    <div className={cn(scrollbar, scrollCover, "qsl:my-2 qsl:overflow-x-auto qsl:overscroll-x-contain")}>
-      <table className="qsl:w-max qsl:min-w-full qsl:border-collapse qsl:text-sm">{children}</table>
+    <div className={cn(scrollbar, scrollCover, "qsl:overflow-x-auto qsl:overscroll-x-contain")} data-quassel-table="">
+      <table className="qsl:w-max qsl:min-w-full qsl:border-collapse">{children}</table>
     </div>
   ),
   thead: ({ children }) => <thead>{children}</thead>,
   tbody: ({ children }) => <tbody>{children}</tbody>,
   tr: ({ children }) => <tr>{children}</tr>,
-  th: ({ children }) => <th className={cn(cellClasses, "qsl:bg-secondary qsl:font-medium qsl:in-data-[tone=on-color]:bg-white/15 qsl:in-data-[tone=on-color]:text-inherit")}>{children}</th>,
-  td: ({ children }) => <td className={cellClasses}>{children}</td>,
+  th: ({ children }) => <th>{children}</th>,
+  td: ({ children }) => <td>{children}</td>,
 };
 
 function transformUrl(url: string, allowUrl?: (url: string) => boolean, resolveUrl?: (url: string) => string) {
@@ -119,8 +115,8 @@ export function Markdown({ text, streaming = false }: { text: string; streaming?
   const resolveUrl = useResolveUrl();
   const urlTransform = useCallback((url: string) => transformUrl(url, allowUrl, resolveUrl), [allowUrl, resolveUrl]);
   return (
+    <div data-quassel="" data-quassel-markdown="">
     <Streamdown
-      className="space-y-0 text-inherit"
       prefix="qsl"
       mode={streaming ? "streaming" : "static"}
       isAnimating={streaming}
@@ -133,6 +129,7 @@ export function Markdown({ text, streaming = false }: { text: string; streaming?
     >
       {text}
     </Streamdown>
+    </div>
   );
 }
 

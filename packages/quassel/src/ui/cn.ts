@@ -1,4 +1,4 @@
 import type { CnFunction } from "cn";
 import { createCn } from "cn/config";
 
-export const cn: CnFunction = createCn({ prefix: "qsl", extend: { theme: { text: ["meta", "trace", "timestamp", "label", "chat"] } } });
+export const cn: CnFunction = createCn({ prefix: "qsl", extend: { theme: { text: ["body", "small"] } } });

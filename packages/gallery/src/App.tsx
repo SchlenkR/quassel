@@ -96,16 +96,14 @@ function ReadDemo() {
 function LayoutDemo() {
   const [fullWidth, setFullWidth] = useState(true);
   const [position, setPosition] = useState<"aside" | "above">("aside");
-  const [fontScale, setFontScale] = useState(0.88);
   return (
-    <Stage title="Layout" note="The user background expands independently of the text. Timestamps default to the tool text size." head={
+    <Stage title="Layout" note="The user background expands independently of the text. Timestamps use the same small size as tool text." head={
       <div className="layout-controls">
         <label><input type="checkbox" checked={fullWidth} onChange={(event) => setFullWidth(event.target.checked)} />Full row background</label>
         <label>Timestamps<select value={position} onChange={(event) => setPosition(event.target.value as "aside" | "above")}><option value="aside">Beside the message</option><option value="above">Above the message</option></select></label>
-        <label>Timestamp size<input aria-label="Timestamp size" type="range" min="0.7" max="1.1" step="0.01" value={fontScale} onChange={(event) => setFontScale(Number(event.target.value))} /><output>{Math.round(fontScale * 100)}%</output></label>
       </div>
     }>
-      <ChatMessages messages={[...research, ...steps]} detailMode="grouped" showTimestamps bubbleOptions={{ userBackgroundFullWidth: fullWidth }} timestampOptions={{ position, fontScale, timeZone: "UTC" }} />
+      <ChatMessages messages={[...research, ...steps]} detailMode="grouped" showTimestamps bubbleOptions={{ userBackgroundFullWidth: fullWidth }} timestampOptions={{ position, timeZone: "UTC" }} />
     </Stage>
   );
 }

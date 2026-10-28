@@ -63,7 +63,7 @@ test("timestamp placement changes without losing expanded tool groups or timesta
   assert.equal(container.querySelector('[data-chat="timestamped"]')?.getAttribute("data-timestamp-position"), "aside");
   assert.equal(container.querySelector("time")?.textContent, "12:00");
   assert.equal(container.querySelector("time")?.getAttribute("datetime"), at);
-  assert.ok(container.querySelector("time")?.classList.contains("qsl:text-timestamp"));
+  assert.ok(container.querySelector("time")?.classList.contains("qsl:text-small"));
   assert.ok(container.querySelector("time")?.classList.contains("qsl:text-muted-foreground"));
   act(() => container.querySelector<HTMLButtonElement>('[data-step="group"] > button')!.click());
   render({ showTimestamps: true, timestampOptions: { position: "above", timeZone: "UTC" } });
@@ -80,17 +80,18 @@ test("timestamp placement changes without losing expanded tool groups or timesta
   assert.equal(container.querySelector("time"), null);
 });
 
-test("appearance dimensions reach nested chats and timestamp sizing has an independent override", () => {
+test("appearance spacing reaches nested chats without typography overrides", () => {
   act(() => root.render(createElement(ChatPanel, {
-    appearance: { fontSize: 15, lineHeight: 1.6, messageGap: 12, denseMessageGap: 4, toolFontScale: 0.9, toolGroupGap: 2, toolRowPadding: 3 },
-    children: createElement(ChatMessages, { messages, showTimestamps: true, timestampOptions: { fontScale: 0.75 }, announce: false }),
+    appearance: { messageGap: 12, denseMessageGap: 4, toolGroupGap: 2, toolRowPadding: 3 },
+    children: createElement(ChatMessages, { messages, showTimestamps: true, announce: false }),
   })));
   const panel = container.querySelector<HTMLElement>('[data-chat="panel"]')!;
-  assert.equal(panel.style.getPropertyValue("--qsl-font-size"), "15px");
-  assert.equal(panel.style.getPropertyValue("--qsl-tool-font-scale"), "0.9");
+  assert.equal(panel.style.getPropertyValue("--qsl-chat-message-gap"), "12px");
+  assert.equal(panel.style.getPropertyValue("--qsl-chat-dense-message-gap"), "4px");
   assert.equal(panel.style.getPropertyValue("--qsl-tool-group-gap"), "2px");
   assert.equal(panel.style.getPropertyValue("--qsl-tool-row-padding"), "3px");
-  assert.match(container.querySelector<HTMLElement>('[data-quassel-transcript]')!.parentElement!.style.getPropertyValue("--qsl-timestamp-font-size"), /0\.75/);
+  assert.ok(container.querySelector("time")?.classList.contains("qsl:text-small"));
+  assert.doesNotMatch(container.innerHTML, /style="[^"]*(?:font-size|font-scale|line-height)/);
 });
 
 test("copy actions sit below the message: Markdown for inputs, Markdown and formatted for answers", () => {

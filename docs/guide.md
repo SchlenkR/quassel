@@ -24,7 +24,7 @@ fundamental decisions:
 4. **Steps**: Which detail level as default (`current`, `off`, `icons`, `chips`, `grouped`,
    `compact`, `full`)? Should the user be able to switch (`DetailModeSwitch`)?
 5. **Look**: RAgents default or custom colors, radii, font (`--qsl-*`; the text size follows the
-   host by itself)? Dark mode fixed, by
+   host through `--qsl-font-size: 1em`)? Dark mode fixed, by
    switch or following the system? Custom primitives of the host design system (`QuasselProvider`)?
 6. **Styles in the host**: Does the host have Tailwind? Without Tailwind `@schlenkr/quassel/chat.css` is enough.
 7. **Texts**: Keep the English default labels or replace them through `texts`?
@@ -125,7 +125,7 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
   nodeRef?: Ref<HTMLDivElement>;
   maxWidth?: CSSProperties["maxWidth"];            // content width for transcript and composer
   horizontalPadding?: CSSProperties["paddingInline"]; // default 24px
-  appearance?: ChatAppearance;          // fontSize, lineHeight, gaps, toolFontScale, toolGroupGap, toolRowPadding
+  appearance?: ChatAppearance;          // messageGap, denseMessageGap, toolGroupGap, toolRowPadding
   scrollOnSend?: boolean;               // default false; true jumps to the end after a successful send
 }
 ```
@@ -156,7 +156,7 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
   scrollerRef?: (element: HTMLDivElement | null) => void;
   maxWidth?; horizontalPadding?; appearance?;
   jumpToEndThreshold?: number;          // default 120px; tolerance for following and the jump button
-  timestampOptions?: TimestampOptions;  // position "aside" | "above", fontScale, format, locale, timeZone, showDaySeparators
+  timestampOptions?: TimestampOptions;  // position "aside" | "above", format, locale, timeZone, showDaySeparators
   codeBlockOptions?: CodeBlockOptions;  // wrap, maxHeight, showCopyButton
   bubbleOptions?: BubbleOptions;        // userBackgroundFullWidth, variant, maxWidth, sides, showSender, senderLabel
   messageActions?: MessageActionsOptions; // copy, copyFormatted, edit, retry, custom
@@ -176,9 +176,7 @@ attribute `data-quassel-transcript`; it gets custom classes through `scrollerCla
 With `showTimestamps`, `timestampOptions.position` chooses `"aside"` (the default, a left
 column) or `"above"` (a line above each block). The `time` column beside a message is at least
 five digits wide and never wraps; longer formats widen it. Timestamps use the UI font at the
-same size as tool text: 88% of the base by default, also following `appearance.toolFontScale`
-or `--qsl-text-trace`. `timestampOptions.fontScale` sets an independent ratio such as `0.8`;
-`--qsl-timestamp-font-size` accepts an explicit CSS length.
+same small size as tool text: 85% of the base, with line height 1.4.
 
 `bubbleOptions.userBackgroundFullWidth` defaults to `true`: a user message has a background
 across the available message row. Only the background expands; the content keeps its normal
@@ -350,6 +348,12 @@ for the whole page or on a wrapper for one chat.
 | `--qsl-primary-foreground` | text on accent | `#ffffff` / `#2d2235` |
 | `--qsl-secondary` | own messages, code, hover | `#e1ddeb` / `#373247` |
 | `--qsl-muted-foreground` | secondary text, timestamps, steps | `#62586e` / `#b6a9bd` |
+| `--qsl-inline-code-background` | inline code tint | unset: 70% `--qsl-secondary`, 30% transparent |
+| `--qsl-inline-code-foreground` | inline code text | unset: inherited text color |
+| `--qsl-inline-code-edge` | inline code outline | unset: transparent |
+| `--qsl-code-background` | Markdown code block surface | unset: `--qsl-secondary` |
+| `--qsl-code-border` | Markdown code block border | unset: `--qsl-border` |
+| `--qsl-blockquote-background` | blockquote tint | unset: 6% `--qsl-primary`, 94% transparent |
 | `--qsl-destructive` | errors, stop | `#a94360` / `#ffa2b0` |
 | `--qsl-success` | check marks | `#3b705f` / `#8dceae` |
 | `--qsl-border`, `--qsl-border-soft`, `--qsl-border-strong` | lines | |
@@ -361,36 +365,26 @@ for the whole page or on a wrapper for one chat.
 | `--qsl-input-card-radius` | input card | not set: `--qsl-radius-xl` |
 | `--qsl-bubble-radius` | speech bubble of own messages | not set: `10px 10px 4px 10px` (`material` tone: `9px`) |
 | `--qsl-font-size` | text size of the quassel root, see [Text size](#text-size) | `13px`; `1em` follows the host |
-| `--qsl-text-meta` | chips, arguments and result in the `full` detail level | `0.8 * --qsl-base` |
-| `--qsl-text-trace` | step lines, group header, section titles and content in the step popover | `0.88 * --qsl-base` |
-| `--qsl-tool-font-scale` | tool text ratio, also used by timestamps | `0.88` |
-| `--qsl-timestamp-font-size` | timestamp text size | tool text size |
 | `--qsl-tool-group-gap` | gap between rows in an expanded group | `1px` |
 | `--qsl-tool-row-padding` | vertical padding inside tool/thinking rows and group headers | `1px` |
-| `--qsl-text-label` | sender identifier on speech bubbles, the "fed into" note | `0.85 * --qsl-base` |
-| `--qsl-text-small` | `<small>` (size of attachments) | not set: `80%` |
 | `--qsl-font`, `--qsl-mono` | fonts | system font, `ui-monospace` |
 | `--qsl-color-scheme` | `color-scheme` of the quassel elements | `light` / `dark` |
 
-Plus the scales from the Tailwind theme: `--qsl-spacing` (0.235rem, compact unit),
-`--qsl-text-xs` to `--qsl-text-xl` including `--line-height` (derived from the text size, see
-[Text size](#text-size)) and the chat dimensions `--qsl-chat-font-size` (`--qsl-base`),
-`--qsl-chat-line-height` (1.65),
+Spacing uses `--qsl-spacing` (0.235rem, compact unit) and the chat dimensions
 `--qsl-chat-message-gap` (10px), `--qsl-chat-dense-message-gap` (3px),
-`--qsl-chat-content-max-width`, `--qsl-chat-horizontal-padding` (24px; these six are also set
-by `appearance`, `maxWidth` and `horizontalPadding`). `appearance` additionally accepts
-`toolFontScale` (ratio), `toolGroupGap` and `toolRowPadding` (CSS lengths; numbers are pixels).
-`appearance.fontSize` sets the base for the whole chat, including tool text and timestamps.
+`--qsl-chat-content-max-width` and `--qsl-chat-horizontal-padding` (24px). These four are also set
+by `appearance`, `maxWidth` and `horizontalPadding`. `appearance` additionally accepts
+`toolGroupGap` and `toolRowPadding` (CSS lengths; numbers are pixels). Typography is controlled
+only by `--qsl-font`, `--qsl-mono` and `--qsl-font-size`.
 
 Every variable takes effect from the element it is set on, the radii too: "not set" means
 quassel defines them nowhere itself and computes with the default at the place of use. A wrapper
 that sets `--qsl-radius-md` or `--qsl-bubble-radius` therefore reaches into every quassel
 element. Small buttons cap `--qsl-radius-md` at 10 or 12px.
 
-A host with a minimum font size sets all sizes below its limit, at 12px that is
-`--qsl-text-xs`, `--qsl-text-meta`, `--qsl-text-trace`, `--qsl-text-label` and `--qsl-text-small`.
-Popovers live in `document.body` by default and only inherit the wrapper's variables with
-`portalContainer` (see slots).
+A host with a minimum font size chooses a base that keeps its 85% small text above that limit.
+Popovers live in `document.body` by default and only inherit the wrapper's color and font-family
+variables with `portalContainer` (see slots); the base size is passed to them automatically.
 
 ```css
 .my-chat {
@@ -406,42 +400,73 @@ Examples: `packages/gallery/src/themes.css`.
 
 ### Text size
 
-quassel starts at 13px; every size inside derives from that one value. A host sets
-`--qsl-font-size` to its chosen size, or `1em` to inherit the surrounding text size:
-
-- `--qsl-base` holds it as an absolute length. quassel sets it once on its root and nested
-  elements inherit it unchanged, so sizes never compound. It is a registered `<length>`
-  property (`@property`, initial value `13px`) to be read, not set.
-- Chat text, the input and open actions are `--qsl-base` itself (`--qsl-chat-font-size`).
-  Small UI text (tables, system messages, action cards, buttons: `--qsl-text-sm`) is
-  `* 0.9`, step lines and group headers (`--qsl-text-trace`) `* 0.88`, labels (`--qsl-text-label`)
-  `* 0.85`, chips and tool arguments (`--qsl-text-meta`) and `--qsl-text-xs` `* 0.8`.
-  Timestamps follow the tool text size by default; `timestampOptions.fontScale` or
-  `--qsl-timestamp-font-size` sets an independent size. `--qsl-text-lg` and `--qsl-text-xl` are `* 1.15` and `* 1.3`. Headings in Markdown are
-  relative to the chat text (`1.2em`, `1.1em`).
-- Step and tool rows use the UI font. Monospace is only for code, tool arguments and results.
-
-To change the size, set `--qsl-font-size` on the quassel root or on any ancestor. It takes any
-length; `em` and `%` refer to the parent's font size. Single steps keep their own variables, and
-all of them override from any ancestor:
+The typography inputs are exactly `--qsl-font` (UI family), `--qsl-mono` (monospace family) and
+`--qsl-font-size` (base size). quassel defaults to 13px. Set one size on a wrapper; every size
+inside follows it. Any CSS length works, and `1em` inherits the surrounding font size:
 
 ```css
 .my-chat {
-    --qsl-font-size: 15px;      /* everything follows */
-    --qsl-chat-font-size: 16px; /* chat text and input only */
-    --qsl-text-meta: 12px;      /* one step of the scale */
+    --qsl-font-size: 1em;
 }
 ```
 
-A step popover renders in `document.body` (or `portalContainer`), outside the chat. quassel
-hands it the `--qsl-base` of the chat that opened it, so it matches the chat even where the
-text size around `document.body` differs. A custom `PopoverContent` applies the `style` prop it
-receives to its popup for the same effect. Spacing is not part of this: it is still based on
+The scale is fixed; individual sizes and line heights have no public overrides:
+
+| Content | Size relative to base | Line height |
+|---|---|---|
+| Messages, composer in every layout, pending action and question cards, options, text buttons | 1 | 1.5 |
+| Step rows, group headers, timestamps, chips, tool arguments/results, labels, badges, notices, table meta text | 0.85 | 1.4 |
+| Markdown h1 | 1.3 | 1.25 |
+| Markdown h2 | 1.15 | 1.3 |
+| Markdown h3 | 1.05 | 1.35 |
+| Markdown h4-h6 | 1 | 1.4 |
+| Inline monospace and Markdown code blocks | 0.9 of surrounding text | inherited |
+
+Markdown tables use body text; their `<small>` content uses the small size. Code inside a code
+block inherits the block's size, so the 0.9 factor applies only once. Tool rows use the UI font;
+arguments and results use the monospace font at the small size.
+
+`--qsl-base` is internal: a registered `<length>` property (`@property`, initial value `13px`).
+The outer quassel root resolves the selected size into an absolute length, which descendants
+inherit unchanged. Small text therefore never shrinks again inside another small element.
+Set `--qsl-font-size` on the outer root or an ancestor, and never set `--qsl-base` yourself.
+
+`Markdown` carries its own styling scope and reset. Import the same stylesheet and use it
+outside a transcript to render a document with exactly the same Markdown typography:
+
+```tsx
+import { Markdown } from "@schlenkr/quassel";
+import "@schlenkr/quassel/chat.css";
+
+<div className="my-chat">
+  <Markdown text={documentText} />
+</div>
+```
+
+Headings, emphasis, lists, code, links, blockquotes and tables share one set of rules in documents
+and answers. Their colors come from the theme variables, including the three Markdown background
+variables in the table above. No host Markdown stylesheet is needed.
+
+A tool detail popover renders in `document.body` (or `portalContainer`), outside the chat.
+quassel passes it the absolute base of the chat that opened it. A custom `PopoverContent` must
+apply the `style` prop it receives to its popup for the same effect. Spacing remains based on
 `--qsl-spacing` in `rem`.
 
 `@property` registrations are ignored inside shadow trees. A host that mounts quassel in a
-shadow root includes `@schlenkr/quassel/chat.css` in the document as well; otherwise
-`--qsl-base` is an ordinary variable and nested elements compound their sizes.
+shadow root includes `@schlenkr/quassel/chat.css` in the document as well, so the absolute base
+registration is available there too.
+
+#### Migration to 0.6
+
+Delete overrides of `--qsl-chat-font-size`, `--qsl-chat-line-height`, `--qsl-timestamp-font-size`,
+`--qsl-tool-font-scale` and all `--qsl-text-*` variables (including `--qsl-text-sm`,
+`--qsl-text-trace`, `--qsl-text-label`, `--qsl-text-meta`, `--qsl-text-xs`, `--qsl-text-lg`,
+`--qsl-text-xl`, `--qsl-text-base`, `--qsl-text-small` and their `--line-height` companions).
+Replace the host's running text size with a single `--qsl-font-size` value, or use `1em` to
+follow the surrounding text. Remove `appearance.fontSize`, `appearance.lineHeight`,
+`appearance.toolFontScale` and `timestampOptions.fontScale`; they are no longer accepted.
+Delete duplicated host Markdown typography rules and render documents with `Markdown`.
+Colors, radii, shadows and spacing options keep their existing contract.
 
 ### Dark mode
 
@@ -535,9 +560,9 @@ against its own folder inside a chat that resolves against something else:
 - All utilities carry the `qsl:` prefix (in CSS `.qsl\:flex`), the theme variables `--qsl-*`,
   its own keyframes `qsl-*`.
 - There is no global reset. The Tailwind preflight applies only to elements with `data-quassel`
-  (the roots of panel, transcript, composer, popover and primitives) and their descendants,
+  (the roots of panel, transcript, composer, Markdown, popover and primitives) and their descendants,
   with zero specificity. There, as in RAgents, the WebKit scrollbars are hidden too.
-- The rules live in the cascade layers `theme`, `base` and `utilities`. Unlayered rules of the
+- The rules live in the cascade layers `theme`, `base`, `components` and `utilities`. Unlayered rules of the
   host therefore always win - good for custom classes through `className`, but global element
   rules of the host (`button { ... }`, `a { ... }`) reach into quassel too. Such rules belong in
   a layer of their own or on classes of their own.
@@ -580,7 +605,7 @@ README images come from `packages/gallery/showcase.html`: scenes via
 `?scene=agent|details|questions|party|themes` (`questions` shows the actions: the resolved one
 in the transcript, two open ones in the dock above the composer; `actions` works too; in `agent`
 `run_tests` has been running for 1:40), dark with `&theme=dark`. `?scene=host` shows a host with
-its own scale next to the default: font sizes from 12px, custom radii and speech bubble through
+its own base next to the default: 15px body text, custom radii and speech bubble through
 wrapper variables, popovers through `portalContainer` in the wrapper.
 
 ## Publishing

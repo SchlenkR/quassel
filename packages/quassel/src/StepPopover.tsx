@@ -13,7 +13,7 @@ export const stepPopoverOrigin = (event: MouseEvent<HTMLElement>): StepPopoverOr
   base: getComputedStyle(event.currentTarget).getPropertyValue("--qsl-base"),
 });
 
-const preClasses = "qsl:rounded-lg qsl:bg-secondary qsl:p-3 qsl:font-mono qsl:text-trace qsl:leading-[1.625] qsl:break-all qsl:whitespace-pre-wrap";
+const preClasses = "qsl:rounded-lg qsl:bg-secondary qsl:p-3 qsl:font-mono qsl:text-small qsl:break-all qsl:whitespace-pre-wrap";
 
 export function StepPopover({
   message,
@@ -50,7 +50,7 @@ export function StepPopover({
         anchor={anchor}
         aria-label={title}
         className={cn(
-          "qsl:w-[min(680px,calc(100vw-32px))] qsl:gap-0 qsl:overflow-hidden qsl:p-0 qsl:text-base qsl:leading-normal qsl:shadow-pop",
+          "qsl:w-[min(680px,calc(100vw-32px))] qsl:gap-0 qsl:overflow-hidden qsl:p-0 qsl:text-body qsl:shadow-pop",
           "qsl:max-h-[min(70dvh,620px,var(--available-height))]",
         )}
         collisionPadding={16}
@@ -72,13 +72,13 @@ export function StepPopover({
         </div>
         <div className="qsl:min-h-0 qsl:flex-1 qsl:overflow-auto qsl:overscroll-contain qsl:p-4">
           {thinking ? (
-            <div className="qsl:text-sm qsl:leading-[1.625] qsl:whitespace-pre-wrap">{message.text}</div>
+            <div className="qsl:text-small qsl:whitespace-pre-wrap">{message.text}</div>
           ) : tool ? (
             <div className="qsl:flex qsl:flex-col qsl:gap-4">
-              <div className="qsl:font-mono qsl:text-sm">{message.text}</div>
+              <div className="qsl:font-mono qsl:text-small">{message.text}</div>
               <PopoverSection label={texts.argumentsLabel} value={toolArgumentsText(tool)} />
               {tool.result === undefined ? (
-                <div className="qsl:text-sm qsl:text-muted-foreground">{texts.toolStillRunning}</div>
+                <div className="qsl:text-small qsl:text-muted-foreground">{texts.toolStillRunning}</div>
               ) : (
                 <PopoverSection error={tool.isError} label={texts.resultLabel} value={prettyJson(tool.result)} />
               )}
@@ -93,7 +93,7 @@ export function StepPopover({
 function PopoverSection({ label, value, error = false }: { label: string; value: string; error?: boolean }) {
   return (
     <section>
-      <h3 className="qsl:mb-1.5 qsl:text-trace qsl:font-semibold qsl:tracking-[0.04em] qsl:text-muted-foreground qsl:uppercase">{label}</h3>
+      <h3 className="qsl:mb-1.5 qsl:text-small qsl:font-semibold qsl:tracking-[0.04em] qsl:text-muted-foreground qsl:uppercase">{label}</h3>
       <pre className={cn(preClasses, error && "qsl:text-destructive")}>{value}</pre>
     </section>
   );

@@ -19,8 +19,8 @@ type DraftAttachment = { id: number; file: File } & (
 // Below this panel width, accompanying labels collapse to their icons.
 const COMPACT_WIDTH_PX = 480;
 
-const errorClasses = "qsl:px-3 qsl:py-2 qsl:text-sm qsl:text-destructive";
-const attachmentItemClasses = "qsl:relative qsl:flex qsl:w-[190px] qsl:max-w-full qsl:min-w-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-lg qsl:border qsl:border-border qsl:text-sm";
+const errorClasses = "qsl:px-3 qsl:py-2 qsl:text-small qsl:text-destructive";
+const attachmentItemClasses = "qsl:relative qsl:flex qsl:w-[190px] qsl:max-w-full qsl:min-w-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-lg qsl:border qsl:border-border qsl:text-small";
 const attachmentMediaClasses = "qsl:block qsl:h-[112px] qsl:w-full qsl:bg-secondary qsl:object-contain";
 
 /** A toolbar button, declarative: icon, text or both - plus click handler. */
@@ -222,8 +222,8 @@ export function ChatInputToolbar({
     fileInput.dragging && "qsl:outline-2 qsl:outline-offset-[3px] qsl:outline-dashed qsl:outline-primary",
   );
   const textareaClasses = cn(
-    "qsl:resize-none qsl:overscroll-contain qsl:border-0 qsl:bg-transparent qsl:text-chat qsl:leading-[var(--qsl-chat-line-height,1.65)] qsl:text-foreground qsl:placeholder:text-muted-foreground qsl:focus:outline-none",
-    inline ? "qsl:min-w-0 qsl:flex-1 qsl:px-2.5 qsl:py-2" : toolbar ? "qsl:w-full qsl:min-w-0 qsl:flex-auto qsl:px-2 qsl:py-[3px] qsl:leading-[1.3]" : "qsl:px-3 qsl:pt-3 qsl:pb-2",
+    "qsl:resize-none qsl:overscroll-contain qsl:border-0 qsl:bg-transparent qsl:text-body qsl:text-foreground qsl:placeholder:text-muted-foreground qsl:focus:outline-none",
+    inline ? "qsl:min-w-0 qsl:flex-1 qsl:px-2.5 qsl:py-2" : toolbar ? "qsl:w-full qsl:min-w-0 qsl:flex-auto qsl:px-2 qsl:py-[3px]" : "qsl:px-3 qsl:pt-3 qsl:pb-2",
   );
   const toolbarRowClasses = cn(
     "qsl:flex qsl:items-center qsl:gap-2 qsl:border-t qsl:border-border-soft qsl:px-2 qsl:py-1.5 qsl:in-data-[tone=overseer-details]:flex-nowrap",
@@ -281,7 +281,7 @@ export function ChatInputToolbar({
       return;
     }
     const style = getComputedStyle(element);
-    const lineHeight = Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) * 1.4;
+    const lineHeight = Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) * 1.5;
     const padding = Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom);
     const maximum = lineHeight * Math.max(inputMaxRows, inputRows) + padding;
     element.style.height = "auto";
@@ -478,7 +478,7 @@ export function ChatInputToolbar({
           >
             <PaperclipIcon />
           </Button>}
-          {preparing && <span className={cn("qsl:text-xs qsl:text-muted-foreground", inline && "qsl:sr-only")} role="status">{allTexts.attachmentsPreparing}</span>}
+          {preparing && <span className={cn("qsl:text-small qsl:text-muted-foreground", inline && "qsl:sr-only")} role="status">{allTexts.attachmentsPreparing}</span>}
           {actions?.map((action, index) => action.active === undefined ? (
             <Button disabled={action.disabled} key={index} onClick={action.onClick} size="sm" title={action.title ?? action.label} variant="ghost">
               {action.icon}

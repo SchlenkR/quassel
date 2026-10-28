@@ -1,7 +1,8 @@
 .choice-card {
     padding-inline: 14px;
     background: var(--qsl-background);
-    font-size: 13px;
+    font-size: var(--qsl-base);
+    line-height: 1.5;
 }
 
 .choice-options {

@@ -49,7 +49,7 @@ variables too.
   actions are announced once, with the host in control of the wording.
 - Complete English and German UI labels through `englishTexts` / `germanTexts`; `texts` can override any label (English by default).
 - Grouped steps show their error count even while collapsed.
-- Text size follows the host: no overrides needed to fit in (see below).
+- One text size per host, a fixed small size and shared Markdown typography (see below).
 
 ## Install
 
@@ -93,28 +93,26 @@ Any backend that emits the `@schlenkr/quassel/events` stream works with the same
 
 ## Text size
 
-quassel starts at 13px with a line height of 1.5, a 10px message gap and a 3px dense
-step gap. Tool rows and timestamps use 88% of the text size. Expanded tool groups have a
-1px gap between rows; tool rows have 1px of vertical padding on each side.
+quassel defaults to 13px. Set `--qsl-font-size` on a wrapper, or `1em` to inherit the host's
+font size. Messages, the composer, action cards and text buttons use that base with line height
+1.5. All small UI text, including tools and timestamps, uses 85% with line height 1.4.
+`--qsl-font` and `--qsl-mono` select the font families. There are no other typography inputs.
+Sizes derive from an absolute base, so nested small elements never compound.
 
-Every size derives from one base, so nested elements never compound. Set `--qsl-font-size`
-on a wrapper, or `appearance.fontSize`, to change it. Use `1em` to follow the host's font size.
-`appearance` also offers `toolFontScale`, `toolGroupGap` and `toolRowPadding`.
+`Markdown` uses the same typography in answers and standalone documents:
+
+```tsx
+<Markdown text={documentText} />
+```
 
 User message backgrounds fill the available row by default while text keeps its width and
 alignment. `bubbleOptions={{ userBackgroundFullWidth: false }}` restores a fitted background.
-Timestamps sit beside messages by default; their size follows the tool text unless overridden:
+Timestamps sit beside messages by default; `timestampOptions={{ position: "above" }}` moves
+them above. Message gaps and tool row spacing remain configurable through `appearance`.
 
-```tsx
-<ChatMessages
-    messages={messages}
-    showTimestamps
-    timestampOptions={{ position: "above", fontScale: 0.88 }}
-/>
-```
-
-`--qsl-text-trace`, `--qsl-timestamp-font-size` and the other `--qsl-text-*` variables override
-individual sizes. The [guide](docs/guide.md#text-size) lists the full API.
+For 0.6, replace separate size and line-height overrides with `--qsl-font-size` and remove
+all typography fields from `appearance` and timestamp options. The [migration guide](docs/guide.md#migration-to-06)
+lists the removed variables and options.
 
 ## Development
 

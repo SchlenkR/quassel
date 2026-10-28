@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "./cn"
 
 const buttonVariants = cva(
-  "qsl:group/button qsl:inline-flex qsl:shrink-0 qsl:items-center qsl:justify-center qsl:rounded-lg qsl:border qsl:border-transparent qsl:bg-clip-padding qsl:text-sm qsl:font-medium qsl:whitespace-nowrap qsl:transition-all qsl:outline-none qsl:select-none qsl:focus-visible:border-ring qsl:focus-visible:ring-3 qsl:focus-visible:ring-ring/50 qsl:active:not-aria-[haspopup]:translate-y-px qsl:disabled:pointer-events-none qsl:disabled:opacity-50 qsl:aria-invalid:border-destructive qsl:aria-invalid:ring-3 qsl:aria-invalid:ring-destructive/20 qsl:dark:aria-invalid:border-destructive/50 qsl:dark:aria-invalid:ring-destructive/40 qsl:[&_svg]:pointer-events-none qsl:[&_svg]:shrink-0 qsl:[&_svg:not([class*='size-'])]:size-4",
+  "qsl:group/button qsl:inline-flex qsl:shrink-0 qsl:items-center qsl:justify-center qsl:rounded-lg qsl:border qsl:border-transparent qsl:bg-clip-padding qsl:text-body qsl:font-medium qsl:whitespace-nowrap qsl:transition-all qsl:outline-none qsl:select-none qsl:focus-visible:border-ring qsl:focus-visible:ring-3 qsl:focus-visible:ring-ring/50 qsl:active:not-aria-[haspopup]:translate-y-px qsl:disabled:pointer-events-none qsl:disabled:opacity-50 qsl:aria-invalid:border-destructive qsl:aria-invalid:ring-3 qsl:aria-invalid:ring-destructive/20 qsl:dark:aria-invalid:border-destructive/50 qsl:dark:aria-invalid:ring-destructive/40 qsl:[&_svg]:pointer-events-none qsl:[&_svg]:shrink-0 qsl:[&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -21,7 +21,7 @@ const buttonVariants = cva(
       size: {
         default:
           "qsl:h-8 qsl:gap-1.5 qsl:px-2.5 qsl:has-data-[icon=inline-end]:pr-2 qsl:has-data-[icon=inline-start]:pl-2",
-        xs: "qsl:h-6 qsl:gap-1 qsl:rounded-[min(--theme(--radius-md),10px)] qsl:px-2 qsl:text-xs qsl:in-data-[slot=button-group]:rounded-lg qsl:has-data-[icon=inline-end]:pr-1.5 qsl:has-data-[icon=inline-start]:pl-1.5 qsl:[&_svg:not([class*='size-'])]:size-3",
+        xs: "qsl:h-6 qsl:gap-1 qsl:rounded-[min(--theme(--radius-md),10px)] qsl:px-2 qsl:in-data-[slot=button-group]:rounded-lg qsl:has-data-[icon=inline-end]:pr-1.5 qsl:has-data-[icon=inline-start]:pl-1.5 qsl:[&_svg:not([class*='size-'])]:size-3",
         sm: "qsl:h-7 qsl:gap-1 qsl:rounded-[min(--theme(--radius-md),12px)] qsl:px-2.5 qsl:in-data-[slot=button-group]:rounded-lg qsl:has-data-[icon=inline-end]:pr-1.5 qsl:has-data-[icon=inline-start]:pl-1.5 qsl:[&_svg:not([class*='size-'])]:size-3.5",
         lg: "qsl:h-9 qsl:gap-1.5 qsl:px-2.5 qsl:has-data-[icon=inline-end]:pr-2 qsl:has-data-[icon=inline-start]:pl-2",
         icon: "qsl:size-8",

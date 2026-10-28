@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "./cn"
 
 const toggleVariants = cva(
-  "qsl:group/toggle qsl:inline-flex qsl:items-center qsl:justify-center qsl:gap-1 qsl:rounded-lg qsl:text-sm qsl:font-medium qsl:whitespace-nowrap qsl:transition-all qsl:outline-none qsl:hover:bg-muted qsl:hover:text-foreground qsl:focus-visible:border-ring qsl:focus-visible:ring-[3px] qsl:focus-visible:ring-ring/50 qsl:disabled:pointer-events-none qsl:disabled:opacity-50 qsl:aria-invalid:border-destructive qsl:aria-invalid:ring-destructive/20 qsl:aria-pressed:bg-muted qsl:data-[state=on]:bg-muted qsl:dark:aria-invalid:ring-destructive/40 qsl:[&_svg]:pointer-events-none qsl:[&_svg]:shrink-0 qsl:[&_svg:not([class*='size-'])]:size-4",
+  "qsl:group/toggle qsl:inline-flex qsl:items-center qsl:justify-center qsl:gap-1 qsl:rounded-lg qsl:text-body qsl:font-medium qsl:whitespace-nowrap qsl:transition-all qsl:outline-none qsl:hover:bg-muted qsl:hover:text-foreground qsl:focus-visible:border-ring qsl:focus-visible:ring-[3px] qsl:focus-visible:ring-ring/50 qsl:disabled:pointer-events-none qsl:disabled:opacity-50 qsl:aria-invalid:border-destructive qsl:aria-invalid:ring-destructive/20 qsl:aria-pressed:bg-muted qsl:data-[state=on]:bg-muted qsl:dark:aria-invalid:ring-destructive/40 qsl:[&_svg]:pointer-events-none qsl:[&_svg]:shrink-0 qsl:[&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {

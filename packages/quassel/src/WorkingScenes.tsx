@@ -217,7 +217,7 @@ export function WorkingScenes({ label = "Working ...", compact = false }: Workin
 
   const frame = scene.draw(Math.floor(frameTick / scene.tick) + (scene.moving ? offset : 0));
   return (
-    <span aria-label={label} className={cn("qsl:flex qsl:items-center qsl:gap-2.5 qsl:text-chat", compact ? "qsl:text-inherit" : "qsl:mt-4 qsl:text-foreground")} data-chat="working" role="status">
+    <span aria-label={label} className={cn("qsl:flex qsl:items-center qsl:gap-2.5 qsl:text-body", compact ? "qsl:text-inherit" : "qsl:mt-4 qsl:text-foreground")} data-chat="working" role="status">
       {!compact && <span aria-hidden="true" className="qsl:text-muted-foreground qsl:opacity-70">&gt;</span>}
       <span aria-hidden="true" className={cn("qsl:inline-block qsl:flex-none qsl:font-mono qsl:[font-variant-ligatures:none]", compact ? "qsl:w-[2.4em] qsl:text-center" : "qsl:w-[15rem]")} key={scene.id}>
         <span className="qsl:tracking-[0.02em] qsl:whitespace-pre qsl:motion-reduce:opacity-60">

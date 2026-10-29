@@ -43,6 +43,7 @@ variables too.
 - Streaming-safe Markdown (tables, code with copy button, lists) via Streamdown.
 - Steering: typing while a turn runs sends into it; stop, retry and failed-send recovery built in.
 - Attachments by button, drag and drop or paste, with previews and size limits.
+- Optional pill composer: one animated action for microphone, send, steering and stop, with host-controlled recording and transcription.
 - Condensed conversation: all user inputs and the latest answer between them, independently of tool/thinking detail.
 - Timestamps, day separators, message actions, configurable bubbles and appearance.
 - Screen reader friendly: the transcript is not a live region; finished replies and new
@@ -91,11 +92,38 @@ export function Chat({ send, stop }: { send: (text: string) => Promise<void>; st
 
 Any backend that emits the `@schlenkr/quassel/events` stream works with the same components.
 
+## Pill composer
+
+Use `layout="pill"` for a larger, rounded composer with one 48px primary action. Host buttons
+go into `toolbarLeft` and `toolbarRight`; attachments stay just before the primary action.
+
+```tsx
+<ChatInputToolbar
+  layout="pill"
+  maxRows={5}
+  running={running}
+  onSend={send}
+  onStop={stop}
+  microphone={microphone}
+  replaceInput={microphone.state === "recording" ? <LiveWaveform /> : undefined}
+  toolbarLeft={<ConversationControls />}
+/>
+```
+
+Empty input shows the microphone, text or attachments show send, and an empty running turn
+shows stop. Typing while running sends into that turn. Without `microphone`, empty input shows
+a disabled send button. The host owns audio, press-and-hold or click-to-latch behavior, and
+transcription through the typed `ChatMicrophone` API. Recording has a live color and an aura
+driven by `level` (0-1); preparing and transcribing show a spinner. The aura renders outside
+clipping ancestors and animations respect reduced motion. Card, inline and toolbar keep their defaults.
+See the [API, state table and microphone integration](docs/guide.md#pill-composer) and the gallery's Pill composer demo.
+
 ## Text size
 
 quassel defaults to 13px. Set `--qsl-font-size` on a wrapper, or `1em` to inherit the host's
 font size. Messages, the composer, action cards and text buttons use that base with line height
-1.5. All small UI text, including tools and timestamps, uses 85% with line height 1.4.
+1.5, the pill input included. All small UI text, including tools and timestamps, uses 85% with
+line height 1.4.
 `--qsl-font` and `--qsl-mono` select the font families. There are no other typography inputs.
 Sizes derive from an absolute base, so nested small elements never compound.
 

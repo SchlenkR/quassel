@@ -11,6 +11,7 @@ const pkgDir = join(root, "packages/quassel");
 const pkgFile = join(pkgDir, "package.json");
 const out = join(pkgDir, "dist");
 const dryRun = process.argv.includes("--dry-run");
+const buildOnly = process.argv.includes("--build-only");
 const repoUrl = "https://github.com/SchlenkR/quassel";
 const rawUrl = "https://raw.githubusercontent.com/SchlenkR/quassel/main";
 
@@ -23,7 +24,7 @@ const parse = (version) => {
   return match.slice(1).map(Number);
 };
 const compare = (left, right) => parse(left).reduce((order, part, index) => order || part - parse(right)[index], 0);
-const latest = (() => {
+const latest = buildOnly ? undefined : (() => {
   try {
     return execFileSync("npm", ["view", declared.name, "version"], { encoding: "utf8" }).trim() || undefined;
   } catch {
@@ -36,7 +37,7 @@ const bumped = (version) => {
 };
 const version = latest === undefined || compare(declared.version, latest) > 0 ? declared.version : bumped(latest);
 const source = { ...declared, version };
-console.log(`${source.name}: npm has ${latest ?? "nothing"}, publishing ${version}${dryRun ? " (dry run)" : ""}`);
+console.log(buildOnly ? `${source.name}: building ${version} for packing` : `${source.name}: npm has ${latest ?? "nothing"}, publishing ${version}${dryRun ? " (dry run)" : ""}`);
 if (!dryRun && version !== declared.version) {
   writeFileSync(pkgFile, readFileSync(pkgFile, "utf8").replace(/"version": "[^"]*"/, `"version": "${version}"`));
 }
@@ -96,7 +97,7 @@ const manifest = {
 };
 writeFileSync(join(out, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 
-if (process.env.NPM_TOKEN) {
+if (!buildOnly && process.env.NPM_TOKEN) {
   writeFileSync(join(out, ".npmrc"), "registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NPM_TOKEN}\n");
 }
 if (!existsSync(join(out, "index.d.ts"))) {
@@ -106,4 +107,4 @@ if (!readFileSync(join(out, "chat.css"), "utf8").includes(".qsl\\:flex")) {
   throw new Error("chat.css in dist has no quassel utilities");
 }
 
-run("npm", ["publish", "--access", "public", ...(dryRun ? ["--dry-run"] : [])], out);
+if (!buildOnly) run("npm", ["publish", "--access", "public", ...(dryRun ? ["--dry-run"] : [])], out);

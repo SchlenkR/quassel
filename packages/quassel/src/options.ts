@@ -50,6 +50,20 @@ export interface MessageActionsOptions {
 
 export type SendShortcut = "enter" | "mod-enter";
 
+export interface MicrophonePress {
+  source: "pointer" | "keyboard" | "virtual";
+  timeStamp: number;
+}
+
+export interface ChatMicrophone {
+  state: "idle" | "preparing" | "recording" | "transcribing";
+  level?: number;
+  onPressStart: (press: MicrophonePress) => void;
+  onPressEnd: (press: MicrophonePress) => void;
+  onCancel: () => void;
+  label?: string;
+}
+
 const cssLength = (value: string | number | undefined) => typeof value === "number" ? `${value}px` : value;
 
 export const appearanceStyle = (appearance?: ChatAppearance): CSSProperties => ({

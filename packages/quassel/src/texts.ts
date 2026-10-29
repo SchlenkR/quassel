@@ -20,6 +20,11 @@ export interface ChatTexts {
   send: string;
   sendIntoRun: string;
   stop: string;
+  microphone?: string;
+  microphoneHint?: string;
+  microphonePreparing?: string;
+  microphoneRecording?: string;
+  microphoneTranscribing?: string;
   placeholder: string;
   steeringPlaceholder: string;
   steered: string;
@@ -95,6 +100,11 @@ export const englishTexts: Required<ChatTexts> = {
   send: "Send",
   sendIntoRun: "Feed into the running turn",
   stop: "Stop work",
+  microphone: "Speak",
+  microphoneHint: "Hold to speak or click to start recording",
+  microphonePreparing: "Connecting microphone ...",
+  microphoneRecording: "Finish recording",
+  microphoneTranscribing: "Transcribing ...",
   placeholder: "Write a message ...",
   steeringPlaceholder: "Interject ...",
   steered: "Fed into the running turn",
@@ -166,6 +176,11 @@ export const germanTexts: Required<ChatTexts> = {
   send: "Senden",
   sendIntoRun: "In die laufende Antwort einreihen",
   stop: "Bearbeitung stoppen",
+  microphone: "Sprechen",
+  microphoneHint: "Zum Sprechen halten oder zum Aufnehmen antippen",
+  microphonePreparing: "Mikrofon wird verbunden ...",
+  microphoneRecording: "Aufnahme beenden",
+  microphoneTranscribing: "Wird transkribiert ...",
   placeholder: "Nachricht schreiben ...",
   steeringPlaceholder: "Nachsteuern ...",
   steered: "In die laufende Antwort eingereiht",

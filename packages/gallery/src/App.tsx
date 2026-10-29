@@ -18,11 +18,13 @@ import {
 import { ChoiceCard } from "./ChoiceCard";
 import { useFakeAgent } from "./fakeAgent";
 import { actions, research, steps } from "./samples";
+import { PillDemo } from "./PillDemo";
 
 const DEMOS = [
   { id: "read", title: "Read only", note: "Transcript without a composer" },
   { id: "layout", title: "Layout", note: "Message backgrounds and timestamps" },
   { id: "input", title: "Input card", note: "Stop, interjecting, attachments" },
+  { id: "pill", title: "Pill composer", note: "One button: speak, send, stop" },
   { id: "actions", title: "Actions", note: "Pending actions above the composer" },
   { id: "themes", title: "Themes", note: "Only --qsl-* overridden" },
   { id: "slots", title: "Slots", note: "Custom buttons through QuasselProvider" },
@@ -74,6 +76,7 @@ export function App() {
         {demo === "read" && <ReadDemo />}
         {demo === "layout" && <LayoutDemo />}
         {demo === "input" && <InputDemo />}
+        {demo === "pill" && <PillDemo />}
         {demo === "actions" && <ActionDemo />}
         {demo === "themes" && <ThemeDemo />}
         {demo === "slots" && <SlotDemo />}

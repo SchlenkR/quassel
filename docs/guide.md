@@ -19,7 +19,7 @@ fundamental decisions:
 2. **Backend**: Where do the events come from? quassel brings NO backend and no transport.
    The host delivers a stream of `ChatEvent`s (SSE, WebSocket, RPC, fake) and reduces it with
    `applyEvent`. Sending, stopping and dismissing are callbacks of the host.
-3. **Input**: Card (`layout="card"`), single line (`"inline"`) or as a bar (`"toolbar"`)?
+3. **Input**: Card (`layout="card"`), single line (`"inline"`), bar (`"toolbar"`) or pill (`"pill"`)?
    Attachments allowed (`attachments`)? Custom buttons (`actions`, `toolbarLeft`, `toolbarRight`)?
 4. **Steps**: Which detail level as default (`current`, `off`, `icons`, `chips`, `grouped`,
    `compact`, `full`)? Should the user be able to switch (`DetailModeSwitch`)?
@@ -275,12 +275,14 @@ errors or cancellation through the same region: one shared, hidden `role="status
   onStop?: () => void;                  // with running: stop button as long as nothing is typed
   running?: boolean;                    // typing turns into interjecting
   disabled?: boolean; sendDisabled?: boolean;
-  layout?: "card" | "toolbar" | "inline";  // default "card"
+  layout?: "card" | "toolbar" | "inline" | "pill";  // default "card"
   detailsContainer?: HTMLElement | null;   // with "toolbar": target for attachments, errors and buttons (portal)
-  rows?: number;                        // default 3; with maxRows the input grows up to that ("inline" starts at 1)
+  rows?: number;                        // default 3; with maxRows the input grows up to that (inline and pill start at 1)
   maxRows?: number;
   actions?: ToolbarAction[];            // { icon?, label?, title?, disabled?, active?, onClick }; active makes a toggle
   toolbarLeft?: ReactNode; toolbarRight?: ReactNode;
+  microphone?: ChatMicrophone;          // pill only: host-controlled voice input
+  replaceInput?: ReactNode;             // pill only: replaces the textarea area, preserving the draft
   texts?: Partial<ChatTexts>;
   handleRef?: Ref<ChatInputHandle>;     // insert(text), focus(), reset(), submit(onSubmit?, { allowEmpty })
   attachments?: boolean;                // default true; false = no attaching, dropping or pasting of files
@@ -298,6 +300,88 @@ errors or cancellation through the same region: one shared, hidden `role="status
 Attachments come in through the button, by dropping or by pasting; at most 8 files and 20 MiB. A
 failed `onSend` restores the draft or offers it for insertion. Below a width of 480px, actions
 with an icon collapse their label.
+
+#### Pill composer
+
+`layout="pill"` renders a single rounded row: `actions` and `toolbarLeft`, the textarea (or
+`replaceInput`), `toolbarRight`, the attachment button, and one primary action at the far right.
+The row starts at 64px with a 48px round action; the input text uses the host base.
+It starts with one text row and grows to `maxRows` (default 6), then scrolls inside the textarea.
+The 32px corners stay rounded as the row grows. Previews and errors sit above the pill.
+The other layouts keep their existing size, structure and behavior; voice props apply only to pill.
+
+| Condition, in priority order | Primary action | Behavior |
+|---|---|---|
+| `microphone.state === "preparing"` | Spinner | Connecting; an existing press can still end or cancel |
+| `microphone.state === "recording"` | Live microphone | Recording color, indicator and level-driven aura; host handles finishing |
+| `microphone.state === "transcribing"` | Spinner, disabled | Busy until the host changes state |
+| Text or attachments | Send | `onSend`; also while running, for steering |
+| Running, empty | Stop | `onStop`; disabled when no stop handler exists |
+| Empty, idle, `microphone` provided | Microphone | Host press callbacks |
+| Empty, no microphone (or send pending) | Send, disabled | No empty send or accidental recording |
+
+`disabled` blocks the textarea, attachment button and primary action. `sendDisabled` blocks
+sending without blocking microphone or stop. Hosts control their own slot buttons' disabled
+state. During voice preparation, recording and transcription the draft is preserved and
+cannot be submitted. `replaceInput` hides the textarea without discarding it and blocks sending
+until removed. Use it for a waveform, elapsed recording time or transcription status.
+
+The package exports `ChatMicrophone` and `MicrophonePress`:
+
+```ts
+interface MicrophonePress {
+  source: "pointer" | "keyboard" | "virtual";
+  timeStamp: number;
+}
+
+interface ChatMicrophone {
+  state: "idle" | "preparing" | "recording" | "transcribing";
+  level?: number;
+  onPressStart: (press: MicrophonePress) => void;
+  onPressEnd: (press: MicrophonePress) => void;
+  onCancel: () => void;
+  label?: string;
+}
+```
+
+The host requests microphone permission, captures audio, computes `level` and transcribes.
+Quassel never opens the microphone. The level is clamped to 0-1; non-finite values become 0.
+`label` overrides the idle microphone name. All other voice labels and tooltips come from
+`texts`: `microphone`, `microphoneHint`, `microphonePreparing`, `microphoneRecording` and
+`microphoneTranscribing`, included in `englishTexts` and `germanTexts`.
+
+Primary pointer presses use pointer capture; Space and Enter emit equivalent start/end pairs
+and ignore repeats. `timeStamp` is the event timestamp in milliseconds, so the host can measure
+a hold. A screen reader's virtual activation emits a start/end pair with the same timestamp.
+There is no duplicate callback from the click after a pointer or keyboard press. Start and end
+remain paired across changes from idle to preparing to recording; the end uses the callbacks
+that received the start.
+
+For press-and-hold, start capture on `onPressStart`, then finish on `onPressEnd`. For
+click-to-latch, keep recording after a short pair, finish after a long pair or a subsequent
+pair that began while recording, and treat virtual pairs as short clicks. The gallery's
+`PillDemo.tsx` demonstrates both with a 250ms threshold. On finishing, set `state` to
+`"transcribing"`, then to `"idle"`; insert the transcript with `ChatInputHandle.insert(text)`
+or send it through the host. A host can use the same API while an agent is running.
+
+Escape (also with focus elsewhere), pointer cancellation, lost pointer capture, keyboard
+focus loss during a press, window blur, a hidden document, disabling and unmounting cancel
+active voice input through `onCancel`. The host should release audio resources and set its
+state back to idle. Preparing ignores new presses; transcribing is disabled and `aria-busy`.
+
+Enter sends, Shift+Enter inserts a line break, and `sendShortcut="mod-enter"` requires Ctrl
+or Cmd. IME composition never sends. Buttons have accessible names and focus outlines.
+Icons crossfade and rotate on the same button; reduced motion disables these transitions and
+the spinner rotation and keeps the recording aura at a fixed size.
+
+The primary action uses a native button for pointer capture and keyboard handling. Theme it
+through the pill variables; `QuasselProvider.components.Button` still supplies attachment and
+declarative action buttons.
+
+The aura is a pointer-transparent portal in the button's document body, positioned against the
+button each animation frame so scrolling and resizing keep it aligned. It escapes clipping
+and transformed ancestors of the composer. Its colors are read from the button's host theme;
+`--qsl-pill-aura-z-index` controls its stacking order (default 1000).
 
 ### Further building blocks
 
@@ -363,6 +447,17 @@ for the whole page or on a wrapper for one chat.
 | `--qsl-radius-sm`, `-md`, `-lg`, `-xl`, `-2xl` | single steps, otherwise from `--qsl-radius` | not set: `* 0.6`, `* 0.8`, `* 1`, `* 1.4`, `* 1.8` |
 | `--qsl-radius-panel` | cards, e.g. the action card | `17px` |
 | `--qsl-input-card-radius` | input card | not set: `--qsl-radius-xl` |
+| `--qsl-pill-background` | pill surface | `--qsl-background` |
+| `--qsl-pill-border` | pill edge | `--qsl-border` |
+| `--qsl-pill-shadow` | pill elevation | `--qsl-bar-shadow` |
+| `--qsl-pill-primary-background` | round action background | `--qsl-primary` |
+| `--qsl-pill-primary-foreground` | round action icon | `--qsl-primary-foreground` |
+| `--qsl-pill-primary-shadow` | round action elevation | soft accent shadow |
+| `--qsl-pill-recording-background` | recording action background | `--qsl-destructive` |
+| `--qsl-pill-recording-foreground` | recording icon and indicator | `--qsl-background` |
+| `--qsl-pill-aura-color` | voice aura glow | `--qsl-destructive` |
+| `--qsl-pill-aura-ring-color` | voice aura ring | aura color |
+| `--qsl-pill-aura-z-index` | portal stacking order | `1000` |
 | `--qsl-bubble-radius` | speech bubble of own messages | not set: `10px 10px 4px 10px` (`material` tone: `9px`) |
 | `--qsl-font-size` | text size of the quassel root, see [Text size](#text-size) | `13px`; `1em` follows the host |
 | `--qsl-tool-group-gap` | gap between rows in an expanded group | `1px` |
@@ -414,7 +509,7 @@ The scale is fixed; individual sizes and line heights have no public overrides:
 
 | Content | Size relative to base | Line height |
 |---|---|---|
-| Messages, composer in every layout, pending action and question cards, options, text buttons | 1 | 1.5 |
+| Messages, card/inline/toolbar/pill composer, pending action and question cards, options, text buttons | 1 | 1.5 |
 | Step rows, group headers, timestamps, chips, tool arguments/results, labels, badges, notices, table meta text | 0.85 | 1.4 |
 | Markdown h1 | 1.3 | 1.25 |
 | Markdown h2 | 1.15 | 1.3 |
@@ -608,11 +703,17 @@ in the transcript, two open ones in the dock above the composer; `actions` works
 its own base next to the default: 15px body text, custom radii and speech bubble through
 wrapper variables, popovers through `portalContainer` in the wrapper.
 
+The Pill composer demo includes an interactive fake agent, simulated press-and-hold and
+click-to-latch recording, waveform and transcription, plus every primary state in light and
+dark. `showcase.html?scene=pill&theme=light` (or `dark`) shows a compact state sheet including
+idle, text, running, steering, preparing, recording, transcribing, disabled and no microphone.
+
 ## Publishing
 
 ```sh
 pnpm release --dry-run   # builds packages/quassel/dist and shows the contents of the package
 pnpm release             # publishes to npm
+pnpm --dir packages/quassel pack --pack-destination /tmp/quassel-preview
 ```
 
 The version counts up by itself: the release takes the patch after the latest version on npm and
@@ -622,6 +723,11 @@ The script (`scripts/publish.mjs`) checks the types, bundles `index` and `events
 (dependencies stay external), generates the declarations with tsc, builds `chat.css` with the
 Tailwind CLI and writes its own `package.json` with the built paths. It takes the token from
 `NPM_TOKEN`, otherwise the user's `.npmrc` applies.
+
+`pnpm pack` in `packages/quassel` runs the same type check, bundling, declaration and CSS build
+through `prepack` (`scripts/publish.mjs --build-only`) and packs `dist` at the declared version.
+It does not query npm, change versions, write credentials or publish. Use the tarball to test
+a host before releasing. `publishConfig.linkDirectory=false` keeps the gallery linked to source.
 
 ## Recipes
 

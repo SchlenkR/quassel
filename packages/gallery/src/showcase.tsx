@@ -17,6 +17,7 @@ import "./showcase.css";
 import { ChoiceCard } from "./ChoiceCard";
 import { actions, party, research, steps, tokens } from "./samples";
 import { englishTexts as texts } from "./texts";
+import { PillStates } from "./PillDemo";
 
 function Frame({ caption, small, className, children }: { caption?: string; small?: boolean; className?: string; children: ReactNode }) {
   return (
@@ -172,6 +173,11 @@ const scenes: Record<string, () => ReactNode> = {
   party: PartyScene,
   themes: ThemeScene,
   host: HostScene,
+  pill: () => <div className="pill-showcase pill-palette">
+    <h1>Eine Pill. Eine Aktion.</h1>
+    <p>ChatInputToolbar / Mikrofon, Senden, Stoppen / Hell und Dunkel</p>
+    <PillStates />
+  </div>,
 };
 
 const params = new URLSearchParams(location.search);

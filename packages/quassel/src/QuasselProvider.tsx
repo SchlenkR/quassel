@@ -26,6 +26,7 @@ export interface QuasselToggleProps {
   className?: string;
   disabled?: boolean;
   title?: string;
+  "aria-label"?: string;
   pressed?: boolean;
   onPressedChange?: (pressed: boolean) => void;
   children?: ReactNode;

@@ -1,6 +1,6 @@
 {
   "name": "@schlenkr/quassel",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Chat building blocks for React: streaming transcript with thinking and tool steps, input card, themable Tailwind styles and an event contract",
   "license": "MIT",
   "author": "Ronald Schlenker",
@@ -12,6 +12,10 @@
   "keywords": ["chat", "react", "llm", "agent", "streaming", "ui", "tailwind"],
   "type": "module",
   "sideEffects": ["*.css"],
+  "publishConfig": {
+    "directory": "dist",
+    "linkDirectory": false
+  },
   "exports": {
     ".": "./src/index.ts",
     "./events": "./src/events.ts",
@@ -21,6 +25,7 @@
     "check": "tsc --noEmit",
     "test": "pnpm css && node --import tsx --test tests/*.test.ts",
     "css": "tailwindcss -i src/chat.css -o build/chat.css",
+    "prepack": "node ../../scripts/publish.mjs --build-only",
     "dev": "tailwindcss -i src/chat.css -o build/chat.css --watch"
   },
   "dependencies": {

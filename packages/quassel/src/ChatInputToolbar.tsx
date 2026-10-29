@@ -8,7 +8,8 @@ import { ChatTexts, defaultTexts, fillText } from "./texts";
 import type { ChatAttachmentInput } from "./events";
 import { attachmentCapabilityError, attachmentMediaType, encodeAttachment, formatAttachmentSize, MAX_CHAT_ATTACHMENTS, maxAttachmentSizeLabel, validateAttachmentSelection } from "./attachments";
 import { ChatSendContext } from "./ChatSendContext";
-import type { SendShortcut } from "./options";
+import type { ChatMicrophone, SendShortcut } from "./options";
+import { ComposerPrimaryAction } from "./ComposerPrimaryAction";
 
 type DraftAttachment = { id: number; file: File } & (
   | { status: "reading" }
@@ -42,13 +43,7 @@ export interface ChatInputHandle {
   submit: (onSubmit?: (text: string, attachments?: ChatAttachmentInput[]) => void | Promise<void>, options?: { allowEmpty?: boolean }) => Promise<void>;
 }
 
-/**
- * The input card: borderless textarea on top, toolbar below a hairline. Custom buttons come
- * declaratively through `actions` or freely through the left/right slots; while work is running
- * the stop button stays visible, and typing shows the send button next to it, which then
- * interjects. `rows` sets the initial height; with `maxRows` the textarea grows with its content
- * up to that number of rows and scrolls after that. `inline` starts with one row and grows the same way.
- */
+/** A composer with attachments, host slots and steering into a running turn. */
 export function ChatInputToolbar({
   onSend,
   onStop,
@@ -64,6 +59,8 @@ export function ChatInputToolbar({
   actions,
   toolbarLeft,
   toolbarRight,
+  microphone,
+  replaceInput,
   texts,
   handleRef,
   attachments: attachmentsEnabled = true,
@@ -81,7 +78,7 @@ export function ChatInputToolbar({
   running?: boolean;
   disabled?: boolean;
   sendDisabled?: boolean;
-  layout?: "card" | "toolbar" | "inline";
+  layout?: "card" | "toolbar" | "inline" | "pill";
   detailsContainer?: HTMLElement | null;
   onErrorChange?: (error: string | undefined) => void;
   inputAriaControls?: string;
@@ -90,6 +87,8 @@ export function ChatInputToolbar({
   actions?: ToolbarAction[];
   toolbarLeft?: ReactNode;
   toolbarRight?: ReactNode;
+  microphone?: ChatMicrophone;
+  replaceInput?: ReactNode;
   texts?: Partial<ChatTexts>;
   handleRef?: Ref<ChatInputHandle>;
   /** false = no attaching: neither button nor dropping or pasting files. */
@@ -149,6 +148,7 @@ export function ChatInputToolbar({
   };
   const rootRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const composing = useRef(false);
   const autoFocusSettled = useRef(false);
   useEffect(() => {
     if (!autoFocus || autoFocusSettled.current) return;
@@ -212,18 +212,22 @@ export function ChatInputToolbar({
   });
   const toolbar = layout === "toolbar";
   const inline = layout === "inline";
-  const inputRows = inline || toolbar ? 1 : rows;
-  const inputMaxRows = toolbar ? 1 : inline ? (maxRows ?? 1) : maxRows;
+  const pill = layout === "pill";
+  const inputRows = inline || toolbar || pill ? 1 : rows;
+  const inputMaxRows = toolbar ? 1 : pill ? (maxRows ?? 6) : inline ? (maxRows ?? 1) : maxRows;
+  const microphoneBusy = pill && !!microphone && microphone.state !== "idle";
+  const replacingInput = pill && replaceInput !== undefined && replaceInput !== null && typeof replaceInput !== "boolean";
   // The toolbar variant pulses while working; the host only sets the radius.
   const rootClasses = cn(
-    "qsl:flex qsl:shrink-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-[var(--qsl-input-card-radius,--theme(--radius-xl))] qsl:border qsl:border-border-strong qsl:bg-background qsl:shadow-bar qsl:transition-colors qsl:focus-within:border-primary",
-    "qsl:in-data-[tone=material]:rounded-xl qsl:in-data-[tone=material]:border-glass-edge/50 qsl:in-data-[tone=material]:bg-background",
+    "qsl:flex qsl:shrink-0 qsl:flex-col",
+    pill ? "qsl:min-w-0" : "qsl:overflow-hidden qsl:rounded-[var(--qsl-input-card-radius,--theme(--radius-xl))] qsl:border qsl:border-border-strong qsl:bg-background qsl:shadow-bar qsl:transition-colors qsl:focus-within:border-primary qsl:in-data-[tone=material]:rounded-xl qsl:in-data-[tone=material]:border-glass-edge/50 qsl:in-data-[tone=material]:bg-background",
     toolbar && "qsl:h-full qsl:min-w-0 qsl:flex-row qsl:items-center qsl:rounded-lg qsl:data-[working=true]:animate-working-pulse qsl:data-[working=true]:border-primary qsl:motion-reduce:data-[working=true]:animate-none",
     fileInput.dragging && "qsl:outline-2 qsl:outline-offset-[3px] qsl:outline-dashed qsl:outline-primary",
   );
   const textareaClasses = cn(
-    "qsl:resize-none qsl:overscroll-contain qsl:border-0 qsl:bg-transparent qsl:text-body qsl:text-foreground qsl:placeholder:text-muted-foreground qsl:focus:outline-none",
-    inline ? "qsl:min-w-0 qsl:flex-1 qsl:px-2.5 qsl:py-2" : toolbar ? "qsl:w-full qsl:min-w-0 qsl:flex-auto qsl:px-2 qsl:py-[3px]" : "qsl:px-3 qsl:pt-3 qsl:pb-2",
+    "qsl:resize-none qsl:overscroll-contain qsl:border-0 qsl:bg-transparent qsl:text-foreground qsl:placeholder:text-muted-foreground",
+    !pill && "qsl:text-body qsl:focus:outline-none",
+    pill ? "qsl:pill-input" : inline ? "qsl:min-w-0 qsl:flex-1 qsl:px-2.5 qsl:py-2" : toolbar ? "qsl:w-full qsl:min-w-0 qsl:flex-auto qsl:px-2 qsl:py-[3px]" : "qsl:px-3 qsl:pt-3 qsl:pb-2",
   );
   const toolbarRowClasses = cn(
     "qsl:flex qsl:items-center qsl:gap-2 qsl:border-t qsl:border-border-soft qsl:px-2 qsl:py-1.5 qsl:in-data-[tone=overseer-details]:flex-nowrap",
@@ -292,7 +296,7 @@ export function ChatInputToolbar({
 
   useEffect(() => {
     applyAutoGrow();
-  }, [draft, applyAutoGrow]);
+  }, [draft, replacingInput, applyAutoGrow]);
 
   // Hosts may lay the composer out a frame later; re-measure once the width settles.
   useEffect(() => {
@@ -309,7 +313,7 @@ export function ChatInputToolbar({
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, [inputMaxRows, applyAutoGrow]);
+  }, [inputMaxRows, replacingInput, applyAutoGrow]);
 
   // Panel width instead of viewport width: the chat column can be arbitrarily narrow in the host.
   useEffect(() => {
@@ -338,7 +342,7 @@ export function ChatInputToolbar({
   const send = async (onSubmit = onSend, allowEmpty = false) => {
     const text = draft.trim();
     const snapshot = attachmentsRef.current;
-    if ((!allowEmpty && !text && !snapshot.length) || disabled || sendDisabled || pendingSend.current || capabilityError || snapshot.some((entry) => entry.status !== "ready")) {
+    if ((!allowEmpty && !text && !snapshot.length) || disabled || sendDisabled || microphoneBusy || replacingInput || pendingSend.current || capabilityError || snapshot.some((entry) => entry.status !== "ready")) {
       return;
     }
     pendingSend.current = true;
@@ -386,7 +390,7 @@ export function ChatInputToolbar({
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && event.nativeEvent.keyCode !== 229
+    if (event.key === "Enter" && !event.shiftKey && !composing.current && !event.nativeEvent.isComposing && event.nativeEvent.keyCode !== 229
       && (sendShortcut === "enter" || event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       if (!event.repeat) void send();
@@ -465,31 +469,33 @@ export function ChatInputToolbar({
             </Button>
           )}
   </>;
+  const actionButtons = actions?.map((action, index) => action.active === undefined ? (
+    <Button aria-label={action.label ?? action.title} disabled={action.disabled} key={index} onClick={action.onClick} size="sm" title={action.title ?? action.label} variant="ghost">
+      {action.icon}
+      {action.label && <span className={action.icon ? "qsl:in-data-[compact=true]:hidden" : undefined}>{action.label}</span>}
+    </Button>
+  ) : (
+    <Toggle aria-label={action.label ?? action.title} disabled={action.disabled} key={index} onPressedChange={() => action.onClick()} pressed={action.active} size="sm" title={action.title ?? action.label}>
+      {action.icon}
+      {action.label && <span className={action.icon ? "qsl:in-data-[compact=true]:hidden" : undefined}>{action.label}</span>}
+    </Toggle>
+  ));
+  const attachButton = attachmentsEnabled && <Button
+    aria-label={allTexts.attachFiles}
+    disabled={disabled || sending}
+    onClick={() => fileInput.inputRef.current?.click()}
+    size="icon-sm"
+    title={fillText(allTexts.attachFilesHint, { count: MAX_CHAT_ATTACHMENTS, size: maxAttachmentSizeLabel })}
+    variant="ghost"
+  >
+    <PaperclipIcon />
+  </Button>;
   const detailToolbar = (
       <div className={toolbarRowClasses} data-input="controls">
         <div className={cn(toolbarSideClasses, "qsl:in-data-[tone=overseer-details]:flex-none", inline || toolbar ? "qsl:flex-none" : "qsl:flex-auto")}>
-          {attachmentsEnabled && <Button
-            aria-label={allTexts.attachFiles}
-            disabled={disabled || sending}
-            onClick={() => fileInput.inputRef.current?.click()}
-            size="icon-sm"
-            title={fillText(allTexts.attachFilesHint, { count: MAX_CHAT_ATTACHMENTS, size: maxAttachmentSizeLabel })}
-            variant="ghost"
-          >
-            <PaperclipIcon />
-          </Button>}
+          {attachButton}
           {preparing && <span className={cn("qsl:text-small qsl:text-muted-foreground", inline && "qsl:sr-only")} role="status">{allTexts.attachmentsPreparing}</span>}
-          {actions?.map((action, index) => action.active === undefined ? (
-            <Button disabled={action.disabled} key={index} onClick={action.onClick} size="sm" title={action.title ?? action.label} variant="ghost">
-              {action.icon}
-              {action.label && <span className={action.icon ? "qsl:in-data-[compact=true]:hidden" : undefined}>{action.label}</span>}
-            </Button>
-          ) : (
-            <Toggle disabled={action.disabled} key={index} onPressedChange={() => action.onClick()} pressed={action.active} size="sm" title={action.title ?? action.label}>
-              {action.icon}
-              {action.label && <span className={action.icon ? "qsl:in-data-[compact=true]:hidden" : undefined}>{action.label}</span>}
-            </Toggle>
-          ))}
+          {actionButtons}
           {toolbarLeft}
         </div>
         <div className={cn(toolbarSideClasses, "qsl:in-data-[tone=overseer-details]:flex-1", inline || toolbar ? "qsl:flex-none" : "qsl:flex-[0_1_auto]")}>
@@ -509,9 +515,12 @@ export function ChatInputToolbar({
         aria-controls={inputAriaControls}
         className={textareaClasses}
         aria-label={allTexts.placeholder}
-        disabled={!toolbar && disabled}
+        disabled={!toolbar && (disabled || microphoneBusy)}
+        hidden={replacingInput}
         readOnly={toolbar && disabled}
         onChange={(event) => changeDraft(event.target.value)}
+        onCompositionStart={() => { composing.current = true; }}
+        onCompositionEnd={() => { composing.current = false; }}
         onKeyDown={onKeyDown}
         placeholder={running ? allTexts.steeringPlaceholder : allTexts.placeholder}
         ref={textareaRef}
@@ -538,11 +547,31 @@ export function ChatInputToolbar({
         {...fileInput.inputProps}
       />}
       {!toolbar && attachmentPreviews}
-      {inline ? <>{errors}<div className="qsl:flex qsl:min-w-0 qsl:items-end">{input}{detailToolbar}</div></> : input}
+      {pill ? <>
+        {errors}
+        {preparing && <span className="qsl:sr-only" role="status">{allTexts.attachmentsPreparing}</span>}
+        <div className="qsl:pill-row" data-input="pill">
+          {(actionButtons?.length || toolbarLeft) && <div className="qsl:pill-slot" data-input="left">{actionButtons}{toolbarLeft}</div>}
+          {input}
+          {replacingInput && <div className="qsl:pill-replacement" data-input="replacement">{replaceInput}</div>}
+          {(toolbarRight || attachmentsEnabled) && <div className="qsl:pill-slot" data-input="right">{toolbarRight}{attachButton}</div>}
+          <ComposerPrimaryAction
+            disabled={disabled}
+            hasContent={hasContent}
+            microphone={microphone}
+            onSend={() => { void send(); }}
+            onStop={onStop}
+            running={running}
+            sendDisabled={sendDisabled || attachmentBlocked || !!capabilityError || replacingInput}
+            sending={sending}
+            texts={allTexts}
+          />
+        </div>
+      </> : inline ? <>{errors}<div className="qsl:flex qsl:min-w-0 qsl:items-end">{input}{detailToolbar}</div></> : input}
       {toolbar ? <>
         <div className="qsl:flex qsl:flex-none qsl:items-center qsl:gap-1 qsl:p-1">{sendButtons}</div>
         {detailsContainer && createPortal(details, detailsContainer)}
-      </> : !inline && <>{errors}{detailToolbar}</>}
+      </> : !inline && !pill && <>{errors}{detailToolbar}</>}
 
     </div>
   );

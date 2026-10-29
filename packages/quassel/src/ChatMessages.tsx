@@ -864,19 +864,23 @@ function MessageAttachments({ message, texts }: { message: Message; texts: ChatT
       <ul className="qsl:mt-2.5 qsl:flex qsl:flex-wrap qsl:gap-2" aria-label={texts.attachments}>
         {message.attachments.map((attachment, index) => {
           const isImage = attachment.mediaType.startsWith("image/");
-          return (
-            <li className={cn("qsl:relative qsl:flex qsl:max-w-full qsl:min-w-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-lg qsl:border qsl:border-border qsl:text-small", isImage ? "qsl:w-[320px]" : "qsl:w-[190px]")} key={`${attachment.url}-${index}`}>
-              {isImage && (
+          if (isImage)
+            return (
+              <li className="qsl:relative qsl:overflow-hidden qsl:rounded-lg qsl:border qsl:border-border" key={`${attachment.url}-${index}`}>
                 <button
                   type="button"
-                  className="qsl:block qsl:w-full qsl:cursor-zoom-in qsl:bg-secondary"
+                  className="qsl:block qsl:cursor-zoom-in qsl:bg-secondary"
                   aria-label={fillText(texts.enlargeImage ?? defaultTexts.enlargeImage, { name: attachment.name })}
+                  title={attachment.name}
                   onClick={() => setEnlarged(attachment)}
                   data-chat="attachment-image"
                 >
-                  <img className="qsl:mx-auto qsl:block qsl:max-h-[240px] qsl:max-w-full qsl:object-contain" src={attachment.url} alt={attachment.name} loading="lazy" />
+                  <img className="qsl:block qsl:size-24 qsl:object-cover" src={attachment.url} alt={attachment.name} loading="lazy" />
                 </button>
-              )}
+              </li>
+            );
+          return (
+            <li className="qsl:relative qsl:flex qsl:w-[190px] qsl:max-w-full qsl:min-w-0 qsl:flex-col qsl:overflow-hidden qsl:rounded-lg qsl:border qsl:border-border qsl:text-small" key={`${attachment.url}-${index}`}>
               {attachment.mediaType.startsWith("video/") && <video className="qsl:block qsl:h-[112px] qsl:w-full qsl:bg-secondary qsl:object-contain" src={attachment.url} controls preload="metadata" aria-label={attachment.name} />}
               <div className="qsl:flex qsl:flex-col qsl:gap-1 qsl:p-2 qsl:[overflow-wrap:anywhere]">
                 <a className="qsl:font-medium" href={attachmentDownloadUrl(attachment.url)} download={attachment.name}>{attachment.name}</a>

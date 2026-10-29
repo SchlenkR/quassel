@@ -27,7 +27,7 @@ export {
   MAX_CHAT_ATTACHMENTS, MAX_CHAT_ATTACHMENT_BYTES,
 } from "./attachments";
 export type {
-  ChatAppearance, TimestampOptions, CodeBlockOptions, BubbleOptions, MessageAction, MessageActionsOptions, SendShortcut,
+  ChatAppearance, TimestampOptions, CodeBlockOptions, BubbleOptions, MessageAction, MessageActionsOptions, SendShortcut, ChatMicrophone, MicrophonePress,
 } from "./options";
 export { appearanceStyle } from "./options";
 export {

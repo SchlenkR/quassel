@@ -113,7 +113,8 @@ export function PartyMessage({
         {cards.length > 0 && <div className="qsl:mt-2.5 qsl:flex qsl:flex-col qsl:items-start qsl:gap-2" data-chat="cards">{cards}</div>}
         <Reactions hooks={hooks} message={message} texts={texts} />
         {thread && <ThreadSummary hooks={hooks} message={message} texts={texts} thread={thread} timestampOptions={timestampOptions} />}
-        <div className="qsl:absolute qsl:top-1 qsl:right-2 qsl:[&>[data-chat=message-actions]]:mt-0" data-chat="party-actions">
+        <div className="qsl:absolute qsl:top-1 qsl:right-2 qsl:flex qsl:items-center qsl:gap-1 qsl:[&>[data-chat=message-actions]]:mt-0" data-chat="party-actions">
+          <FloatingReactionPicker hooks={hooks} message={message} texts={texts} />
           <MessageActions contentRef={textRef} message={message} options={messageActions} side="end" texts={texts} />
         </div>
       </div>
@@ -126,13 +127,13 @@ function Reactions({ message, hooks, texts }: { message: Message; hooks: PartyHo
   const reactions = (message.reactions ?? []).filter((reaction) => reaction.count > 0);
   const toggle = hooks.onToggleReaction;
   const choices = toggle ? hooks.reactionChoices ?? [] : [];
-  if (reactions.length === 0 && choices.length === 0) return null;
+  if (reactions.length === 0) return null;
   const mine = (reaction: ChatReaction) => reaction.mine ?? (hooks.currentUserId !== undefined && !!reaction.userIds?.includes(hooks.currentUserId));
   const icon = (key: string) => hooks.renderReaction?.(key) ?? key;
   const label = (key: string, count: number) => fillText(texts.reaction ?? defaultTexts.reaction!, { reaction: key, count });
   const unused = choices.filter((key) => !reactions.some((reaction) => reaction.key === key));
   return (
-    <div className={cn("qsl:mt-2 qsl:flex qsl:flex-wrap qsl:items-center qsl:gap-1.5", reactions.length === 0 && !picking && "qsl:hidden qsl:group-hover/message:flex qsl:focus-within:flex")} data-chat="reactions">
+    <div className="qsl:mt-2 qsl:flex qsl:flex-wrap qsl:items-center qsl:gap-1.5" data-chat="reactions">
       {reactions.map((reaction) => {
         const own = mine(reaction);
         const classes = cn(chipClasses, own
@@ -151,6 +152,28 @@ function Reactions({ message, hooks, texts }: { message: Message; hooks: PartyHo
       {toggle && unused.length > 0 && (
         <button aria-expanded={picking} aria-label={texts.addReaction ?? defaultTexts.addReaction} className={cn(chipClasses, "qsl:cursor-pointer qsl:px-1.5 qsl:text-muted-foreground qsl:hover:bg-secondary qsl:hover:text-foreground")}
           data-chat="add-reaction" onClick={() => setPicking((value) => !value)} title={texts.addReaction ?? defaultTexts.addReaction} type="button"><SmilePlusIcon /></button>
+      )}
+    </div>
+  );
+}
+
+function FloatingReactionPicker({ message, hooks, texts }: { message: Message; hooks: PartyHooks; texts: ChatTexts }) {
+  const [picking, setPicking] = useState(false);
+  const toggle = hooks.onToggleReaction;
+  const choices = toggle ? hooks.reactionChoices ?? [] : [];
+  if (!toggle || choices.length === 0 || (message.reactions ?? []).some((reaction) => reaction.count > 0)) return null;
+  const icon = (key: string) => hooks.renderReaction?.(key) ?? key;
+  return (
+    <div className={cn("qsl:relative qsl:transition-opacity", picking ? "qsl:opacity-100" : "qsl:opacity-0 qsl:group-hover/message:opacity-100 qsl:focus-within:opacity-100 qsl:[@media(hover:none)]:opacity-100")}>
+      <button aria-expanded={picking} aria-label={texts.addReaction ?? defaultTexts.addReaction} className="qsl:inline-grid qsl:size-6 qsl:cursor-pointer qsl:place-items-center qsl:rounded-md qsl:text-muted-foreground qsl:hover:bg-secondary qsl:hover:text-foreground qsl:[&_svg]:size-[14px]"
+        data-chat="add-reaction" onClick={() => setPicking((value) => !value)} title={texts.addReaction ?? defaultTexts.addReaction} type="button"><SmilePlusIcon /></button>
+      {picking && (
+        <div className="qsl:absolute qsl:top-full qsl:right-0 qsl:z-10 qsl:mt-1 qsl:flex qsl:gap-1 qsl:rounded-full qsl:bg-[var(--qsl-reaction-background,var(--qsl-background))] qsl:p-1 qsl:shadow-[var(--qsl-reaction-shadow,0_0_0_1px_var(--qsl-border-soft))]" data-chat="reaction-picker">
+          {choices.map((key) => (
+            <button aria-label={key} className={cn(chipClasses, "qsl:cursor-pointer qsl:text-muted-foreground qsl:hover:bg-secondary qsl:hover:text-foreground")}
+              data-chat="reaction-choice" key={key} onClick={() => { setPicking(false); toggle(message, key); }} title={key} type="button">{icon(key)}</button>
+          ))}
+        </div>
       )}
     </div>
   );

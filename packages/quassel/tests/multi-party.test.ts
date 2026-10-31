@@ -121,6 +121,19 @@ test("reactions toggle through the host and offer the remaining choices", () => 
   assert.equal(container.querySelector('[data-chat="add-reaction"]'), null);
 });
 
+test("a message without reactions offers them from the hover actions without a layout row", () => {
+  const toggled: string[] = [];
+  render([post("m1", ben, 0, "Done")], { currentUserId: "ana", onToggleReaction: (message, key) => toggled.push(`${message.key}:${key}`), reactionChoices: ["+1", "eyes"] });
+  assert.equal(container.querySelector('[data-chat="reactions"]'), null);
+  const add = container.querySelector<HTMLButtonElement>('[data-chat="party-actions"] [data-chat="add-reaction"]')!;
+  act(() => add.click());
+  const choices = [...container.querySelectorAll<HTMLButtonElement>('[data-chat="reaction-picker"] [data-chat="reaction-choice"]')];
+  assert.deepEqual(choices.map((choice) => choice.textContent), ["+1", "eyes"]);
+  act(() => choices[1].click());
+  assert.deepEqual(toggled, ["m1:eyes"]);
+  assert.equal(container.querySelector('[data-chat="reaction-picker"]'), null);
+});
+
 test("host hooks render cards, attachments, avatars and header decorations", () => {
   const messages = [post("m1", cleo, 0, "See the draft", {
     cards: [{ kind: "invoice", key: "i1", data: { total: 12 } }, { kind: "unknown" }],

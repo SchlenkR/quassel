@@ -19,6 +19,7 @@ import { ChoiceCard } from "./ChoiceCard";
 import { useFakeAgent } from "./fakeAgent";
 import { actions, research, steps } from "./samples";
 import { PillDemo } from "./PillDemo";
+import { TeamChat } from "./TeamDemo";
 
 const DEMOS = [
   { id: "read", title: "Read only", note: "Transcript without a composer" },
@@ -26,6 +27,7 @@ const DEMOS = [
   { id: "input", title: "Input card", note: "Stop, interjecting, attachments" },
   { id: "pill", title: "Pill composer", note: "One button: speak, send, stop" },
   { id: "actions", title: "Actions", note: "Pending actions above the composer" },
+  { id: "team", title: "Team chat", note: "Authors, threads, reactions, mentions" },
   { id: "themes", title: "Themes", note: "Only --qsl-* overridden" },
   { id: "slots", title: "Slots", note: "Custom buttons through QuasselProvider" },
 ] as const;
@@ -78,6 +80,7 @@ export function App() {
         {demo === "input" && <InputDemo />}
         {demo === "pill" && <PillDemo />}
         {demo === "actions" && <ActionDemo />}
+        {demo === "team" && <TeamDemo />}
         {demo === "themes" && <ThemeDemo />}
         {demo === "slots" && <SlotDemo />}
       </main>
@@ -176,6 +179,15 @@ function ActionDemo() {
             : undefined}
         />
       </ChatPanel>
+    </Stage>
+  );
+}
+
+function TeamDemo() {
+  const [language, setLanguage] = useState<"de" | "en">("en");
+  return (
+    <Stage head={<Toggles onChange={setLanguage} value={language} values={["de", "en"]} />} note="layout=&quot;multi-party&quot;: header per author, reply summary with an approval chip from renderMessageDecorations, cards through renderCard, reactions, the unread divider and a highlighted question. Open a thread and reply." title="Team chat">
+      <TeamChat key={language} texts={language === "de" ? germanTexts : englishTexts} />
     </Stage>
   );
 }

@@ -18,6 +18,7 @@ import { ChoiceCard } from "./ChoiceCard";
 import { actions, party, research, steps, tokens } from "./samples";
 import { englishTexts as texts } from "./texts";
 import { PillStates } from "./PillDemo";
+import { TeamChat } from "./TeamDemo";
 
 function Frame({ caption, small, className, children }: { caption?: string; small?: boolean; className?: string; children: ReactNode }) {
   return (
@@ -171,6 +172,7 @@ const scenes: Record<string, () => ReactNode> = {
   actions: ActionScene,
   questions: ActionScene,
   party: PartyScene,
+  team: () => <Frame className="showcase-frame--team"><TeamChat texts={texts} /></Frame>,
   themes: ThemeScene,
   host: HostScene,
   pill: () => <div className="pill-showcase pill-palette">

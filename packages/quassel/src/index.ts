@@ -1,8 +1,10 @@
 export type {
   Role, ToolInfo, PendingAction, Message, ChatEvent, ChatTextCursor, ChatJournalCursor, ChatAttachment, ChatAttachmentInput,
   ChatAttachmentCapabilities, ChatStartupStatus, DetailMode, TranscriptMode, StepState, ChatAnnouncement,
+  ChatAuthor, ChatMention, ChatReaction, ChatThread, ChatCard, ChatBadge,
 } from "./types";
-export { applyEvent, prettyJson, compactToolLine, stepState } from "./types";
+export { applyEvent, prettyJson, compactToolLine, stepState, channelMessages, threadMessages, summarizeThread, mentionMarkdown } from "./types";
+export { Avatar, type DecorationPlace } from "./PartyMessage";
 export type { ChatTexts } from "./texts";
 export { defaultTexts, englishTexts, germanTexts, fillText } from "./texts";
 export { ChatMessages } from "./ChatMessages";
@@ -11,7 +13,7 @@ export { ChatInputToolbar, type ChatInputHandle, type ToolbarAction } from "./Ch
 export { DetailModeSwitch, DETAIL_MODES, detailModeLabel } from "./DetailModeSwitch";
 export { TranscriptModeSwitch } from "./TranscriptModeSwitch";
 export { TimestampSwitch } from "./TimestampSwitch";
-export { Markdown, MarkdownCodeBlocks, MarkdownLinks, markdownPlainText, type LinkClickHandler } from "./Markdown";
+export { Markdown, MarkdownCodeBlocks, MarkdownLinks, MarkdownMentions, markdownPlainText, type LinkClickHandler } from "./Markdown";
 export { MessageActions } from "./MessageActions";
 export { PendingActionCard } from "./PendingActionCard";
 export { StepPopover } from "./StepPopover";

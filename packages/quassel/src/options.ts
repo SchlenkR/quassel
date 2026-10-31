@@ -14,6 +14,8 @@ export interface TimestampOptions {
   locale?: string;
   timeZone?: string;
   showDaySeparators?: boolean;
+  /** Label of a day separator, e.g. "Today, Saturday 31 October"; default: the long date. */
+  dayLabel?: (date: Date) => string;
 }
 
 export interface CodeBlockOptions {

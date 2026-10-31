@@ -1,7 +1,10 @@
 import type { Message } from "./events";
 
-export type { Role, ToolInfo, PendingAction, Message, ChatEvent, ChatTextCursor, ChatJournalCursor, ChatAttachment, ChatAttachmentInput, ChatAttachmentCapabilities, ChatStartupStatus } from "./events";
-export { applyEvent, prettyJson, compactToolLine } from "./events";
+export type {
+  Role, ToolInfo, PendingAction, Message, ChatEvent, ChatTextCursor, ChatJournalCursor, ChatAttachment, ChatAttachmentInput, ChatAttachmentCapabilities, ChatStartupStatus,
+  ChatAuthor, ChatMention, ChatReaction, ChatThread, ChatCard, ChatBadge,
+} from "./events";
+export { applyEvent, prettyJson, compactToolLine, channelMessages, threadMessages, summarizeThread, mentionMarkdown } from "./events";
 
 export type TranscriptMode = "all" | "latest";
 

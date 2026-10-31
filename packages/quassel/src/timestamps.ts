@@ -31,7 +31,7 @@ export function timestampDay(date: Date, options: TimestampOptions = {}): { key:
   const key = new Intl.DateTimeFormat("en-CA", {
     timeZone: options.timeZone, year: "numeric", month: "2-digit", day: "2-digit",
   }).format(date);
-  const label = new Intl.DateTimeFormat(options.locale, {
+  const label = options.dayLabel?.(date) ?? new Intl.DateTimeFormat(options.locale, {
     timeZone: options.timeZone, dateStyle: "long",
   }).format(date);
   return { key, label };

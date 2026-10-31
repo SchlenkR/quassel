@@ -1,0 +1,72 @@
+.team-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 380px;
+    max-width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--qsl-background);
+    box-shadow: 0 0 0 1px var(--qsl-border-soft), var(--qsl-bar-shadow);
+}
+
+.team-card-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--qsl-primary) 14%, transparent);
+    color: var(--qsl-primary);
+    font-weight: 700;
+}
+
+.team-muted {
+    color: var(--qsl-muted-foreground);
+    font-size: 0.85em;
+}
+
+.team-draft {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 520px;
+    padding: 12px 16px 14px;
+    border-radius: 10px;
+    background: var(--qsl-secondary);
+}
+
+.team-draft p {
+    margin: 0 0 6px;
+    color: var(--qsl-muted-foreground);
+}
+
+.team-primary {
+    align-self: flex-start;
+    padding: 5px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--qsl-primary);
+    color: var(--qsl-primary-foreground);
+    font: inherit;
+    cursor: pointer;
+}
+
+.team-done {
+    color: var(--qsl-success);
+    font-weight: 500;
+}
+
+.team-chip {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--qsl-primary) 15%, transparent);
+    color: var(--qsl-primary);
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.team-thread-bar {
+    padding: 10px 24px 0;
+}

@@ -3,9 +3,10 @@ import { type CSSProperties, ReactNode, useCallback, useContext, useEffect, useL
 import { createPortal } from "react-dom";
 import { Dialog } from "@base-ui/react/dialog";
 import { createChatScroll, defaultJumpToEndThreshold } from "./chat-scroll";
-import { ChatAnnouncement, ChatAttachment, DetailMode, Message, PendingAction, prettyJson, stepState, ToolInfo, TranscriptMode } from "./types";
+import { ChatAnnouncement, ChatAttachment, ChatAuthor, ChatCard, ChatThread, DetailMode, Message, PendingAction, prettyJson, stepState, ToolInfo, TranscriptMode } from "./types";
 import { ChatTexts, defaultTexts, fillText } from "./texts";
-import { Markdown, MarkdownCodeBlocks, MarkdownLinks, markdownPlainText, type LinkClickHandler } from "./Markdown";
+import { Markdown, MarkdownCodeBlocks, MarkdownLinks, MarkdownMentions, markdownPlainText, type LinkClickHandler } from "./Markdown";
+import { authorOf, Divider, PartyMessage, type PartyHooks } from "./PartyMessage";
 import { StepPopover, stepPopoverOrigin, type StepPopoverOrigin } from "./StepPopover";
 import { PendingActionCard } from "./PendingActionCard";
 import { WorkingScenes } from "./WorkingScenes";
@@ -47,6 +48,8 @@ const chipInteractiveClasses = "qsl:cursor-pointer qsl:hover:border-border qsl:h
 const collapseAtBottomFrom = 11;
 
 const maxAnnouncementsAtOnce = 2;
+
+const defaultGroupWithin = 5 * 60_000;
 
 const bubbleBodyClasses = "qsl:relative qsl:max-w-[86%] qsl:px-3 qsl:py-2 qsl:text-body qsl:[overflow-wrap:anywhere] qsl:@max-[620px]/chat:max-w-full";
 
@@ -96,6 +99,23 @@ export function ChatMessages({
   bubbleOptions,
   messageActions,
   toolElapsedThreshold = 3000,
+  layout = "assistant",
+  currentUserId,
+  isHighlighted,
+  unreadFromKey,
+  threadParentKey,
+  groupWithin = defaultGroupWithin,
+  before,
+  activeThreadKey,
+  onOpenThread,
+  onToggleReaction,
+  reactionChoices,
+  renderReaction,
+  renderCard,
+  renderAttachment,
+  renderAvatar,
+  renderThreadSummary,
+  renderMessageDecorations,
 }: {
   messages: Message[];
   /** Contributions with this Message.sender appear without a speech bubble; null keeps the message defaults. */
@@ -137,7 +157,46 @@ export function ChatMessages({
   messageActions?: MessageActionsOptions;
   /** Milliseconds before a running tool call shows its elapsed time (from Message.at) while running; false = never. */
   toolElapsedThreshold?: number | false;
+  /** multi-party = user and assistant messages as rows with avatar, name, time, reactions and thread summary. */
+  layout?: "assistant" | "multi-party";
+  /** The reader: own reactions and mentions of this id are marked. */
+  currentUserId?: string;
+  /** Messages addressed to the reader; default: Message.highlighted or a mention of currentUserId. */
+  isHighlighted?: (message: Message) => boolean;
+  /** The unread divider stands before this message. */
+  unreadFromKey?: string;
+  /** Thread view: the parent with this key comes first, a reply count divider follows it, the parent shows no summary. */
+  threadParentKey?: string;
+  /** Multi-party: consecutive messages of one author within this many ms share one header; false = never. */
+  groupWithin?: number | false;
+  /** Content above the first message, e.g. a button that loads older messages. */
+  before?: ReactNode;
+  /** The thread summary of this parent is marked as open. */
+  activeThreadKey?: string;
+  onOpenThread?: (message: Message) => void;
+  onToggleReaction?: (message: Message, key: string) => void;
+  /** Reaction keys offered by the add button; without onToggleReaction reactions are display only. */
+  reactionChoices?: readonly string[];
+  /** Icon or emoji for a reaction key; undefined = the key as text. */
+  renderReaction?: (key: string) => ReactNode | undefined;
+  /** Host cards inside a message by Message.cards kind; undefined = not shown. */
+  renderCard?: (card: ChatCard, message: Message) => ReactNode | undefined;
+  /** Custom rendering for one attachment; undefined = default thumbnail or file tile. */
+  renderAttachment?: (attachment: ChatAttachment, message: Message) => ReactNode | undefined;
+  renderAvatar?: (author: ChatAuthor, message: Message) => ReactNode | undefined;
+  /** Replaces the reply summary below a thread parent; undefined = default summary. */
+  renderThreadSummary?: (message: Message, thread: ChatThread) => ReactNode | undefined;
+  /** Extra inline content, e.g. a state chip, in the message header or in the reply summary. */
+  renderMessageDecorations?: (message: Message, place: "header" | "thread") => ReactNode;
 }) {
+  const multiParty = layout === "multi-party";
+  const hooks: PartyHooks = {
+    currentUserId, activeThreadKey, onOpenThread, onToggleReaction, reactionChoices, renderReaction, renderCard, renderAttachment, renderAvatar,
+    renderThreadSummary, renderMessageDecorations,
+  };
+  const highlighted = (message: Message) => isHighlighted
+    ? isHighlighted(message)
+    : message.highlighted ?? (currentUserId !== undefined && !!message.mentions?.some((mention) => mention.id === currentUserId) && message.author?.id !== currentUserId);
   const selected = useMemo(() => {
     if (transcriptMode === "all") return messages;
     const answers = new Set<Message>();
@@ -256,7 +315,7 @@ export function ChatMessages({
           return running && index === lastNonUser
             && (message.role === "thinking" ? !message.closed : stepState(message) === "running");
         }
-        if ((message.role === "thinking" || message.role === "assistant") && message.text.trim() === "" && !message.attachments?.length) {
+        if ((message.role === "thinking" || message.role === "assistant") && message.text.trim() === "" && !message.attachments?.length && !message.cards?.length) {
           return false;
         }
         if (message.role === "thinking" || message.role === "tool") {
@@ -323,16 +382,55 @@ export function ChatMessages({
       group = [];
     }
   };
+  let lastParty: Message | undefined;
   visible.forEach((message, index) => {
     const date = timestampOptions?.showDaySeparators ? messageDate(message.at) : undefined;
     if (date) {
       const day = timestampDay(date, timestampOptions);
       if (day.key !== lastDay) {
         closeGroup();
-        blocks.push(<div className={cn(stepClasses, "qsl:text-center qsl:text-small qsl:text-muted-foreground")} data-chat="day-separator" data-day={day.key} key={`day-${message.key}`}>{day.label}</div>);
+        blocks.push(multiParty
+          ? <Divider key={`day-${message.key}`} kind="day" label={day.label} />
+          : <div className={cn(stepClasses, "qsl:text-center qsl:text-small qsl:text-muted-foreground")} data-chat="day-separator" data-day={day.key} key={`day-${message.key}`}>{day.label}</div>);
         lastDay = day.key;
+        lastParty = undefined;
       }
     }
+    if (message.key === unreadFromKey) {
+      closeGroup();
+      blocks.push(<Divider key={`unread-${message.key}`} kind="unread" label={allTexts.unread ?? defaultTexts.unread!} />);
+      lastParty = undefined;
+    }
+    if (multiParty && (message.role === "user" || message.role === "assistant") && !message.tool) {
+      closeGroup();
+      const inThreadView = message.key === threadParentKey;
+      const grouped = groupWithin !== false && lastParty !== undefined && !inThreadView && !lastParty.thread?.count
+        && authorOf(lastParty).id === authorOf(message).id
+        && (messageDate(message.at)?.getTime() ?? 0) - (messageDate(lastParty.at)?.getTime() ?? Number.NEGATIVE_INFINITY) <= groupWithin;
+      blocks.push(
+        <PartyMessage
+          attachments={<MessageAttachments message={message} renderAttachment={renderAttachment} texts={allTexts} />}
+          grouped={grouped}
+          highlighted={highlighted(message)}
+          hooks={hooks}
+          inThreadView={inThreadView}
+          key={message.key}
+          message={message}
+          messageActions={messageActions}
+          texts={allTexts}
+          timestampOptions={timestampOptions}
+        />,
+      );
+      lastParty = message;
+      if (inThreadView) {
+        const replies = visible.filter((other) => other.parentId === message.key).length;
+        blocks.push(<Divider key={`thread-${message.key}`} kind="thread"
+          label={replies === 1 ? allTexts.threadReplyOne ?? defaultTexts.threadReplyOne! : fillText(allTexts.threadReplyMany ?? defaultTexts.threadReplyMany!, { count: replies })} />);
+        lastParty = undefined;
+      }
+      return;
+    }
+    lastParty = undefined;
     const customRendering = message.role === "tool" && message.tool && detailMode !== "current" ? renderTool?.(message.tool) : undefined;
     if (customRendering !== undefined) {
       closeGroup();
@@ -363,6 +461,7 @@ export function ChatMessages({
         texts={allTexts}
         toolArgumentsText={toolArgumentsText}
         renderAction={renderAction}
+        renderAttachment={renderAttachment}
         onDismissAction={onDismissAction}
         bubbleOptions={bubbleOptions}
         messageActions={messageActions}
@@ -414,7 +513,7 @@ export function ChatMessages({
           scrollerRef?.(element);
         }}
       >
-        {visible.length === 0 && !running ? (
+        {visible.length === 0 && !running && before === undefined ? (
           emptyState ?? null
         ) : (
           <div
@@ -426,6 +525,7 @@ export function ChatMessages({
             )}
             ref={threadRef}
           >
+            {before}
             {blocks}
             {running && (working ?? <WorkingScenes label={allTexts.working} />)}
           </div>
@@ -455,7 +555,7 @@ export function ChatMessages({
     </div>
   );
 
-  return <MarkdownLinks onLinkClick={onLinkClick}><MarkdownCodeBlocks options={codeBlockOptions} texts={allTexts}>{transcript}</MarkdownCodeBlocks></MarkdownLinks>;
+  return <MarkdownMentions currentUserId={currentUserId}><MarkdownLinks onLinkClick={onLinkClick}><MarkdownCodeBlocks options={codeBlockOptions} texts={allTexts}>{transcript}</MarkdownCodeBlocks></MarkdownLinks></MarkdownMentions>;
 }
 
 /** Consecutive steps as chips side by side; the line wraps when space runs out. */
@@ -714,6 +814,7 @@ function Bubble({
   texts,
   toolArgumentsText,
   renderAction,
+  renderAttachment,
   onDismissAction,
   bubbleOptions,
   messageActions,
@@ -727,6 +828,7 @@ function Bubble({
   texts: ChatTexts;
   toolArgumentsText: (tool: ToolInfo) => string;
   renderAction?: (action: PendingAction, text: string) => ReactNode | undefined;
+  renderAttachment?: (attachment: ChatAttachment, message: Message) => ReactNode | undefined;
   onDismissAction?: (actionId: string) => void;
   bubbleOptions?: BubbleOptions;
   messageActions?: MessageActionsOptions;
@@ -783,7 +885,7 @@ function Bubble({
     return (
       <div className={cn(stepSpacing, "qsl:border-l-2 qsl:border-destructive/50 qsl:pl-3 qsl:text-small qsl:text-muted-foreground")} data-message="system">
         <Markdown text={message.text} />
-        <MessageAttachments message={message} texts={texts} />
+        <MessageAttachments message={message} renderAttachment={renderAttachment} texts={texts} />
       </div>
     );
   }
@@ -800,7 +902,7 @@ function Bubble({
     {showSender && sender && <span className={cn("qsl:mb-[5px] qsl:table qsl:text-small qsl:font-semibold",
       useBubble && message.bubble && "qsl:rounded-full qsl:border qsl:border-white/30 qsl:bg-black/15 qsl:px-[7px] qsl:py-px qsl:tracking-[0.02em]")} data-chat="sender">{sender}</span>}
     <div data-chat="message-text" ref={textRef}><Markdown text={message.text} streaming={message.role === "assistant" && !message.closed} /></div>
-    <MessageAttachments message={message} texts={texts} />
+    <MessageAttachments message={message} renderAttachment={renderAttachment} texts={texts} />
     {message.steered && <small className="qsl:mt-1 qsl:block qsl:text-small qsl:opacity-70" data-chat="steered">{texts.steered}</small>}
   </>;
   const cursor = message.role === "assistant" && message.textCursor ? JSON.stringify(message.textCursor) : undefined;
@@ -856,13 +958,19 @@ function ActionContent({
   );
 }
 
-function MessageAttachments({ message, texts }: { message: Message; texts: ChatTexts }) {
+function MessageAttachments({ message, texts, renderAttachment }: {
+  message: Message;
+  texts: ChatTexts;
+  renderAttachment?: (attachment: ChatAttachment, message: Message) => ReactNode | undefined;
+}) {
   const [enlarged, setEnlarged] = useState<ChatAttachment>();
   if (!message.attachments?.length) return null;
   return (
     <>
       <ul className="qsl:mt-2.5 qsl:flex qsl:flex-wrap qsl:gap-2" aria-label={texts.attachments}>
         {message.attachments.map((attachment, index) => {
+          const custom = renderAttachment?.(attachment, message);
+          if (custom !== undefined) return <li className="qsl:max-w-full qsl:min-w-0" data-chat="attachment-custom" key={`${attachment.url}-${index}`}>{custom}</li>;
           const isImage = attachment.mediaType.startsWith("image/");
           if (isImage)
             return (

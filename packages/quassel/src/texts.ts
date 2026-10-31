@@ -72,6 +72,14 @@ export interface ChatTexts {
   notSent: string;
   notSentAttachments: string;
   insertUnsent: string;
+  unread?: string;
+  threadReplyOne?: string;
+  threadReplyMany?: string;
+  threadLastReply?: string;
+  openThread?: string;
+  addReaction?: string;
+  reaction?: string;
+  edited?: string;
 }
 
 
@@ -152,6 +160,14 @@ export const englishTexts: Required<ChatTexts> = {
   notSent: "Not sent:",
   notSentAttachments: "({count} attachments)",
   insertUnsent: "Insert unsent input",
+  unread: "New",
+  threadReplyOne: "1 reply",
+  threadReplyMany: "{count} replies",
+  threadLastReply: "last {time}",
+  openThread: "Open thread: {count}",
+  addReaction: "Add reaction",
+  reaction: "{reaction}: {count}",
+  edited: "edited",
 };
 
 export const germanTexts: Required<ChatTexts> = {
@@ -228,6 +244,14 @@ export const germanTexts: Required<ChatTexts> = {
   notSent: "Nicht gesendet:",
   notSentAttachments: "({count} Anhänge)",
   insertUnsent: "Nicht gesendete Eingabe einfügen",
+  unread: "Neu",
+  threadReplyOne: "1 Antwort",
+  threadReplyMany: "{count} Antworten",
+  threadLastReply: "zuletzt {time}",
+  openThread: "Thema öffnen: {count}",
+  addReaction: "Reaktion hinzufügen",
+  reaction: "{reaction}: {count}",
+  edited: "bearbeitet",
 };
 
 export const defaultTexts = englishTexts;

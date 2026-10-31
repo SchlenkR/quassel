@@ -26,6 +26,47 @@ export interface ToolInfo {
   isError?: boolean;
 }
 
+/** Who wrote a message in a multi-party chat; without avatarUrl the initials (or the first letters of name) are shown. */
+export interface ChatAuthor {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+  initials?: string;
+}
+
+/** A mention inside the message text: every "@name" is highlighted, the one of the current user more strongly. */
+export interface ChatMention {
+  id: string;
+  name: string;
+}
+
+/** A reaction on a message; key is what the host renders (emoji or icon key), mine marks the current user's own. */
+export interface ChatReaction {
+  key: string;
+  count: number;
+  mine?: boolean;
+  userIds?: string[];
+}
+
+/** The replies below a thread parent, summarized. */
+export interface ChatThread {
+  count: number;
+  participants: ChatAuthor[];
+  lastReplyAt?: string;
+}
+
+/** Host content inside a message, rendered by renderCard according to kind. */
+export interface ChatCard {
+  kind: string;
+  key?: string;
+  data?: unknown;
+}
+
+export interface ChatBadge {
+  label: string;
+  tone?: "neutral" | "accent" | "success" | "warning" | "danger";
+}
+
 export interface ChatTextCursor {
   conversationId: string;
   sequence: number;
@@ -70,6 +111,19 @@ export interface Message {
   steered?: boolean;
   /** Colored speech bubble instead of running text, e.g. for multi-party conversations. */
   bubble?: { color: string; side: "start" | "end"; label?: string };
+  /** Multi-party chats: the person behind the message, shown with avatar and name in the header. */
+  author?: ChatAuthor;
+  /** Key of the thread parent; a reply belongs to that thread. */
+  parentId?: string;
+  /** Summary of the replies on a thread parent. */
+  thread?: ChatThread;
+  reactions?: ChatReaction[];
+  mentions?: ChatMention[];
+  cards?: ChatCard[];
+  badges?: ChatBadge[];
+  /** Addressed to the current user; the predicate isHighlighted on ChatMessages can decide instead. */
+  highlighted?: boolean;
+  edited?: boolean;
 }
 
 export interface ChatStartupStatus {
@@ -205,4 +259,5 @@ export function compactToolLine(tool: ToolInfo): string {
   return line.length > 160 ? `${line.slice(0, 160)} ...` : line;
 }
 
+export { channelMessages, threadMessages, summarizeThread, mentionMarkdown } from "./threads";
 export { MAX_CHAT_ATTACHMENTS, MAX_CHAT_ATTACHMENT_BYTES, MAX_CHAT_REQUEST_BYTES, chatAttachmentMediaType, parseChatAttachments } from "./chat-attachments";

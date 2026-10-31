@@ -93,6 +93,32 @@ interface ChatTextCursor { conversationId: string; sequence: number; offset: num
   `MAX_CHAT_ATTACHMENT_BYTES` (20 MiB), `MAX_CHAT_REQUEST_BYTES`, `chatAttachmentMediaType`,
   `parseChatAttachments` (validates attachments on the server: count, name, MIME type, Base64, size).
 
+### Multi-party data on Message
+
+Team chats carry who wrote what, threads, reactions and mentions on the message itself. These
+fields are plain data; the host maps its own backend onto them (they are not produced by `applyEvent`).
+
+```ts
+interface Message {
+  // ... the fields above
+  author?: ChatAuthor;        // { id, name, avatarUrl?, initials? }
+  parentId?: string;          // key of the thread parent: this message is a reply
+  thread?: ChatThread;        // on a parent: { count, participants: ChatAuthor[], lastReplyAt? }
+  reactions?: ChatReaction[]; // { key, count, mine?, userIds? }
+  mentions?: ChatMention[];   // { id, name }: every "@name" in text is highlighted
+  cards?: ChatCard[];         // { kind, key?, data? }: host content, rendered by renderCard
+  badges?: ChatBadge[];       // { label, tone?: "neutral" | "accent" | "success" | "warning" | "danger" }
+  highlighted?: boolean;      // addressed to the reader
+  edited?: boolean;
+}
+```
+
+Pure helpers, also usable on the server: `channelMessages(messages)` (top-level messages only,
+parents without `thread` get one computed from their replies), `threadMessages(messages, parentKey)`
+(the parent, then its replies), `summarizeThread(replies)` and `mentionMarkdown(text, mentions)`
+(turns `@name` into the mention markup quassel renders; longest name first, case-insensitive,
+never inside code).
+
 A custom backend is quassel-compatible as soon as it delivers this event stream. Attachments
 come in as `ChatAttachmentInput` (`{ name, mediaType, data }`, Base64) through `onSend` and are
 then attached to the `user` event as `ChatAttachment` (`{ name, mediaType, size, url }`).
@@ -156,11 +182,29 @@ dock appears, grows or disappears. It is filled by `ChatMessages` (see actions);
   scrollerRef?: (element: HTMLDivElement | null) => void;
   maxWidth?; horizontalPadding?; appearance?;
   jumpToEndThreshold?: number;          // default 120px; tolerance for following and the jump button
-  timestampOptions?: TimestampOptions;  // position "aside" | "above", format, locale, timeZone, showDaySeparators
+  timestampOptions?: TimestampOptions;  // position "aside" | "above", format, locale, timeZone, showDaySeparators, dayLabel
   codeBlockOptions?: CodeBlockOptions;  // wrap, maxHeight, showCopyButton
   bubbleOptions?: BubbleOptions;        // userBackgroundFullWidth, variant, maxWidth, sides, showSender, senderLabel
   messageActions?: MessageActionsOptions; // copy, copyFormatted, edit, retry, custom
   toolElapsedThreshold?: number | false;  // default 3000 ms until running tools show their elapsed time, false = never
+  // multi-party, see "Multi-party chats" below
+  layout?: "assistant" | "multi-party"; // default "assistant"
+  currentUserId?: string;
+  isHighlighted?: (message: Message) => boolean;
+  unreadFromKey?: string;
+  threadParentKey?: string;
+  activeThreadKey?: string;
+  groupWithin?: number | false;         // default 5 minutes
+  before?: ReactNode;
+  onOpenThread?: (message: Message) => void;
+  onToggleReaction?: (message: Message, key: string) => void;
+  reactionChoices?: readonly string[];
+  renderReaction?: (key: string) => ReactNode | undefined;
+  renderCard?: (card: ChatCard, message: Message) => ReactNode | undefined;
+  renderAttachment?: (attachment: ChatAttachment, message: Message) => ReactNode | undefined;
+  renderAvatar?: (author: ChatAuthor, message: Message) => ReactNode | undefined;
+  renderThreadSummary?: (message: Message, thread: ChatThread) => ReactNode | undefined;
+  renderMessageDecorations?: (message: Message, place: "header" | "thread") => ReactNode;
 }
 ```
 
@@ -248,6 +292,70 @@ cases (`renderAction`, otherwise the default card); in the dock the cards inheri
 `appearance` of the transcript, but no timestamp column. When an action moves from the dock into
 the transcript, its card is mounted anew: the card's own state is lost in the process, and so is
 the focus.
+
+#### Multi-party chats
+
+`layout="multi-party"` renders user and assistant messages as rows for a team chat: avatar,
+a header with name, time (`timestampOptions`), "edited" and badges, then the text, attachments,
+host cards, reactions and the reply summary. Thinking, tool steps, actions and system messages
+keep their usual rendering, so an assistant can work inside a team chat. The default
+`"assistant"` layout is unchanged.
+
+Built in, the same for every multi-user chat:
+
+- **Author header.** `Message.author`; without `avatarUrl` the avatar shows `initials` or the first
+  letters of the name. Consecutive messages of one author within `groupWithin` (default 5 minutes,
+  `false` = never) share one header. Each row carries `data-message="party"`, `data-message-key`
+  (to scroll to a message), `data-grouped` and `data-highlighted`.
+- **Threads.** A reply has `parentId`. The channel view shows the parents with a reply summary
+  (participants without the parent's author, "3 replies", "last 09:15"); with `onOpenThread` the
+  summary is a button, `activeThreadKey` marks the open one. A thread view is the same list:
+  `messages={threadMessages(all, key)}` and `threadParentKey={key}` put a reply count divider after
+  the parent and hide its summary.
+- **Reactions.** `Message.reactions` are shown as chips; own ones (`mine`, or `userIds` containing
+  `currentUserId`) are marked. With `onToggleReaction` the chips are buttons and `reactionChoices`
+  offers the unused keys behind an add button. The host updates the data. `renderReaction(key)`
+  maps a key to an icon; without it the key is shown as text, so emoji keys need nothing.
+- **Mentions and highlighting.** Every `@name` from `Message.mentions` is highlighted in the text,
+  mentions of `currentUserId` more strongly (`data-self`). A message is highlighted when
+  `isHighlighted(message)` says so, otherwise when `Message.highlighted` is set or it mentions
+  `currentUserId` and was written by someone else.
+- **Unread divider.** `unreadFromKey` puts a divider ("New", `texts.unread`) before that message.
+  With `timestampOptions.showDaySeparators`, day separators become lines with the date in the middle;
+  `timestampOptions.dayLabel(date)` words them, e.g. "Today, Saturday 31 October".
+- `before` renders above the first message, e.g. a "load older messages" button.
+
+Extension hooks, the host renders its domain:
+
+- `renderCard(card, message)` renders `Message.cards` by `kind`; `undefined` hides a card.
+- `renderAttachment(attachment, message)` replaces the default thumbnail or file tile.
+- `renderMessageDecorations(message, "header" | "thread")` adds inline content to the header or to
+  the reply summary, e.g. a state chip such as "approval pending".
+- `renderThreadSummary(message, thread)` replaces the whole reply summary.
+- `renderAvatar(author, message)` replaces the avatar, also in the reply summary.
+- `renderTool`, `renderAction` and `messageActions` work as before; in rows the message actions
+  appear on hover at the top right.
+
+```tsx
+const [thread, setThread] = useState<string>();
+<ChatMessages
+  layout="multi-party"
+  messages={thread ? threadMessages(all, thread) : channelMessages(all)}
+  threadParentKey={thread}
+  activeThreadKey={thread}
+  currentUserId={me.id}
+  unreadFromKey={firstUnread}
+  onOpenThread={(message) => setThread(message.key)}
+  onToggleReaction={(message, key) => toggleReaction(message.key, key)}
+  reactionChoices={["\u{1F44D}", "\u2764\uFE0F", "\u{1F440}"]}
+  renderCard={(card) => card.kind === "order" ? <OrderCard order={card.data as Order} /> : undefined}
+  renderMessageDecorations={(message, place) => place === "thread" && waitsForApproval(message) ? <Chip>approval pending</Chip> : null}
+  timestampOptions={{ showDaySeparators: true }}
+/>
+```
+
+The gallery's "Team chat" demo (`packages/gallery/src/TeamDemo.tsx`) shows all of it with a
+fictional workshop team.
 
 #### Screen readers
 
@@ -389,7 +497,8 @@ and transformed ancestors of the composer. Its colors are read from the button's
   cycles the detail level; `DETAIL_MODES`, `detailModeLabel(mode, texts)`.
 - `TranscriptModeSwitch` (`mode`, `onChange`, `texts?`, `className?`): optional toggle between `all` and `latest`.
 - `TimestampSwitch` (`showTimestamps`, `onChange`, `texts?`, `className?`): icon button, clock on or faded.
-- `Markdown` (`text`, `streaming?`), plus `MarkdownLinks` (`onLinkClick`) and
+- `Avatar` (`author`, `size?`): the initials or image avatar of the multi-party layout.
+- `Markdown` (`text`, `streaming?`), plus `MarkdownLinks` (`onLinkClick`), `MarkdownMentions` (`currentUserId`) and
   `MarkdownCodeBlocks` (`options`, `texts`) as contexts; `markdownPlainText(text)`.
 - `PendingActionCard`, `StepPopover`, `MessageActions`, `WorkingScenes` (`label?`, `compact?`).
 - Helpers: `stepState`, `applyEvent`, `fillText`, `formatAttachmentSize`, `encodeAttachment`,
@@ -440,6 +549,17 @@ for the whole page or on a wrapper for one chat.
 | `--qsl-blockquote-background` | blockquote tint | unset: 6% `--qsl-primary`, 94% transparent |
 | `--qsl-destructive` | errors, stop | `#a94360` / `#ffa2b0` |
 | `--qsl-success` | check marks | `#3b705f` / `#8dceae` |
+| `--qsl-warning` | warning badges, highlighted messages | `#8a5a0b` / `#f0c36a` |
+| `--qsl-highlight-background`, `--qsl-highlight-edge` | message addressed to the reader | unset: 12% `--qsl-warning`; `--qsl-warning` |
+| `--qsl-mention-background`, `--qsl-mention-foreground` | `@name` in text | unset: 14% `--qsl-primary`; `--qsl-primary` |
+| `--qsl-mention-self-background`, `--qsl-mention-self-foreground` | mention of the reader | unset: 22% `--qsl-warning`; inherited |
+| `--qsl-reaction-background`, `--qsl-reaction-shadow` | reaction chip | unset: `--qsl-background`; 1px `--qsl-border-soft` ring |
+| `--qsl-reaction-mine-background`, `--qsl-reaction-mine-foreground` | own reaction | unset: 14% `--qsl-primary`; `--qsl-primary` |
+| `--qsl-thread-summary-foreground` | reply count | unset: `--qsl-primary` |
+| `--qsl-thread-summary-hover`, `--qsl-thread-summary-active`, `--qsl-thread-summary-radius` | reply summary | unset: `--qsl-secondary`; 12% `--qsl-primary`; `8px` |
+| `--qsl-unread-color` | unread divider | unset: `--qsl-primary` |
+| `--qsl-avatar-background`, `--qsl-avatar-foreground`, `--qsl-avatar-radius`, `--qsl-avatar-size` | initials avatar | unset: `--qsl-secondary`; `--qsl-muted-foreground`; `50%`; `32px` |
+| `--qsl-party-row-inset`, `--qsl-party-row-padding`, `--qsl-party-row-radius` | multi-party row | unset: `12px`; `8px`; `10px` |
 | `--qsl-border`, `--qsl-border-soft`, `--qsl-border-strong` | lines | |
 | `--qsl-glass-edge` | edge in the `material` tone | |
 | `--qsl-bar-shadow`, `--qsl-pop-shadow`, `--qsl-card-shadow` | shadows | |
@@ -697,7 +817,7 @@ pnpm build      # build stylesheet and gallery
 The gallery shows read only, input card with a fake agent (alternating text, thinking and
 multiple tool calls of 3.5 seconds each, including steering), actions, themes and slots. The
 README images come from `packages/gallery/showcase.html`: scenes via
-`?scene=agent|details|questions|party|themes` (`questions` shows the actions: the resolved one
+`?scene=agent|details|questions|party|team|themes` (`questions` shows the actions: the resolved one
 in the transcript, two open ones in the dock above the composer; `actions` works too; in `agent`
 `run_tests` has been running for 1:40), dark with `&theme=dark`. `?scene=host` shows a host with
 its own base next to the default: 15px body text, custom radii and speech bubble through

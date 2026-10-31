@@ -95,6 +95,7 @@
     --color-muted-foreground: var(--qsl-muted-foreground);
     --color-destructive: var(--qsl-destructive);
     --color-success: var(--qsl-success);
+    --color-warning: var(--qsl-warning);
     --color-border: var(--qsl-border);
     --color-border-soft: var(--qsl-border-soft);
     --color-border-strong: var(--qsl-border-strong);
@@ -452,6 +453,7 @@
         --qsl-muted-foreground: #62586e;
         --qsl-destructive: #a94360;
         --qsl-success: #3b705f;
+        --qsl-warning: #8a5a0b;
         --qsl-border: #c9c4d5;
         --qsl-border-soft: #dad6e3;
         --qsl-border-strong: #a397b2;
@@ -473,6 +475,7 @@
             --qsl-muted-foreground: #b6a9bd;
             --qsl-destructive: #ffa2b0;
             --qsl-success: #8dceae;
+            --qsl-warning: #f0c36a;
             --qsl-border: #555065;
             --qsl-border-soft: #403c50;
             --qsl-border-strong: #8e809f;

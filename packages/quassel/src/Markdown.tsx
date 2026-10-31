@@ -6,10 +6,23 @@ import { useAllowUrl, useQuasselComponents, useResolveUrl } from "./QuasselProvi
 import type { CodeBlockOptions } from "./options";
 import { type ChatTexts, defaultTexts } from "./texts";
 import { copyChatText, useChatAction } from "./useChatAction";
+import { mentionHrefPrefix } from "./threads";
+
+const mentionClasses = cn(
+  "qsl:rounded-[4px] qsl:px-[3px] qsl:font-medium",
+  "qsl:bg-[var(--qsl-mention-background,color-mix(in_srgb,var(--qsl-primary)_14%,transparent))] qsl:text-[var(--qsl-mention-foreground,var(--qsl-primary))]",
+  "qsl:data-self:bg-[var(--qsl-mention-self-background,color-mix(in_srgb,var(--qsl-warning)_22%,transparent))] qsl:data-self:text-[var(--qsl-mention-self-foreground,inherit)]",
+);
 
 export type LinkClickHandler = (href: string, label: string) => boolean;
 
 const LinkClickContext = createContext<LinkClickHandler | undefined>(undefined);
+const MentionContext = createContext<string | undefined>(undefined);
+
+/** Marks mentions of this user id as addressed to the reader. */
+export function MarkdownMentions({ children, currentUserId }: { children: ReactNode; currentUserId?: string }) {
+  return <MentionContext.Provider value={currentUserId}>{children}</MentionContext.Provider>;
+}
 const CodeBlockContext = createContext<{ options?: CodeBlockOptions; texts: ChatTexts }>({ texts: defaultTexts });
 
 export function MarkdownCodeBlocks({ children, options, texts }: { children: ReactNode; options?: CodeBlockOptions; texts: ChatTexts }) {
@@ -42,6 +55,11 @@ export function MarkdownLinks({ children, onLinkClick }: { children: ReactNode; 
 
 function MarkdownLink({ href, children }: { href?: string; children?: ReactNode }) {
   const onLinkClick = useContext(LinkClickContext);
+  const currentUserId = useContext(MentionContext);
+  if (href?.startsWith(mentionHrefPrefix)) {
+    const id = decodeURIComponent(href.slice(mentionHrefPrefix.length));
+    return <span className={mentionClasses} data-chat="mention" data-mention-id={id} data-self={id === currentUserId || undefined}>{children}</span>;
+  }
   if (!href || href === "streamdown:incomplete-link") {
     return <span>{children}</span>;
   }

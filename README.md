@@ -24,6 +24,15 @@ agent; resolved actions stay in the transcript as a record.
 
 **Multi-party conversations.** Colored bubbles with labels for agents that talk to each other.
 
+**Team chats.** `layout="multi-party"` turns the transcript into a team channel: avatar, name,
+time and badges per message, threads with a reply summary and a thread view from the same list,
+reactions, highlighted `@mentions` and messages addressed to the reader, and an unread divider.
+The host renders its domain through hooks: `renderCard` for its own cards inside a message,
+`renderMessageDecorations` for a state chip in the header or the reply summary, `renderAttachment`
+and `renderAvatar`. See [Multi-party chats](docs/guide.md#multi-party-chats).
+
+![A team channel with threads, reactions, a host card and a highlighted question](docs/images/team.png)
+
 <p>
   <img src="docs/images/questions.png" alt="Pending actions: a host-rendered choice and the generic card" width="49%">
   <img src="docs/images/party.png" alt="Planner and reviewer as labeled bubbles" width="49%">

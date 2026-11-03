@@ -142,10 +142,11 @@ Sizes derive from an absolute base, so nested small elements never compound.
 <Markdown text={documentText} />
 ```
 
-User message backgrounds fill the available row by default while text keeps its width and
-alignment. `bubbleOptions={{ userBackgroundFullWidth: false }}` restores a fitted background.
+User message backgrounds fit their text by default, with one uniform corner radius
+(`--qsl-bubble-radius`) and a compact padding (`--qsl-bubble-padding-x`, `--qsl-bubble-padding-y`).
+`bubbleOptions={{ userBackgroundFullWidth: true }}` fills the available row instead.
 Timestamps sit beside messages by default; `timestampOptions={{ position: "above" }}` moves
-them above. Message gaps and tool row spacing remain configurable through `appearance`.
+them above, aligned to the side of their message. Message gaps and tool row spacing remain configurable through `appearance`.
 
 For 0.6, replace separate size and line-height overrides with `--qsl-font-size` and remove
 all typography fields from `appearance` and timestamp options. The [migration guide](docs/guide.md#migration-to-06)

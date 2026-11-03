@@ -51,7 +51,7 @@ const maxAnnouncementsAtOnce = 2;
 
 const defaultGroupWithin = 5 * 60_000;
 
-const bubbleBodyClasses = "qsl:relative qsl:max-w-[86%] qsl:px-3 qsl:py-2 qsl:text-body qsl:[overflow-wrap:anywhere] qsl:@max-[620px]/chat:max-w-full";
+const bubbleBodyClasses = "qsl:relative qsl:max-w-[86%] qsl:px-[var(--qsl-bubble-padding-x,10px)] qsl:py-[var(--qsl-bubble-padding-y,3px)] qsl:text-body qsl:[overflow-wrap:anywhere] qsl:@max-[620px]/chat:max-w-full";
 
 function isStep(message?: Message): boolean {
   return !!message && (message.role === "thinking" || message.role === "tool");
@@ -328,13 +328,13 @@ export function ChatMessages({
   );
   const openActions = dock ? messages.filter(isOpenAction) : [];
 
-  const withTime = (content: ReactNode, key: string, at: string | undefined, dense = false): ReactNode =>
+  const withTime = (content: ReactNode, key: string, at: string | undefined, dense = false, side: "start" | "end" = "start"): ReactNode =>
     showTimestamps
       ? (
         <div className={cn("qsl:flex", timestampOptions?.position === "above" ? "qsl:flex-col qsl:items-stretch qsl:gap-1" : "qsl:items-baseline qsl:gap-2", dense ? denseStepClasses : stepClasses)}
           data-chat="timestamped" data-timestamp-position={timestampOptions?.position ?? "aside"} key={`time-${key}`}>
           <time dateTime={messageDate(at)?.toISOString()} className={cn("qsl:flex-none qsl:text-small qsl:tabular-nums qsl:text-muted-foreground qsl:opacity-85",
-            timestampOptions?.position === "above" ? "qsl:self-start" : timestampOptions?.format && timestampOptions.format !== "time" ? "qsl:w-[clamp(60px,20%,120px)]" : "qsl:min-w-[5ch] qsl:whitespace-nowrap")}>
+            timestampOptions?.position === "above" ? (side === "end" ? "qsl:self-end" : "qsl:self-start") : timestampOptions?.format && timestampOptions.format !== "time" ? "qsl:w-[clamp(60px,20%,120px)]" : "qsl:min-w-[5ch] qsl:whitespace-nowrap")}>
             {messageDate(at) ? timestampLabel(messageDate(at)!, timestampOptions, now) : ""}
           </time>
           <div className="qsl:min-w-0 qsl:flex-1 qsl:[&>*:first-child]:mt-0">{content}</div>
@@ -469,6 +469,7 @@ export function ChatMessages({
       message.key,
       message.at,
       dense,
+      messageSide(message, bubbleOptions),
     ));
   });
   closeGroup();
@@ -804,6 +805,10 @@ function Elapsed({ start, after, className, texts }: { start: number; after: num
   return <span aria-hidden="true" className={cn(className, "qsl:tabular-nums")} data-step="elapsed">{formatElapsed(elapsed, texts)}</span>;
 }
 
+const messageSide = (message: Message, bubbleOptions?: BubbleOptions): "start" | "end" =>
+  (message.role === "user" ? bubbleOptions?.userSide : bubbleOptions?.assistantSide)
+    ?? message.bubble?.side ?? (message.role === "user" ? "end" : "start");
+
 function Bubble({
   message,
   plain,
@@ -894,8 +899,7 @@ function Bubble({
 
   const variant = bubbleOptions?.variant ?? "default";
   const useBubble = !plain && variant !== "plain" && (variant === "bubbles" || message.role === "user" || !!message.bubble);
-  const side = (message.role === "user" ? bubbleOptions?.userSide : bubbleOptions?.assistantSide)
-    ?? message.bubble?.side ?? (message.role === "user" ? "end" : "start");
+  const side = messageSide(message, bubbleOptions);
   const sender = bubbleOptions?.senderLabel?.(message) ?? message.bubble?.label ?? message.sender;
   const showSender = bubbleOptions?.showSender ?? (!!message.bubble?.label && !plain);
   const content = <>
@@ -912,10 +916,10 @@ function Bubble({
       <MessageActions contentRef={textRef} message={message} options={messageActions} side={side} texts={texts} />
     </div>
   );
-  const fullBackground = message.role === "user" && bubbleOptions?.userBackgroundFullWidth !== false;
+  const fullBackground = message.role === "user" && bubbleOptions?.userBackgroundFullWidth === true;
   const surfaceClasses = message.bubble
     ? "qsl:rounded-lg"
-    : "qsl:rounded-[var(--qsl-bubble-radius,10px_10px_4px_10px)] qsl:border qsl:border-border qsl:bg-secondary qsl:in-data-[tone=material]:rounded-[var(--qsl-bubble-radius,9px)] qsl:in-data-[tone=material]:border-glass-edge/20 qsl:in-data-[tone=material]:bg-primary/15";
+    : "qsl:rounded-[var(--qsl-bubble-radius,10px)] qsl:border qsl:border-border qsl:bg-secondary qsl:in-data-[tone=material]:rounded-[var(--qsl-bubble-radius,9px)] qsl:in-data-[tone=material]:border-glass-edge/20 qsl:in-data-[tone=material]:bg-primary/15";
   return <div className={cn(stepSpacing, "qsl:group/message")}>
     <div data-chat-text-cursor={cursor} className={cn("qsl:relative qsl:flex", side === "end" ? "qsl:justify-end" : "qsl:justify-start")}
       data-message={message.role === "user" && !message.bubble && variant === "default" ? "user" : "bubble"} data-side={side} data-background-width={fullBackground ? "full" : "content"}>

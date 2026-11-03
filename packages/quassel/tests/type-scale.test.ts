@@ -50,7 +50,7 @@ test("tool arguments and results stay monospace", () => {
 test("the built stylesheet contains only the fixed type scale", () => {
   const css = readFileSync(new URL("../build/chat.css", import.meta.url), "utf8");
   const allowed = {
-    "font-size": new Set(["var(--qsl-font-size, 13px)", "var(--qsl-base)", "calc(var(--qsl-base) * 0.85)", "calc(var(--qsl-base) * 1.3)", "calc(var(--qsl-base) * 1.15)", "calc(var(--qsl-base) * 1.05)", "0.9em", "inherit"]),
+    "font-size": new Set(["var(--qsl-font-size, 13px)", "var(--qsl-base)", "calc(var(--qsl-base) * 0.85)", "calc(var(--qsl-base) * 1.6)", "calc(var(--qsl-base) * 1.3)", "calc(var(--qsl-base) * 1.1)", "0.9em", "inherit"]),
     "line-height": new Set(["1.5", "1.4", "1.25", "1.3", "1.35", "inherit"]),
   };
   for (const property of ["font-size", "line-height"] as const) {
